@@ -81,6 +81,30 @@ tr.alt td{background:#f8fafc}
   <div id="sec-log" class="sec"></div>
   <div id="sec-import" class="sec"></div>
   <div id="sec-entries" class="sec"></div>
+  <div id="sec-admin" class="sec"></div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto">
+    <div style="background:#fff;border-radius:12px;padding:24px;max-width:560px;margin:40px auto;position:relative">
+      <h3 style="font-size:16px;color:#1e293b;margin-bottom:16px">Edit Error Entry</h3>
+      <div class="fgrid">
+        <div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="eDt"></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="eTy"></select></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="eSr" onchange="upEF()"></select></div>
+        <div class="fhalf" id="eTmW"><label class="flb" style="margin-top:0">Team</label><select id="eTm" onchange="upEW()"></select></div>
+        <div class="fhalf" id="eWhW"><label class="flb" style="margin-top:0">Who</label><select id="eWh"></select></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="eFx"></select></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><select id="eDrug"></select></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="eRx" placeholder="e.g. 1234567"></div>
+      </div>
+      <label class="flb">Notes</label>
+      <textarea id="eNt" rows="2"></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-full" onclick="saveEdit()">Save Changes</button>
+        <button onclick="closeEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;flex:1">Cancel</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -110,7 +134,22 @@ var SM={};
 SM["Intake"]=[];SM["PCR 3"]=[];SM["TLAC"]=[];SM["Ups"]=[];SM["RPH"]=[];
 var FX=["New Erx","Refill Response","Fax","Verbal","Transfer"];
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── Editable lists (stored in Firebase) ───────────────────────────────────
+var DRUGS = ["Metformin 500mg","Metformin 1000mg","Lisinopril 10mg","Ozempic 0.5mg","Ozempic 1mg","Ozempic 2mg","Mounjaro 5mg","Mounjaro 10mg","Wegovy 1.7mg","Wegovy 2.4mg","Tirzepatide 7.5mg","Semaglutide 7.5mg","Humira 40mg","Lantus 100u","Jardiance 10mg"];
+var drugsRef = db.ref("config/drugs");
+var etRef = db.ref("config/errorTypes");
+var tmRef = db.ref("config/teams");
+
+drugsRef.on("value",function(snap){var v=snap.val();if(v&&Array.isArray(v))DRUGS=v;});
+etRef.on("value",function(snap){var v=snap.val();if(v&&Array.isArray(v)){ET=v;}});
+tmRef.on("value",function(snap){var v=snap.val();if(v&&Array.isArray(v)){TM=v;}});
+
+function saveDrugs(){drugsRef.set(DRUGS);}
+function saveET(){etRef.set(ET);}
+function saveTM(){tmRef.set(TM);}
+
+// edit modal state
+var editId=null;
 var D=[], FBI={};
 var idS=Date.now();
 function mkId(){return idS++;}
@@ -164,14 +203,15 @@ var NAVS=[
   {k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},
   {k:"trends",l:"Trends"},{k:"staff",l:"Staff"},
   {k:"member",l:"Member View"},{k:"log",l:"Log Error"},
-  {k:"import",l:"Import"},{k:"entries",l:"All Entries"}
+  {k:"import",l:"Import"},{k:"entries",l:"All Entries"},
+  {k:"admin",l:"Admin"}
 ];
 function buildNav(){
   var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';
   document.getElementById("navBar").innerHTML=h;
 }
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
-function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,staff:rStaff,member:rMember,log:rLog,import:rImport,entries:rEntries};if(fn[v])fn[v]();}
+function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,staff:rStaff,member:rMember,log:rLog,import:rImport,entries:rEntries,admin:rAdmin};if(fn[v])fn[v]();}
 function upHdr(){
   var sub=getSubset();
   document.getElementById("hTot").textContent=sub.length;
@@ -298,6 +338,8 @@ function rMember(){
 }
 function setI(id,val){var v=val.trim().toUpperCase();if(v)saveInit(id,v,fmtD(new Date()));}
 
+function drugOpts(sel){var h='<option value="">-- Select Drug --</option>';for(var i=0;i<DRUGS.length;i++)h+='<option'+(DRUGS[i]===sel?" selected":"")+'>'+DRUGS[i]+'</option>';h+='<option value="__other__">Other (type below)</option>';return h;}
+
 // ── Log Error ──────────────────────────────────────────────────────────────
 function rLog(){
   document.getElementById("sec-log").innerHTML=
@@ -309,29 +351,30 @@ function rLog(){
     '<div class="fhalf" id="lTmW"><label class="flb" style="margin-top:0">Team</label><select id="lTm" onchange="upLW()">'+tmOpts("Intake")+'</select></div>'+
     '<div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label><select id="lWh">'+whoOpts("Intake","")+'</select></div>'+
     '<div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="lFx">'+fxOpts("")+'</select></div>'+
-    '<div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><input type="text" id="lDrug" placeholder="e.g. Metformin 500mg"></div>'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><select id="lDrugSel" onchange="upDrugField()">'+drugOpts("")+'</select></div>'+
+    '<div class="fhalf" id="lDrugCustomW" style="display:none"><label class="flb" style="margin-top:0">Custom Drug Name</label><input type="text" id="lDrug" placeholder="Type drug name"></div>'+
     '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
     '</div>'+
     '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
     '<button class="btn btn-full" onclick="subLog()">Log Error</button></div>';
 }
+function upDrugField(){var v=document.getElementById("lDrugSel").value;document.getElementById("lDrugCustomW").style.display=v==="__other__"?"block":"none";}
 function upLF(){var s=document.getElementById("lSr").value,show=s==="Human";document.getElementById("lTmW").style.display=show?"block":"none";document.getElementById("lWhW").style.display=show?"block":"none";}
 function upLW(){var t=document.getElementById("lTm").value;document.getElementById("lWh").innerHTML=whoOpts(t,"");}
 function subLog(){
   var src=document.getElementById("lSr").value,date=document.getElementById("lDt").value;
   if(!date){alert("Please select a date.");return;}
+  var drugSel=document.getElementById("lDrugSel").value;
+  var drug=drugSel==="__other__"?document.getElementById("lDrug").value.trim():drugSel;
   var row={};
   row.id=mkId();row.date=date;row.week=getWk(date);row.errorType=document.getElementById("lTy").value;
   row.source=src;row.team=src==="Human"?document.getElementById("lTm").value:"";
   row.who=src==="Human"?document.getElementById("lWh").value:"";
   row.faxErx=document.getElementById("lFx").value;
-  row.drug=document.getElementById("lDrug").value.trim();
-  row.rxNum=document.getElementById("lRx").value.trim();
+  row.drug=drug;row.rxNum=document.getElementById("lRx").value.trim();
   row.notes=document.getElementById("lNt").value;
   saveErr(row);
-  document.getElementById("lDrug").value="";
-  document.getElementById("lRx").value="";
-  document.getElementById("lNt").value="";
+  rLog();
   alert("Error logged successfully.");
 }
 
@@ -365,6 +408,100 @@ function impBulk(){
   document.getElementById("blkT").value="";document.getElementById("blkC").textContent="";
 }
 
+// ── Edit Modal ─────────────────────────────────────────────────────────────
+function openEdit(id){
+  var e=null;for(var i=0;i<D.length;i++)if(D[i].id===id){e=D[i];break;}
+  if(!e)return;
+  editId=id;
+  document.getElementById("eDt").value=e.date||"";
+  document.getElementById("eTy").innerHTML=etOpts(e.errorType||"");
+  document.getElementById("eSr").innerHTML=srOpts(e.source||"Human");
+  document.getElementById("eTm").innerHTML=tmOpts(e.team||"Intake");
+  document.getElementById("eWh").innerHTML=whoOpts(e.team||"Intake",e.who||"");
+  document.getElementById("eFx").innerHTML=fxOpts(e.faxErx||"");
+  document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
+  document.getElementById("eRx").value=e.rxNum||"";
+  document.getElementById("eNt").value=e.notes||"";
+  var show=(e.source||"Human")==="Human";
+  document.getElementById("eTmW").style.display=show?"block":"none";
+  document.getElementById("eWhW").style.display=show?"block":"none";
+  document.getElementById("editModal").style.display="block";
+}
+function closeEdit(){document.getElementById("editModal").style.display="none";editId=null;}
+function upEF(){var s=document.getElementById("eSr").value,show=s==="Human";document.getElementById("eTmW").style.display=show?"block":"none";document.getElementById("eWhW").style.display=show?"block":"none";}
+function upEW(){var t=document.getElementById("eTm").value;document.getElementById("eWh").innerHTML=whoOpts(t,"");}
+function saveEdit(){
+  if(!editId)return;
+  var src=document.getElementById("eSr").value;
+  var date=document.getElementById("eDt").value;
+  var drugSel=document.getElementById("eDrug").value;
+  var drug=drugSel==="__other__"?(prompt("Enter drug name:",""))||"":drugSel;
+  var updates={};
+  updates.date=date;updates.week=getWk(date);
+  updates.errorType=document.getElementById("eTy").value;
+  updates.source=src;
+  updates.team=src==="Human"?document.getElementById("eTm").value:"";
+  updates.who=src==="Human"?document.getElementById("eWh").value:"";
+  updates.faxErx=document.getElementById("eFx").value;
+  updates.drug=drug;
+  updates.rxNum=document.getElementById("eRx").value.trim();
+  updates.notes=document.getElementById("eNt").value;
+  errRef.child(String(editId)).update(updates);
+  closeEdit();
+}
+
+// ── Admin Tab ──────────────────────────────────────────────────────────────
+function rAdmin(){
+  var sec=document.getElementById("sec-admin");
+  var etList=ET.map(function(t,i){return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="flex:1;font-size:13px">'+t+'</span><button onclick="removeET('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
+  var tmList=TM.map(function(t,i){return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="flex:1;font-size:13px">'+bdg(t,TLC[t]||"#6366f1")+'</span><button onclick="removeTM('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
+  var drugList=DRUGS.map(function(d,i){return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="flex:1;font-size:13px">'+d+'</span><button onclick="removeDrug('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
+
+  sec.innerHTML=
+    '<div style="display:flex;gap:12px;flex-wrap:wrap">'+
+
+    // Error Types
+    '<div class="card" style="flex:1;min-width:280px">'+
+      '<h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Error Types</h3>'+
+      '<p style="font-size:11px;color:#94a3b8;margin-bottom:12px">These appear in the Log Error dropdown</p>'+
+      '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+        '<input id="newET" placeholder="New error type" style="flex:1">'+
+        '<button onclick="addET()" class="btn" style="margin-top:0;padding:7px 14px">Add</button>'+
+      '</div>'+
+      '<div style="max-height:320px;overflow-y:auto">'+etList+'</div>'+
+    '</div>'+
+
+    // Teams
+    '<div class="card" style="flex:1;min-width:280px">'+
+      '<h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Teams</h3>'+
+      '<p style="font-size:11px;color:#94a3b8;margin-bottom:12px">Teams available when logging errors</p>'+
+      '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+        '<input id="newTM" placeholder="New team name" style="flex:1">'+
+        '<button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 14px">Add</button>'+
+      '</div>'+
+      '<div style="max-height:320px;overflow-y:auto">'+tmList+'</div>'+
+    '</div>'+
+
+    // Drugs
+    '<div class="card" style="flex:1;min-width:280px">'+
+      '<h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Drug List</h3>'+
+      '<p style="font-size:11px;color:#94a3b8;margin-bottom:12px">Drugs available in the Log Error dropdown</p>'+
+      '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+        '<input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1">'+
+        '<button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 14px">Add</button>'+
+      '</div>'+
+      '<div style="max-height:320px;overflow-y:auto">'+drugList+'</div>'+
+    '</div>'+
+    '</div>';
+}
+
+function addET(){var v=document.getElementById("newET").value.trim();if(!v)return;ET.push(v);saveET();document.getElementById("newET").value="";rAdmin();}
+function removeET(i){if(!confirm("Remove this error type?"))return;ET.splice(i,1);saveET();rAdmin();}
+function addTM(){var v=document.getElementById("newTM").value.trim();if(!v)return;TM.push(v);if(!TLC[v])TLC[v]="#6366f1";saveTM();document.getElementById("newTM").value="";rAdmin();}
+function removeTM(i){if(!confirm("Remove this team?"))return;TM.splice(i,1);saveTM();rAdmin();}
+function addDrug(){var v=document.getElementById("newDrug").value.trim();if(!v)return;DRUGS.push(v);saveDrugs();document.getElementById("newDrug").value="";rAdmin();}
+function removeDrug(i){if(!confirm("Remove this drug?"))return;DRUGS.splice(i,1);saveDrugs();rAdmin();}
+
 // ── All Entries ────────────────────────────────────────────────────────────
 function rEntries(){
   var sec=document.getElementById("sec-entries"),fil=[];
@@ -378,8 +515,11 @@ function rEntries(){
     rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td>'+
     '<td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td>'+
     '<td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td>'+
-    '<td style="white-space:nowrap">'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':"")+
-    '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';
+    '<td style="white-space:nowrap">'+
+      '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;cursor:pointer;margin-right:3px">Edit</button>'+
+      (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':"")+
+      '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>'+
+    '</td></tr>';
   }
   sec.innerHTML='<div class="card fbar" style="margin-bottom:10px">'+
     '<label style="font-size:11px;color:#64748b">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select>'+
