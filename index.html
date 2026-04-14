@@ -120,8 +120,9 @@ tr.alt td{background:#f8fafc}
             <label class="flb" style="margin-top:0">Verified by RPH?</label>
             <select id="eRphVerified" onchange="upEditRphFields()">
               <option value="">-- Select --</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
+              <option value="dispensed_with_error">⚠ Verified WITH error (dispensed as-is)</option>
+              <option value="good_catch">✅ Good Catch — RPH caught &amp; fixed before dispensing</option>
+              <option value="No">❌ Not verified by RPH</option>
             </select>
           </div>
           <div class="fhalf" id="eRphCountW" style="display:none">
@@ -284,10 +285,12 @@ function rDash(){
   var human=sub.filter(function(e){return e.source==="Human";}).length;
   var bot=sub.filter(function(e){return e.source==="Bot";}).length;
   var api=sub.filter(function(e){return e.source==="API";}).length;
-  // RPH stats
-  var rphVerifiedCount=sub.filter(function(e){return e.rphVerified==="Yes";}).length;
-  var rphUnverified=sub.filter(function(e){return e.rphVerified==="No";}).length;
-  var rphPct=sub.length?Math.round(rphVerifiedCount/sub.length*100):0;
+  // RPH stats — only "dispensed_with_error" counts as risk
+  var dispensedWithError=sub.filter(function(e){return e.rphVerified==="dispensed_with_error";});
+  var goodCatches=sub.filter(function(e){return e.rphVerified==="good_catch";});
+  var rphVerifiedCount=dispensedWithError.length; // primary risk metric
+  var rphGoodCount=goodCatches.length;
+  var rphPct=sub.length?Math.round(dispensedWithError.length/sub.length*100):0;
   var rphErrors=sub.filter(function(e){return e.source==="Human"&&e.team==="RPH";}).length;
   var etC={};for(var i=0;i<sub.length;i++){etC[sub[i].errorType]=(etC[sub[i].errorType]||0)+1;}
   var topET="None",topEV=0;for(var k in etC){if(etC[k]>topEV){topEV=etC[k];topET=k;}}
@@ -309,9 +312,9 @@ function rDash(){
     {l:"Human",v:human,c:"#3b82f6",s:Math.round(sub.length?human/sub.length*100:0)+"% of total",sc:"#94a3b8"},
     {l:"Bot",v:bot,c:"#8b5cf6",s:Math.round(sub.length?bot/sub.length*100:0)+"% of total",sc:"#94a3b8"},
     {l:"API",v:api,c:"#ec4899",s:Math.round(sub.length?api/sub.length*100:0)+"% of total",sc:"#94a3b8"},
-    {l:"RPH Verified",v:rphVerifiedCount,c:"#10b981",s:rphPct+"% of errors verified",sc:rphPct>=50?"#10b981":"#ef4444"},
-    {l:"Not Verified",v:rphUnverified,c:"#ef4444",s:sub.length?(100-rphPct)+"% unverified":"",sc:"#94a3b8"},
-    {l:"RPH Errors",v:rphErrors,c:"#f97316",s:"errors from RPH team",sc:"#94a3b8"},
+    {l:"⚠ Dispensed w/ Error",v:rphVerifiedCount,c:"#ef4444",s:rphPct+"% of errors slipped through",sc:rphVerifiedCount>0?"#ef4444":"#10b981"},
+    {l:"✅ Good Catches",v:rphGoodCount,c:"#10b981",s:"RPH caught before dispensing",sc:"#10b981"},
+    {l:"RPH Team Errors",v:rphErrors,c:"#f97316",s:"errors from RPH team",sc:"#94a3b8"},
     {l:"Top Error",v:topEV>0?topET:"None",c:"#ef4444",s:topEV>0?topEV+" occurrences":"",sc:"#94a3b8",sm:true},
     {l:"Top Team",v:topTM,c:TLC[topTM]||"#64748b",s:topTV>0?topTV+" errors":"",sc:"#94a3b8",sm:true},
     {l:"Top Staff",v:topST,c:"#f97316",s:topSV>0?topSV+" errors":"",sc:"#94a3b8",sm:true}
@@ -337,117 +340,145 @@ function rDash(){
     '<div><div class="section-title">Alerts &amp; Insights</div>'+alerts+'</div>';
   dChart("ch-ty");charts["ch-ty"]=new Chart(document.getElementById("ch-ty"),{type:"bar",data:{labels:ET.map(function(t){return t.length>16?t.slice(0,14)+"...":t;}),datasets:[{data:tD,backgroundColor:TC,borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
   dChart("ch-tm");if(pD.length>0)charts["ch-tm"]=new Chart(document.getElementById("ch-tm"),{type:"doughnut",data:{labels:pL,datasets:[{data:pD,backgroundColor:pC,borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
-  // RPH Verification doughnut
   dChart("ch-rph");
-  var rphNoData=sub.filter(function(e){return !e.rphVerified||e.rphVerified==="";}).length;
-  charts["ch-rph"]=new Chart(document.getElementById("ch-rph"),{type:"doughnut",data:{labels:["Verified","Not Verified","Not Recorded"],datasets:[{data:[rphVerifiedCount,rphUnverified,rphNoData],backgroundColor:["#10b981","#ef4444","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  var rphNoData=sub.filter(function(e){return !e.rphVerified||e.rphVerified===""||e.rphVerified==="No";}).length;
+  var rphGoodDash=sub.filter(function(e){return e.rphVerified==="good_catch";}).length;
+  var rphBadDash=sub.filter(function(e){return e.rphVerified==="dispensed_with_error";}).length;
+  charts["ch-rph"]=new Chart(document.getElementById("ch-rph"),{type:"doughnut",data:{labels:["⚠ Dispensed w/ Error","✅ Good Catch","❌ Not Verified / No RPH"],datasets:[{data:[rphBadDash,rphGoodDash,rphNoData],backgroundColor:["#ef4444","#10b981","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
   dChart("ch-day");charts["ch-day"]=new Chart(document.getElementById("ch-day"),{type:"bar",data:{labels:days,datasets:[{label:"Errors",data:dayData,backgroundColor:"#6366f1",borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
 }
 
 // ── RPH Report ─────────────────────────────────────────────────────────────
+var rphSelWk=0;
+
 function rRph(){
   var sec=document.getElementById("sec-rph");
-  var total=D.length;
-  var verified=D.filter(function(e){return e.rphVerified==="Yes";});
-  var notVerified=D.filter(function(e){return e.rphVerified==="No";});
-  var rphTeamErrors=D.filter(function(e){return e.source==="Human"&&e.team==="RPH";});
-  var verPct=total?Math.round(verified.length/total*100):0;
+  var wks=allWks();
+  if(!rphSelWk||wks.indexOf(rphSelWk)<0) rphSelWk=wks.length>0?wks[wks.length-1]:thisWk;
 
-  // Total verifications (sum of rphCount across verified entries)
-  var totalVerifications=0;
-  for(var i=0;i<verified.length;i++){var c=parseInt(verified[i].rphCount||"1");if(!isNaN(c))totalVerifications+=c;}
+  var wkBtns='<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="font-size:11px;font-weight:700;color:#475569;margin-right:6px">Week:</span>';
+  for(var wbi2=0;wbi2<wks.length;wbi2++){wkBtns+='<button class="wk-btn'+(wks[wbi2]===rphSelWk?" on":"")+'" onclick="rphSelWk='+wks[wbi2]+';rRph()">Wk '+wks[wbi2]+(wks[wbi2]===thisWk?' ★':'')+'</button>';}
+  if(wks.length===0)wkBtns+='<span style="font-size:11px;color:#94a3b8">No data yet</span>';
+  wkBtns+='</div>';
 
-  // Per-RPH breakdown
+  var wkD=D.filter(function(e){return e.week===rphSelWk;});
+  var total=wkD.length;
+  var dispensed=wkD.filter(function(e){return e.rphVerified==="dispensed_with_error";});
+  var goodCatch=wkD.filter(function(e){return e.rphVerified==="good_catch";});
+  var notVerified=wkD.filter(function(e){return e.rphVerified==="No"||!e.rphVerified||e.rphVerified==="";});
+  var rphTeamErrors=wkD.filter(function(e){return e.source==="Human"&&e.team==="RPH";});
+  var dispensedPct=total?Math.round(dispensed.length/total*100):0;
+  var catchPct=total?Math.round(goodCatch.length/total*100):0;
+
+  var totalChecks=0;
+  var allRphTouched=dispensed.concat(goodCatch);
+  for(var i=0;i<allRphTouched.length;i++){var c=parseInt(allRphTouched[i].rphCount||"1");if(!isNaN(c))totalChecks+=c;}
+
   var rphStats={};
-  for(var vi=0;vi<verified.length;vi++){
-    var names=verified[vi].rphNames||[];
-    for(var ni=0;ni<names.length;ni++){
-      if(!rphStats[names[ni]])rphStats[names[ni]]={verified:0,verifications:0};
-      rphStats[names[ni]].verified++;
-      var cnt=parseInt(verified[vi].rphCount||"1");
-      if(!isNaN(cnt))rphStats[names[ni]].verifications+=cnt;
+  function tallyRph(entries,field){
+    for(var vi=0;vi<entries.length;vi++){
+      var names=entries[vi].rphNames||[];
+      for(var ni=0;ni<names.length;ni++){
+        if(!rphStats[names[ni]])rphStats[names[ni]]={dispensed:0,goodCatch:0,checks:0};
+        rphStats[names[ni]][field]++;
+        var cnt=parseInt(entries[vi].rphCount||"1");
+        if(!isNaN(cnt))rphStats[names[ni]].checks+=cnt;
+      }
     }
   }
+  tallyRph(dispensed,"dispensed");
+  tallyRph(goodCatch,"goodCatch");
 
-  // RPH team errors by type
+  var topCatcher="",topCatchCount=0;
+  for(var tn in rphStats){if(rphStats[tn].goodCatch>topCatchCount){topCatchCount=rphStats[tn].goodCatch;topCatcher=tn;}}
+
   var rphEtC={};
   for(var ri=0;ri<rphTeamErrors.length;ri++){var et=rphTeamErrors[ri].errorType;rphEtC[et]=(rphEtC[et]||0)+1;}
 
-  // KPI cards
   var kh=
-    '<div class="kpi" style="border-left-color:#10b981"><div class="lb">Verified by RPH</div><div class="vl">'+verified.length+'</div><div class="sub" style="color:'+(verPct>=50?"#10b981":"#ef4444")+'">'+verPct+'% of all errors</div></div>'+
-    '<div class="kpi" style="border-left-color:#ef4444"><div class="lb">Not Verified</div><div class="vl">'+notVerified.length+'</div><div class="sub" style="color:#94a3b8">'+(total-verified.length-notVerified.length)+' not recorded</div></div>'+
-    '<div class="kpi" style="border-left-color:#3b82f6"><div class="lb">Total Verifications</div><div class="vl">'+totalVerifications+'</div><div class="sub" style="color:#94a3b8">sum of all RPH checks</div></div>'+
-    '<div class="kpi" style="border-left-color:#f97316"><div class="lb">RPH Team Errors</div><div class="vl">'+rphTeamErrors.length+'</div><div class="sub" style="color:#94a3b8">errors logged by RPH</div></div>';
+    '<div class="kpi" style="border-left-color:#ef4444"><div class="lb">⚠ Dispensed w/ Error</div><div class="vl" style="color:#ef4444">'+dispensed.length+'</div><div class="sub" style="color:'+(dispensedPct>0?"#ef4444":"#10b981")+'">'+dispensedPct+'% of week\'s errors</div></div>'+
+    '<div class="kpi" style="border-left-color:#10b981"><div class="lb">✅ Good Catches</div><div class="vl" style="color:#10b981">'+goodCatch.length+'</div><div class="sub" style="color:#10b981">'+catchPct+'% caught before dispensing</div></div>'+
+    '<div class="kpi" style="border-left-color:#3b82f6"><div class="lb">RPH Checks</div><div class="vl">'+totalChecks+'</div><div class="sub" style="color:#94a3b8">total verifications this week</div></div>'+
+    '<div class="kpi" style="border-left-color:#f97316"><div class="lb">RPH Team Errors</div><div class="vl">'+rphTeamErrors.length+'</div><div class="sub" style="color:#94a3b8">errors by RPH team</div></div>'+
+    (topCatcher?'<div class="kpi" style="border-left-color:#f59e0b;background:#fffbeb"><div class="lb">🏆 Top Catcher</div><div class="vl" style="font-size:13px;color:#92400e">'+topCatcher+'</div><div class="sub" style="color:#b45309">'+topCatchCount+' good catch'+(topCatchCount!==1?"es":"")+'</div></div>':"");
 
-  // Per-RPH table
   var rphRows="";
   var rphNames2=Object.keys(rphStats);
-  rphNames2.sort(function(a,b){return rphStats[b].verified-rphStats[a].verified;});
+  rphNames2.sort(function(a,b){return rphStats[b].goodCatch-rphStats[a].goodCatch||rphStats[a].dispensed-rphStats[b].dispensed;});
   if(rphNames2.length===0){
-    rphRows='<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:20px">No RPH verification data yet.</td></tr>';
+    rphRows='<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:20px">No RPH verification data for this week.</td></tr>';
   } else {
     for(var rni=0;rni<rphNames2.length;rni++){
       var nm=rphNames2[rni],st=rphStats[nm];
-      rphRows+='<tr'+(rni%2===0?' class="alt"':'')+'><td style="font-weight:600">'+nm+'</td><td style="text-align:center">'+st.verified+'</td><td style="text-align:center;font-weight:700;color:#3b82f6">'+st.verifications+'</td></tr>';
+      var isTop=(nm===topCatcher&&topCatchCount>0);
+      rphRows+='<tr style="background:'+(isTop?"#fffbeb":"")+'">'+
+        '<td style="font-weight:700">'+(isTop?'🏆 ':'')+nm+(isTop?' <span class="bdg" style="background:#f59e0b;color:#fff;font-size:9px">TOP CATCHER</span>':'')+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:#10b981">'+st.goodCatch+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:#ef4444">'+st.dispensed+'</td>'+
+        '<td style="text-align:center;color:#64748b">'+st.checks+'</td>'+
+      '</tr>';
     }
   }
 
-  // RPH team error rows
+  var dispensedRows="";
+  if(dispensed.length===0){
+    dispensedRows='<tr><td colspan="6" style="text-align:center;color:#10b981;padding:20px;font-weight:600">🎉 No errors dispensed with mistakes this week!</td></tr>';
+  } else {
+    for(var dei=0;dei<dispensed.length;dei++){
+      var de=dispensed[dei],tc=tyC(de.errorType);
+      dispensedRows+='<tr'+(dei%2===0?' class="alt"':'')+'>'+
+        '<td style="white-space:nowrap">'+de.date+'</td>'+
+        '<td>'+bdg(de.errorType,tc)+'</td>'+
+        '<td>'+(de.who||"—")+'</td>'+
+        '<td>'+(de.rphNames&&de.rphNames.length?de.rphNames.join(", "):"—")+'</td>'+
+        '<td style="color:#64748b">'+(de.drug||"—")+'</td>'+
+        '<td style="color:#374151">'+(de.rxNum||"—")+'</td>'+
+      '</tr>';
+    }
+  }
+
   var rphErrRows="";
   if(rphTeamErrors.length===0){
-    rphErrRows='<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No errors from RPH team logged yet.</td></tr>';
+    rphErrRows='<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No RPH team errors this week.</td></tr>';
   } else {
-    for(var rei=0;rei<rphTeamErrors.length&&rei<100;rei++){
-      var re=rphTeamErrors[rei],tc=tyC(re.errorType);
-      rphErrRows+='<tr'+(rei%2===0?' class="alt"':'')+'><td style="white-space:nowrap">'+re.date+'</td><td>'+bdg(re.errorType,tc)+'</td><td>'+(re.who||"—")+'</td><td style="color:#64748b">'+(re.drug||"—")+'</td><td style="color:#374151">'+(re.rxNum||"—")+'</td></tr>';
+    for(var rei=0;rei<rphTeamErrors.length;rei++){
+      var re=rphTeamErrors[rei],tc2=tyC(re.errorType);
+      rphErrRows+='<tr'+(rei%2===0?' class="alt"':'')+'><td style="white-space:nowrap">'+re.date+'</td><td>'+bdg(re.errorType,tc2)+'</td><td>'+(re.who||"—")+'</td><td style="color:#64748b">'+(re.drug||"—")+'</td><td style="color:#374151">'+(re.rxNum||"—")+'</td></tr>';
     }
   }
 
-  // Error type breakdown for RPH errors chart data
   var rphEtLabels=[],rphEtData=[];
   for(var et2 in rphEtC){rphEtLabels.push(et2.length>14?et2.slice(0,13)+"...":et2);rphEtData.push(rphEtC[et2]);}
 
   sec.innerHTML=
+    wkBtns+
     '<div class="kpi-row">'+kh+'</div>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0">'+
-        '<div class="section-title">Verification Status (All Time)</div>'+
-        '<div class="ch-wrap" style="height:220px"><canvas id="ch-rph2"></canvas></div>'+
-      '</div>'+
-      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0">'+
-        '<div class="section-title">Verified vs Unverified by Week</div>'+
-        '<div class="ch-wrap" style="height:220px"><canvas id="ch-rphwk"></canvas></div>'+
-      '</div>'+
-      (rphEtData.length>0?
-      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0">'+
-        '<div class="section-title">RPH Team — Error Types</div>'+
-        '<div class="ch-wrap" style="height:220px"><canvas id="ch-rphet"></canvas></div>'+
-      '</div>':'')+
+      '<div class="card" style="flex:1;min-width:220px;margin-bottom:0"><div class="section-title">Week '+rphSelWk+' Outcome Breakdown</div><div class="ch-wrap" style="height:210px"><canvas id="ch-rph2"></canvas></div></div>'+
+      '<div class="card" style="flex:2;min-width:300px;margin-bottom:0"><div class="section-title">⚠ Dispensed w/ Error vs ✅ Good Catches — All Weeks</div><div class="ch-wrap" style="height:210px"><canvas id="ch-rphwk"></canvas></div></div>'+
+      (rphEtData.length>0?'<div class="card" style="flex:1;min-width:220px;margin-bottom:0"><div class="section-title">RPH Team Error Types — Wk '+rphSelWk+'</div><div class="ch-wrap" style="height:210px"><canvas id="ch-rphet"></canvas></div></div>':'')+
     '</div>'+
-    '<div style="display:flex;gap:12px;flex-wrap:wrap">'+
-      '<div class="card" style="flex:1;min-width:280px">'+
-        '<h3 style="font-size:13px;margin-bottom:12px">RPH Verification by Member</h3>'+
-        '<div class="tbl-wrap"><table><thead><tr><th>RPH Name</th><th style="text-align:center">Errors Verified</th><th style="text-align:center">Total Checks</th></tr></thead><tbody>'+rphRows+'</tbody></table></div>'+
-      '</div>'+
-      '<div class="card" style="flex:2;min-width:320px">'+
-        '<h3 style="font-size:13px;margin-bottom:12px">RPH Team — Error Log <span style="font-size:10px;color:#94a3b8;font-weight:400">(errors where team = RPH)</span></h3>'+
-        '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Who</th><th>Drug</th><th>RX</th></tr></thead><tbody>'+rphErrRows+'</tbody></table></div>'+
-      '</div>'+
+    '<div class="card" style="margin-bottom:12px">'+
+      '<h3 style="font-size:13px;margin-bottom:4px">RPH Member Breakdown — Week '+rphSelWk+' <span style="font-size:10px;color:#94a3b8;font-weight:400">sorted by most good catches</span></h3>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>RPH Name</th><th style="text-align:center;background:#10b98199">✅ Good Catches</th><th style="text-align:center;background:#ef444499">⚠ Dispensed w/ Error</th><th style="text-align:center">Total Checks</th></tr></thead><tbody>'+rphRows+'</tbody></table></div>'+
+    '</div>'+
+    '<div class="card" style="margin-bottom:12px">'+
+      '<h3 style="font-size:13px;margin-bottom:4px;color:#dc2626">⚠ Dispensed WITH Error — Week '+rphSelWk+' <span style="font-size:10px;color:#94a3b8;font-weight:400">primary risk log</span></h3>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Who Made Error</th><th>RPH(s)</th><th>Drug</th><th>RX</th></tr></thead><tbody>'+dispensedRows+'</tbody></table></div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<h3 style="font-size:13px;margin-bottom:12px">RPH Team Errors — Week '+rphSelWk+' <span style="font-size:10px;color:#94a3b8;font-weight:400">(errors where team = RPH)</span></h3>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Who</th><th>Drug</th><th>RX</th></tr></thead><tbody>'+rphErrRows+'</tbody></table></div>'+
     '</div>';
 
-  // Verification doughnut
   dChart("ch-rph2");
-  var noRecord=D.filter(function(e){return !e.rphVerified||e.rphVerified==="";}).length;
-  charts["ch-rph2"]=new Chart(document.getElementById("ch-rph2"),{type:"doughnut",data:{labels:["Verified","Not Verified","Not Recorded"],datasets:[{data:[verified.length,notVerified.length,noRecord],backgroundColor:["#10b981","#ef4444","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  charts["ch-rph2"]=new Chart(document.getElementById("ch-rph2"),{type:"doughnut",data:{labels:["⚠ Dispensed w/ Error","✅ Good Catch","No RPH Involvement"],datasets:[{data:[dispensed.length,goodCatch.length,notVerified.length],backgroundColor:["#ef4444","#10b981","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
 
-  // Weekly stacked bar
   dChart("ch-rphwk");
-  var wks4=allWks(),wlbs=[],wVer=[],wNot=[];
-  for(var wwi=0;wwi<wks4.length;wwi++){var wk4=wks4[wwi];var wkE=D.filter(function(e){return e.week===wk4;});wlbs.push("Wk "+wk4);wVer.push(wkE.filter(function(e){return e.rphVerified==="Yes";}).length);wNot.push(wkE.filter(function(e){return e.rphVerified==="No";}).length);}
-  charts["ch-rphwk"]=new Chart(document.getElementById("ch-rphwk"),{type:"bar",data:{labels:wlbs,datasets:[{label:"Verified",data:wVer,backgroundColor:"#10b981",stack:"s",borderRadius:3},{label:"Not Verified",data:wNot,backgroundColor:"#ef4444",stack:"s",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  var wks4=allWks(),wlbs=[],wBad=[],wGood=[];
+  for(var wwi=0;wwi<wks4.length;wwi++){var wk4=wks4[wwi];var wkE2=D.filter(function(e){return e.week===wk4;});wlbs.push("Wk "+wk4+(wk4===thisWk?" ★":""));wBad.push(wkE2.filter(function(e){return e.rphVerified==="dispensed_with_error";}).length);wGood.push(wkE2.filter(function(e){return e.rphVerified==="good_catch";}).length);}
+  charts["ch-rphwk"]=new Chart(document.getElementById("ch-rphwk"),{type:"bar",data:{labels:wlbs,datasets:[{label:"⚠ Dispensed w/ Error",data:wBad,backgroundColor:"#ef4444",stack:"s",borderRadius:3},{label:"✅ Good Catch",data:wGood,backgroundColor:"#10b981",stack:"s",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
 
-  // RPH team error types chart
   if(rphEtData.length>0){
     dChart("ch-rphet");
     charts["ch-rphet"]=new Chart(document.getElementById("ch-rphet"),{type:"bar",data:{labels:rphEtLabels,datasets:[{data:rphEtData,backgroundColor:"#f97316",borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
@@ -492,10 +523,10 @@ function rTrend(){
     var wk=wks3[rwi];
     var wkE=D.filter(function(e){return e.week===wk;});
     rlbs.push("Wk "+wk);
-    rVer.push(wkE.filter(function(e){return e.rphVerified==="Yes";}).length);
-    rNot.push(wkE.filter(function(e){return e.rphVerified==="No";}).length);
+    rVer.push(wkE.filter(function(e){return e.rphVerified==="dispensed_with_error";}).length);
+    rNot.push(wkE.filter(function(e){return e.rphVerified==="good_catch";}).length);
   }
-  charts["ch-rphtr"]=new Chart(document.getElementById("ch-rphtr"),{type:"bar",data:{labels:rlbs,datasets:[{label:"Verified",data:rVer,backgroundColor:"#10b981",stack:"r",borderRadius:3},{label:"Not Verified",data:rNot,backgroundColor:"#ef4444",stack:"r",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+  charts["ch-rphtr"]=new Chart(document.getElementById("ch-rphtr"),{type:"bar",data:{labels:rlbs,datasets:[{label:"⚠ Dispensed w/ Error",data:rVer,backgroundColor:"#ef4444",stack:"r",borderRadius:3},{label:"✅ Good Catch",data:rNot,backgroundColor:"#10b981",stack:"r",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
   // Error type dist
   dChart("ch-di");var dL=[],dD=[];for(var eti=0;eti<ET.length;eti++){dL.push(ET[eti].length>14?ET[eti].slice(0,13)+"...":ET[eti]);dD.push(D.filter(function(e){return e.errorType===ET[eti];}).length);}
   charts["ch-di"]=new Chart(document.getElementById("ch-di"),{type:"bar",data:{labels:dL,datasets:[{data:dD,backgroundColor:TC,borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},maxRotation:25}},y:{ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
@@ -594,8 +625,9 @@ function rLog(){
           '<label class="flb" style="margin-top:0">Verified by RPH?</label>'+
           '<select id="lRphVerified" onchange="upRphFields()">'+
             '<option value="">-- Select --</option>'+
-            '<option value="Yes">Yes</option>'+
-            '<option value="No">No</option>'+
+            '<option value="dispensed_with_error">⚠ Verified WITH error (dispensed as-is)</option>'+
+            '<option value="good_catch">✅ Good Catch — RPH caught &amp; fixed before dispensing</option>'+
+            '<option value="No">❌ Not verified by RPH</option>'+
           '</select>'+
         '</div>'+
         '<div class="fhalf" id="lRphDetails" style="display:none">'+
@@ -622,8 +654,9 @@ function rLog(){
 function upRphFields(){
   var v=document.getElementById("lRphVerified");
   if(!v)return;
+  var showDetails=(v.value==="dispensed_with_error"||v.value==="good_catch");
   var details=document.querySelectorAll("#lRphDetails");
-  for(var i=0;i<details.length;i++)details[i].style.display=v.value==="Yes"?"block":"none";
+  for(var i=0;i<details.length;i++)details[i].style.display=showDetails?"block":"none";
 }
 function upDF(){var v=document.getElementById("lDrugSel").value;document.getElementById("lDrugCW").style.display=v==="__other__"?"block":"none";}
 function upLF(){var s=document.getElementById("lSr").value,show=s==="Human";document.getElementById("lTmW").style.display=show?"block":"none";document.getElementById("lWhW").style.display=show?"block":"none";}
@@ -633,9 +666,9 @@ function subLog(){
   if(!date){alert("Please select a date.");return;}
   var ds=document.getElementById("lDrugSel").value;
   var drug=ds==="__other__"?document.getElementById("lDrug").value.trim():ds;
-  var rphVerified=document.getElementById("lRphVerified").value||"No";
+  var rphVerified=document.getElementById("lRphVerified").value||"";
   var rphCount="";var rphNames=[];
-  if(rphVerified==="Yes"){
+  if(rphVerified==="dispensed_with_error"||rphVerified==="good_catch"){
     var cEl=document.getElementById("lRphCount");
     rphCount=cEl?cEl.value.trim():"";
     rphNames=getLogRphs();
@@ -685,7 +718,7 @@ function impBulk(){
 // ── Edit Modal ─────────────────────────────────────────────────────────────
 function upEditRphFields(){
   var v=document.getElementById("eRphVerified").value;
-  var show=v==="Yes";
+  var show=(v==="dispensed_with_error"||v==="good_catch");
   document.getElementById("eRphCountW").style.display=show?"block":"none";
   document.getElementById("eRphNamesW").style.display=show?"block":"none";
 }
@@ -746,8 +779,9 @@ function saveEdit(){
   var ds=document.getElementById("eDrug").value;
   var drug=ds==="__other__"?(prompt("Enter drug name:",""))||"":ds;
   var rphVerified=document.getElementById("eRphVerified").value||"";
-  var rphCount=rphVerified==="Yes"?(document.getElementById("eRphCount").value||""):"";
-  var rphNames=rphVerified==="Yes"?getEditRphs():[];
+  var showRph=(rphVerified==="dispensed_with_error"||rphVerified==="good_catch");
+  var rphCount=showRph?(document.getElementById("eRphCount").value||""):"";
+  var rphNames=showRph?getEditRphs():[];
   for(var i=0;i<D.length;i++){
     if(D[i].id===editId){
       D[i].date=date;D[i].week=getWk(date);
@@ -778,12 +812,18 @@ function rEntries(){
   var rows="",shown=fil.length>300?fil.slice(0,300):fil;
   for(var ri=0;ri<shown.length;ri++){var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#f8fafc":"#fff");
     var rphBdg="—";
-    if(e2.rphVerified==="Yes"){
-      rphBdg='<span class="bdg" style="background:#dcfce7;color:#16a34a">✓ Yes</span>';
+    if(e2.rphVerified==="dispensed_with_error"){
+      rphBdg='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed w/ Error</span>';
       if(e2.rphCount)rphBdg+=' <span style="font-size:10px;color:#64748b">×'+e2.rphCount+'</span>';
       if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#475569">'+e2.rphNames.join(", ")+'</span>';
+    } else if(e2.rphVerified==="good_catch"){
+      rphBdg='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ Good Catch</span>';
+      if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#475569">'+e2.rphNames.join(", ")+'</span>';
     } else if(e2.rphVerified==="No"){
-      rphBdg='<span class="bdg" style="background:#fee2e2;color:#dc2626">✗ No</span>';
+      rphBdg='<span class="bdg" style="background:#f1f5f9;color:#64748b">❌ Not Verified</span>';
+    } else if(e2.rphVerified==="Yes"){
+      // legacy support for old "Yes" entries
+      rphBdg='<span class="bdg" style="background:#fef9c3;color:#854d0e">Verified (old)</span>';
     }
     rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap"><button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;cursor:pointer;margin-right:3px">Edit</button>'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+'<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';
   }
