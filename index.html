@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
 body{background:#f1f5f9;min-height:100vh;padding:16px}
@@ -56,7 +57,16 @@ tr.alt td{background:#f8fafc}
 .alert-card.warn{border-left-color:#f59e0b}
 .alert-card.good{border-left-color:#10b981}
 .section-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.loading{text-align:center;padding:40px;color:#94a3b8;font-size:14px}
+.login-screen{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#f1f5f9;z-index:9999;justify-content:center;align-items:center}
+.login-box{background:#fff;border-radius:16px;padding:40px;max-width:400px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.login-box h1{font-size:22px;font-weight:800;color:#1e293b;margin-bottom:4px}
+.login-box p{font-size:13px;color:#94a3b8;margin-bottom:28px}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:14px;font-weight:600;color:#374151;cursor:pointer;transition:background .2s}
+.google-btn:hover{background:#f8fafc}
+.google-btn img{width:20px;height:20px}
+.user-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:#fff;opacity:.85}
+.user-bar img{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
+.signout-btn{padding:4px 10px;border:1px solid rgba(255,255,255,.4);border-radius:6px;background:transparent;color:#fff;font-size:11px;font-weight:600;cursor:pointer}
 </style>
 </head>
 <body>
@@ -120,6 +130,39 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
+var auth = firebase.auth();
+var provider = new firebase.auth.GoogleAuthProvider();
+
+function signInGoogle(){
+  auth.signInWithPopup(provider).catch(function(err){
+    console.error(err);
+    document.getElementById("loginErr").style.display="block";
+  });
+}
+
+function signOut(){
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(function(user){
+  if(user){
+    document.getElementById("loginScreen").style.display="none";
+    document.getElementById("appShell").style.display="block";
+    document.getElementById("userName").textContent=user.displayName||"";
+    document.getElementById("userEmail").textContent=user.email||"";
+    if(user.photoURL){
+      var img=document.getElementById("userPhoto");
+      img.src=user.photoURL;
+      img.style.display="block";
+    }
+    initApp();
+  } else {
+    document.getElementById("loginScreen").style.display="flex";
+    document.getElementById("appShell").style.display="none";
+  }
+});
+
+function initApp(){
 var errRef = db.ref("errors");
 var fbiRef = db.ref("fbi");
 
@@ -572,8 +615,7 @@ function setIE(id,val){var v=val.trim().toUpperCase();if(v)saveInit(id,v,fmtD(ne
 function clrI(id){clearInit(id);}
 function delE(id){if(!confirm("Delete this entry?"))return;delErr(id);}
 
-// ── Init ───────────────────────────────────────────────────────────────────
-buildNav();
+// ── App starts via auth.onAuthStateChanged above ───────────────────────────
 </script>
 </body>
 </html>
