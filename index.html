@@ -637,8 +637,9 @@ function upLW(){var t=document.getElementById("lTm").value;document.getElementBy
 
 // Good Catch section
 function upGCFields(){
-  var v=document.getElementById("lGC").value;
-  document.getElementById("lGCDetails").style.display=v==="Yes"?"block":"none";
+  var v=document.getElementById("lGC");
+  if(!v)return;
+  document.getElementById("lGCDetails").style.display=v.value==="Yes"?"block":"none";
 }
 function upGCTeam(){
   var t=document.getElementById("lGCTeam").value;
@@ -650,8 +651,11 @@ function upGCTeam(){
 
 // Dispensed with Error section
 function upDWEFields(){
-  var v=document.getElementById("lDWE").value;
-  document.getElementById("lDWEDetails").style.display=v==="Yes"?"block":"none";
+  var v=document.getElementById("lDWE");
+  if(!v)return;
+  var show=v.value==="Yes";
+  document.getElementById("lDWEDetails").style.display=show?"block":"none";
+  document.getElementById("lDWECount").style.display=show?"block":"none";
 }
 function addLogRph(){
   var sel=document.getElementById("lRphSel");
@@ -750,13 +754,6 @@ function rLog(){
 
     '<button class="btn btn-full" onclick="subLog()" style="margin-top:14px">Log Error</button>'+
     '</div>';
-}
-
-function upDWEFields(){
-  var v=document.getElementById("lDWE").value;
-  var show=v==="Yes";
-  document.getElementById("lDWEDetails").style.display=show?"block":"none";
-  document.getElementById("lDWECount").style.display=show?"block":"none";
 }
 
 function subLog(){
