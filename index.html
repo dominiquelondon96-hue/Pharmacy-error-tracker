@@ -46,8 +46,6 @@ tr.alt td{background:#f8fafc}
 .fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 14px}
 .sbx{font-size:11px;background:#f1f5f9;border-radius:6px;padding:6px 10px;min-width:120px}
 .ch-wrap{position:relative;width:100%}
-.bar-wrap{height:7px;border-radius:4px;background:#e2e8f0;overflow:hidden;flex:1}
-.bar-fill{height:7px;border-radius:4px}
 .toggle-group{display:flex;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
 .tgl{padding:5px 14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#475569}
 .tgl.on{background:#4f46e5;color:#fff}
@@ -58,7 +56,20 @@ tr.alt td{background:#f8fafc}
 .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto}
 .modal-box{background:#fff;border-radius:12px;padding:24px;max-width:560px;margin:40px auto}
 .admin-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9}
-.sync-bar{background:#1e40af;color:#fff;padding:8px 16px;font-size:12px;display:flex;justify-content:space-between;align-items:center;border-radius:8px;margin-bottom:12px}
+/* Sync bar */
+.sync-bar{border-radius:8px;padding:10px 16px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;transition:background .4s}
+.sync-bar.synced{background:#1e40af;color:#fff}
+.sync-bar.saving{background:#f59e0b;color:#fff}
+.sync-bar.error{background:#ef4444;color:#fff}
+.sync-bar.loading{background:#6366f1;color:#fff}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+.sync-dot.green{background:#4ade80}
+.sync-dot.yellow{background:#fef08a;animation:pulse .8s infinite}
+.sync-dot.red{background:#fca5a5}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-actions{display:flex;gap:8px;align-items:center}
+.sync-btn{padding:4px 12px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer}
+.sync-btn:hover{background:rgba(255,255,255,.2)}
 </style>
 </head>
 <body>
@@ -67,10 +78,15 @@ tr.alt td{background:#f8fafc}
     <div><h1>Pharmacy Error Tracker</h1><p>Real-time intake error monitoring · Human · Bot · API</p></div>
     <div class="hdr-r"><div class="big" id="hTot">0</div><div id="hMode">This Week</div><div style="color:#fca5a5" id="hPnd">0 Pending</div></div>
   </div>
-  <div id="syncBar" class="sync-bar">
-    <span>Data is saved in your browser. Use <strong>Export</strong> to save and <strong>Import</strong> to share with teammates.</span>
-    <button onclick="exportData()" style="padding:4px 12px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Export Data</button>
+
+  <div id="syncBar" class="sync-bar loading">
+    <span><span class="sync-dot yellow" id="syncDot"></span><span id="syncMsg">Connecting to cloud storage…</span></span>
+    <div class="sync-actions">
+      <button class="sync-btn" onclick="forceSave()">💾 Save Now</button>
+      <button class="sync-btn" onclick="exportData()">⬇ Export Backup</button>
+    </div>
   </div>
+
   <div class="nav" id="navBar"></div>
   <div id="sec-dashboard" class="sec on"></div>
   <div id="sec-summary" class="sec"></div>
@@ -109,16 +125,13 @@ var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Pres
 var TM=["Intake","PCR 3","TLAC","Ups","RPH"];
 var SR=["Human","Bot","API"];
 var TC=["#6366f1","#f59e0b","#10b981","#ef4444","#3b82f6","#ec4899","#8b5cf6","#14b8a6","#f97316","#64748b","#a855f7"];
-var TLC={};
-TLC["Intake"]="#6366f1";TLC["PCR 3"]="#f59e0b";TLC["TLAC"]="#10b981";TLC["Ups"]="#ef4444";TLC["RPH"]="#3b82f6";TLC["Bot"]="#8b5cf6";TLC["API"]="#ec4899";
-var SM={};SM["Intake"]=[];SM["PCR 3"]=[];SM["TLAC"]=[];SM["Ups"]=[];SM["RPH"]=[];
+var TLC={Intake:"#6366f1","PCR 3":"#f59e0b",TLAC:"#10b981",Ups:"#ef4444",RPH:"#3b82f6",Bot:"#8b5cf6",API:"#ec4899"};
+var SM={Intake:[],  "PCR 3":[], TLAC:[], Ups:[], RPH:[]};
 var FX=["New Erx","Refill Response","Fax","Verbal","Transfer"];
 var DRUGS=["Metformin 500mg","Metformin 1000mg","Lisinopril 10mg","Ozempic 0.5mg","Ozempic 1mg","Ozempic 2mg","Mounjaro 5mg","Mounjaro 10mg","Wegovy 1.7mg","Semaglutide 7.5mg","Humira 40mg","Lantus 100u","Jardiance 10mg","Tirzepatide 7.5mg"];
-
 var idS=Date.now();
 function mkId(){return idS++;}
 function fmtD(d){var m=d.getMonth()+1,dy=d.getDate();return d.getFullYear()+"-"+(m<10?"0"+m:m)+"-"+(dy<10?"0"+dy:dy);}
-function pDate(s){var p=s.split("/");if(p.length!==3)return s;var y=p[2];if(y.length>4)y=y.slice(0,4);var mo=p[0].length===1?"0"+p[0]:p[0],dy2=p[1].length===1?"0"+p[1]:p[1];var dt=new Date(y+"-"+mo+"-"+dy2);return isNaN(dt)?s:fmtD(dt);}
 function getWk(ds){try{var d=new Date(ds),j=new Date(d.getFullYear(),0,1);return Math.ceil(((d-j)/86400000+j.getDay()+1)/7);}catch(e){return 1;}}
 function tyC(t){var i=ET.indexOf(t);return i>=0?TC[i]:"#6366f1";}
 function bdg(txt,col){return'<span class="bdg" style="background:'+col+'33;color:'+col+'">'+txt+'</span>';}
@@ -131,8 +144,6 @@ function whoOpts(team,sel){var h='<option value="">Select</option>';var n=SM[tea
 function drugOpts(sel){var h='<option value="">-- Select Drug --</option>';for(var i=0;i<DRUGS.length;i++)h+='<option'+(DRUGS[i]===sel?" selected":"")+'>'+DRUGS[i]+'</option>';h+='<option value="__other__">Other (type below)</option>';return h;}
 function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function getSubset(){if(dashMode==="daily")return D.filter(function(e){return e.date===todayStr;});if(dashMode==="weekly")return D.filter(function(e){return e.week===thisWk;});return D;}
-function save(){try{localStorage.setItem("pet_d",JSON.stringify(D));localStorage.setItem("pet_fbi",JSON.stringify(FBI));localStorage.setItem("pet_sm",JSON.stringify(SM));localStorage.setItem("pet_drugs",JSON.stringify(DRUGS));localStorage.setItem("pet_et",JSON.stringify(ET));localStorage.setItem("pet_tm",JSON.stringify(TM));}catch(e){}}
-function load(){try{var d=localStorage.getItem("pet_d");if(d)D=JSON.parse(d);var f=localStorage.getItem("pet_fbi");if(f)FBI=JSON.parse(f);var s=localStorage.getItem("pet_sm");if(s)SM=JSON.parse(s);var dr=localStorage.getItem("pet_drugs");if(dr)DRUGS=JSON.parse(dr);var et=localStorage.getItem("pet_et");if(et)ET=JSON.parse(et);var tm=localStorage.getItem("pet_tm");if(tm)TM=JSON.parse(tm);}catch(e){}}
 
 var D=[],FBI={};
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
@@ -141,21 +152,124 @@ var eFF="All",eFT="All",eFS="All",eFSt="All";
 var charts={},editId=null;
 var today=new Date(),todayStr=fmtD(today),thisWk=getWk(todayStr);
 
-load();
+// ── Cloud Storage Layer ────────────────────────────────────────────────────
+var STORAGE_KEY="pharmacy-tracker-v1";
+var saveTimer=null;
+var cloudOK=false;
 
+function setSyncUI(status,msg){
+  var bar=document.getElementById("syncBar");
+  var dot=document.getElementById("syncDot");
+  bar.className="sync-bar "+status;
+  document.getElementById("syncMsg").textContent=msg;
+  dot.className="sync-dot "+(status==="synced"?"green":status==="error"?"red":"yellow");
+}
+
+function getPayload(){
+  return JSON.stringify({D:D,FBI:FBI,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,ts:Date.now()});
+}
+
+function applyPayload(p){
+  if(p.D)D=p.D;
+  if(p.FBI)FBI=p.FBI;
+  if(p.SM)SM=p.SM;
+  if(p.DRUGS)DRUGS=p.DRUGS;
+  if(p.ET)ET=p.ET;
+  if(p.TM)TM=p.TM;
+}
+
+// localStorage fallback
+function lsSave(){try{localStorage.setItem("pet_v1",getPayload());}catch(e){}}
+function lsLoad(){try{var r=localStorage.getItem("pet_v1");if(r)applyPayload(JSON.parse(r));}catch(e){}}
+
+async function cloudSave(){
+  lsSave();
+  if(!cloudOK){setSyncUI("error","Saved locally — cloud not available. Open in Claude.ai for cross-device sync.");return;}
+  setSyncUI("saving","Saving to cloud…");
+  try{
+    var res=await window.storage.set(STORAGE_KEY,getPayload());
+    if(res){
+      var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+      setSyncUI("synced","☁ Cloud sync · Last saved: "+t+" · Opens on any browser or device");
+    } else {
+      setSyncUI("error","Cloud save failed — data saved locally");
+    }
+  }catch(ex){setSyncUI("error","Cloud error — saved locally");}
+}
+
+async function cloudLoad(){
+  // Check if cloud storage API is available
+  if(typeof window.storage!=="undefined"){
+    cloudOK=true;
+    setSyncUI("loading","Loading from cloud…");
+    try{
+      var res=await window.storage.get(STORAGE_KEY);
+      if(res&&res.value){
+        var cloud=JSON.parse(res.value);
+        // Also check localStorage, use whichever is newer
+        var lsRaw=localStorage.getItem("pet_v1");
+        var lsTs=0;
+        try{if(lsRaw)lsTs=JSON.parse(lsRaw).ts||0;}catch(e){}
+        if(cloud.ts&&lsTs>cloud.ts){
+          // localStorage is newer — apply it and push to cloud
+          lsLoad();
+          await cloudSave();
+        } else {
+          applyPayload(cloud);
+          lsSave();
+          var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+          setSyncUI("synced","☁ Loaded from cloud · "+D.length+" entries · Synced across all browsers");
+        }
+      } else {
+        // Nothing in cloud — migrate localStorage if available
+        lsLoad();
+        if(D.length>0){
+          setSyncUI("saving","Migrating existing data to cloud…");
+          await cloudSave();
+        } else {
+          setSyncUI("synced","☁ Cloud ready — start logging errors!");
+        }
+      }
+    }catch(ex){
+      cloudOK=false;
+      lsLoad();
+      setSyncUI("error","Cloud unavailable — using local storage only");
+    }
+  } else {
+    // Not in Claude artifact — use localStorage only
+    cloudOK=false;
+    lsLoad();
+    setSyncUI("error","⚠ Local storage only — open in Claude.ai to enable cross-device cloud sync");
+  }
+}
+
+// Debounced save — 1.5s after last change
+function save(){
+  lsSave(); // immediate local save
+  if(saveTimer)clearTimeout(saveTimer);
+  setSyncUI("saving","Changes pending…");
+  saveTimer=setTimeout(function(){cloudSave();},1500);
+}
+
+function forceSave(){
+  if(saveTimer)clearTimeout(saveTimer);
+  cloudSave();
+}
+
+function exportData(){
+  var blob=new Blob([getPayload()],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="pharmacy-tracker-backup-"+fmtD(new Date())+".json";
+  a.click();
+}
+
+// ── Nav ────────────────────────────────────────────────────────────────────
 var NAVS=[{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"admin",l:"Admin"}];
-
 function buildNav(){var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';document.getElementById("navBar").innerHTML=h;}
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
 function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,admin:rAdmin};if(fn[v])fn[v]();}
 function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;document.getElementById("hPnd").textContent=(D.length-Object.keys(FBI).length)+" Pending";document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";}
-
-// ── Export / Import full data ──────────────────────────────────────────────
-function exportData(){
-  var payload={D:D,FBI:FBI,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM};
-  var blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
-  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="pharmacy-tracker-data.json";a.click();
-}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
 function rDash(){
@@ -230,76 +344,15 @@ function rStaff(){
   var rows=[];for(var k in stats)rows.push(stats[k]);rows.sort(function(a,b){return b.wk-a.wk||b.total-a.total;});
   var tBody="";for(var ri=0;ri<rows.length;ri++){var s=rows[ri],isTop=ri===0&&s.wk>0;tBody+='<tr style="background:'+(isTop?"#fff7ed":"")+'"><td style="font-weight:600">'+s.name+(isTop?' <span class="bdg" style="background:#f97316;color:#fff;font-size:9px">TOP THIS WEEK</span>':'')+'</td><td>'+bdg(s.team,TLC[s.team]||"#6366f1")+'</td><td style="text-align:center;font-weight:700;color:#f97316">'+s.wk+'</td><td style="text-align:center">'+s.total+'</td></tr>';}
   var sBoxes="";
-  for(var ti=0;ti<TM.length;ti++){
-    var t=TM[ti],names=SM[t]||[];
-    sBoxes+='<div class="sbx" style="min-width:200px"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:8px;font-size:12px">'+t+'</div>';
-    if(names.length===0){sBoxes+='<div style="color:#94a3b8;font-size:11px;padding:4px 0">No staff added</div>';}
-    for(var ni=0;ni<names.length;ni++){
-      sBoxes+='<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f1f5f9">'+
-        '<span style="flex:1;color:#475569;font-size:12px">'+names[ni]+'</span>'+
-        '<button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;border-radius:5px;cursor:pointer">Edit</button>'+
-        '<button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button>'+
-      '</div>';
-    }
-    sBoxes+='</div>';
-  }
-  sec.innerHTML=
-    '<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-    '<input id="sNm" placeholder="Full name" style="width:200px">'+
-    '<select id="sTm" style="width:140px">'+tmOpts("")+'</select>'+
-    '<button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button>'+
-    '</div></div>'+
-    '<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Current Staff <span style="font-size:11px;color:#94a3b8;font-weight:400">(click Edit to rename or change team)</span></h3>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div></div>'+
-    '<div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3>'+
-    '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div>'+
-    '<div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center">'+
-    '<div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%">'+
-    '<h3 style="font-size:16px;color:#1e293b;margin-bottom:16px">Edit Staff Member</h3>'+
-    '<label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name">'+
-    '<label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select>'+
-    '<div style="display:flex;gap:10px;margin-top:16px">'+
-    '<button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button>'+
-    '<button onclick="closeStaffEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>'+
-    '</div></div></div>';
+  for(var ti=0;ti<TM.length;ti++){var t=TM[ti],names=SM[t]||[];sBoxes+='<div class="sbx" style="min-width:200px"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:8px;font-size:12px">'+t+'</div>';if(names.length===0){sBoxes+='<div style="color:#94a3b8;font-size:11px;padding:4px 0">No staff added</div>';}for(var ni=0;ni<names.length;ni++){sBoxes+='<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f1f5f9"><span style="flex:1;color:#475569;font-size:12px">'+names[ni]+'</span><button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;border-radius:5px;cursor:pointer">Edit</button><button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button></div>';}sBoxes+='</div>';}
+  sec.innerHTML='<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="sNm" placeholder="Full name" style="width:200px"><select id="sTm" style="width:140px">'+tmOpts("")+'</select><button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button></div></div><div class="card"><h3 style="font-size:13px;margin-bottom:12px">Current Staff <span style="font-size:11px;color:#94a3b8;font-weight:400">(click Edit to rename or change team)</span></h3><div style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div></div><div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div><div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center"><div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%"><h3 style="font-size:16px;color:#1e293b;margin-bottom:16px">Edit Staff Member</h3><label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name"><label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select><div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button><button onclick="closeStaffEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button></div></div></div>';
 }
-
-var editStaffTeam=null, editStaffIdx=null;
-
-function editStaff(team, idx){
-  editStaffTeam=team; editStaffIdx=idx;
-  var name=(SM[team]||[])[idx]||"";
-  document.getElementById("editStaffName").value=name;
-  document.getElementById("editStaffTeam").value=team;
-  document.getElementById("editStaffModal").style.display="flex";
-}
-
-function saveStaffEdit(){
-  var newName=document.getElementById("editStaffName").value.trim();
-  var newTeam=document.getElementById("editStaffTeam").value;
-  if(!newName){alert("Please enter a name.");return;}
-  var oldName=(SM[editStaffTeam]||[])[editStaffIdx];
-  SM[editStaffTeam].splice(editStaffIdx,1);
-  if(!SM[newTeam])SM[newTeam]=[];
-  SM[newTeam].push(newName);
-  for(var i=0;i<D.length;i++){
-    if(D[i].who===oldName&&D[i].team===editStaffTeam){
-      D[i].who=newName;
-      D[i].team=newTeam;
-    }
-  }
-  save();closeStaffEdit();rStaff();
-}
-
-function closeStaffEdit(){
-  var m=document.getElementById("editStaffModal");
-  if(m)m.style.display="none";
-  editStaffTeam=null;editStaffIdx=null;
-}
-
+var editStaffTeam=null,editStaffIdx=null;
+function editStaff(team,idx){editStaffTeam=team;editStaffIdx=idx;var name=(SM[team]||[])[idx]||"";document.getElementById("editStaffName").value=name;document.getElementById("editStaffTeam").value=team;document.getElementById("editStaffModal").style.display="flex";}
+function saveStaffEdit(){var newName=document.getElementById("editStaffName").value.trim();var newTeam=document.getElementById("editStaffTeam").value;if(!newName){alert("Please enter a name.");return;}var oldName=(SM[editStaffTeam]||[])[editStaffIdx];SM[editStaffTeam].splice(editStaffIdx,1);if(!SM[newTeam])SM[newTeam]=[];SM[newTeam].push(newName);for(var i=0;i<D.length;i++){if(D[i].who===oldName&&D[i].team===editStaffTeam){D[i].who=newName;D[i].team=newTeam;}}save();closeStaffEdit();rStaff();}
+function closeStaffEdit(){var m=document.getElementById("editStaffModal");if(m)m.style.display="none";editStaffTeam=null;editStaffIdx=null;}
 function addSt(){var n=document.getElementById("sNm").value.trim(),t=document.getElementById("sTm").value;if(!n)return;if(!SM[t])SM[t]=[];SM[t].push(n);save();document.getElementById("sNm").value="";rStaff();}
-function removeSt(team,idx){if(!confirm("Delete "+((SM[team]||[])[idx]||"this staff member")+"? This cannot be undone."))return;SM[team].splice(idx,1);save();rStaff();}
+function removeSt(team,idx){if(!confirm("Delete "+((SM[team]||[])[idx]||"this staff member")+"?"))return;SM[team].splice(idx,1);save();rStaff();}
 
 // ── Member View ────────────────────────────────────────────────────────────
 function rMember(){
@@ -314,7 +367,7 @@ function rMember(){
   var tyOpt='<option'+(mvTy==="All"?" selected":"")+'>All</option>';for(var tyi=0;tyi<ET.length;tyi++)tyOpt+='<option'+(mvTy===ET[tyi]?" selected":"")+'>'+ET[tyi]+'</option>';
   var wkOpt='<option value="All"'+(mvWk==="All"?" selected":"")+'>All Weeks</option>';for(var wki=0;wki<wks.length;wki++)wkOpt+='<option value="'+wks[wki]+'"'+(mvWk==wks[wki]?" selected":"")+'>Week '+wks[wki]+'</option>';
   var kHtml='<div class="kpi" style="border-left-color:#6366f1;padding:10px 14px"><div class="lb">Total</div><div style="font-size:20px;font-weight:800;color:#1e293b">'+mv.length+'</div></div><div class="kpi" style="border-left-color:#ef4444;padding:10px 14px"><div class="lb">Top Error</div><div style="font-size:11px;font-weight:800;color:#1e293b;line-height:1.2">'+topE+'</div></div>';
-  var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#f8fafc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#94a3b8">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#6366f1"):"")+'</td><td style="color:#64748b">'+(me.faxErx||"—")+'</td><td style="color:#374151">'+(me.drug||"—")+'</td><td style="color:#374151">'+(me.rxNum||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b">'+(hi?hi.date:"—")+'</td></tr>';}
+  var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#f8fafc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#94a3b8">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#6366f1"):"")+'</td><td style="color:#64748b">'+(me.faxErx||"—")+'</td><td style="color:#374157">'+(me.drug||"—")+'</td><td style="color:#374151">'+(me.rxNum||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b">'+(hi?hi.date:"—")+'</td></tr>';}
   var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#1e293b">'+mv.length+'</div><div style="font-size:12px;color:#64748b">total errors</div></div></div></div>';
   inner+=(mv.length>0?'<div class="kpi-row">'+kHtml+'</div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Wk</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>':'<div class="card" style="text-align:center;color:#94a3b8;padding:40px">No entries found.</div>');
   sec.innerHTML=inner;
@@ -339,28 +392,21 @@ function subLog(){
 
 // ── Import ─────────────────────────────────────────────────────────────────
 function rImport(){
-  document.getElementById("sec-import").innerHTML='<div class="card" style="max-width:640px"><h3 style="font-size:15px;margin-bottom:6px">Import / Load Saved Data</h3><p style="font-size:12px;color:#64748b;margin-bottom:14px">Load a previously exported JSON file to restore or sync data from a teammate.</p><label class="flb" style="margin-top:0">Load JSON Export File</label><input type="file" accept=".json" id="jsonF" onchange="loadJSON(this)"><hr style="margin:20px 0;border:none;border-top:1px solid #e2e8f0"><h3 style="font-size:15px;margin-bottom:6px">Import via CSV</h3><p style="font-size:12px;color:#64748b;margin-bottom:14px">Columns: date, errorType, source, team, who, faxErx, drug, rxNum, notes</p><label class="flb" style="margin-top:0">Upload CSV File</label><input type="file" accept=".csv" id="csvF" onchange="loadCSVF(this)"><label class="flb">Or Paste Rows</label><textarea id="blkT" rows="6" placeholder="Paste CSV rows here..." style="font-family:monospace;font-size:11px"></textarea><div id="blkM" style="font-size:12px;color:#10b981;font-weight:600;margin:6px 0"></div><button class="btn btn-full" onclick="impBulk()">Import CSV Rows</button></div>';
+  document.getElementById("sec-import").innerHTML='<div class="card" style="max-width:640px"><h3 style="font-size:15px;margin-bottom:6px">Import / Load Saved Data</h3><p style="font-size:12px;color:#64748b;margin-bottom:14px">Load a previously exported JSON backup file to restore data from any browser.</p><label class="flb" style="margin-top:0">Load JSON Export File</label><input type="file" accept=".json" id="jsonF" onchange="loadJSON(this)"><hr style="margin:20px 0;border:none;border-top:1px solid #e2e8f0"><h3 style="font-size:15px;margin-bottom:6px">Import via CSV</h3><p style="font-size:12px;color:#64748b;margin-bottom:14px">Columns: date, errorType, source, team, who, faxErx, drug, rxNum, notes</p><label class="flb" style="margin-top:0">Upload CSV File</label><input type="file" accept=".csv" id="csvF" onchange="loadCSVF(this)"><label class="flb">Or Paste Rows</label><textarea id="blkT" rows="6" placeholder="Paste CSV rows here..." style="font-family:monospace;font-size:11px"></textarea><div id="blkM" style="font-size:12px;color:#10b981;font-weight:600;margin:6px 0"></div><button class="btn btn-full" onclick="impBulk()">Import CSV Rows</button></div>';
 }
-
 function loadJSON(input){
   var f=input.files[0];if(!f)return;
   var r=new FileReader();
   r.onload=function(e){
     try{
       var payload=JSON.parse(e.target.result);
-      if(payload.D)D=payload.D;
-      if(payload.FBI)FBI=payload.FBI;
-      if(payload.SM)SM=payload.SM;
-      if(payload.DRUGS)DRUGS=payload.DRUGS;
-      if(payload.ET)ET=payload.ET;
-      if(payload.TM)TM=payload.TM;
+      applyPayload(payload);
       save();upHdr();render(curV);
       alert("Data loaded successfully. "+D.length+" entries.");
     }catch(err){alert("Error loading file. Make sure it is a valid export JSON.");}
   };
   r.readAsText(f);
 }
-
 function loadCSVF(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){document.getElementById("blkT").value=e.target.result;};r.readAsText(f);}
 function impBulk(){
   var lines=document.getElementById("blkT").value.trim().split("\n"),added=0,skipped=0;
@@ -421,7 +467,7 @@ function rAdmin(){
   var etList=ET.map(function(t,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+t+'</span><button onclick="removeET('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
   var tmList=TM.map(function(t,i){return'<div class="admin-item"><span style="flex:1">'+bdg(t,TLC[t]||"#6366f1")+'</span><button onclick="removeTM('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
   var drugList=DRUGS.map(function(d,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+d+'</span><button onclick="removeDrug('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-  sec.innerHTML='<p style="font-size:12px;color:#64748b;margin-bottom:14px">Changes here update dropdowns immediately and are saved in your browser.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Error Types</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Shown in Log Error dropdown</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Teams</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Available when logging errors</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Drug List</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Available in drug dropdown</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
+  sec.innerHTML='<p style="font-size:12px;color:#64748b;margin-bottom:14px">Changes here update dropdowns immediately and are saved to cloud automatically.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Error Types</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Shown in Log Error dropdown</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Teams</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Available when logging errors</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Drug List</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Available in drug dropdown</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
 }
 function addET(){var v=document.getElementById("newET").value.trim();if(!v)return;ET.push(v);save();document.getElementById("newET").value="";rAdmin();}
 function removeET(i){if(!confirm("Remove?"))return;ET.splice(i,1);save();rAdmin();}
@@ -430,7 +476,14 @@ function removeTM(i){if(!confirm("Remove?"))return;TM.splice(i,1);save();rAdmin(
 function addDrug(){var v=document.getElementById("newDrug").value.trim();if(!v)return;DRUGS.push(v);save();document.getElementById("newDrug").value="";rAdmin();}
 function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rAdmin();}
 
-buildNav();upHdr();rDash();
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init(){
+  await cloudLoad();
+  buildNav();
+  upHdr();
+  rDash();
+}
+init();
 </script>
 </body>
 </html>
