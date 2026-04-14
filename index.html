@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmacy Error Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{background:#f1f5f9;min-height:100vh;padding:16px}
+.wrap{max-width:1200px;margin:0 auto}
+.hdr{background:#1e40af;border-radius:12px;padding:16px 24px;margin-bottom:14px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.hdr h1{font-size:20px;font-weight:800;margin:0}
+.hdr p{font-size:12px;opacity:.75;margin-top:2px}
+.hdr-r{text-align:right;font-size:12px;color:#fff}
+.big{font-size:22px;font-weight:800}
+.nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.nav button{padding:7px 13px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#475569}
+.nav button.on{background:#4f46e5;color:#fff}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px}
+.kpi-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border-radius:10px;padding:11px 14px;border-left:4px solid #6366f1;min-width:120px;flex-grow:1}
+.kpi .lb{font-size:10px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+.kpi .vl{font-size:20px;font-weight:800;color:#1e293b}
+.kpi .sub{font-size:10px;color:#94a3b8;margin-top:1px}
+.sec{display:none}.sec.on{display:block}
+label.flb{display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:3px;margin-top:10px}
+input,select,textarea{width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;color:#1e293b;background:#f8fafc;box-sizing:border-box}
+textarea{resize:vertical}
+.btn{padding:9px 16px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px}
+.btn-full{width:100%;display:block}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:9px 10px;text-align:left;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;background:#1e40af}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
+tr.alt td{background:#f8fafc}
+.bdg{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;display:inline-block;white-space:nowrap}
+.tbl-wrap{overflow-x:auto}
+.wk-btn{padding:5px 11px;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#374151;margin:2px}
+.wk-btn.on{background:#1e40af;color:#fff}
+.tfr td{background:#1e40af;color:#fff;font-weight:700;padding:8px 12px;text-align:center}
+.tfr td:first-child{text-align:left}
+.ii{width:46px;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;text-align:center;background:#fffbeb}
+.fgrid{display:flex;gap:12px;flex-wrap:wrap}
+.fhalf{width:47%;min-width:180px}
+.fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 14px}
+.sbx{font-size:11px;background:#f1f5f9;border-radius:6px;padding:6px 10px;min-width:120px}
+.ch-wrap{position:relative;width:100%}
+.bar-wrap{height:7px;border-radius:4px;background:#e2e8f0;overflow:hidden;flex:1}
+.bar-fill{height:7px;border-radius:4px}
+.toggle-group{display:flex;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
+.tgl{padding:5px 14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#475569}
+.tgl.on{background:#4f46e5;color:#fff}
+.alert-card{border-radius:10px;padding:12px 16px;margin-bottom:10px;border-left:4px solid #ef4444;background:#fff}
+.alert-card.warn{border-left-color:#f59e0b}
+.alert-card.good{border-left-color:#10b981}
+.section-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.loading{text-align:center;padding:40px;color:#94a3b8;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div>
+      <h1>Pharmacy Error Tracker</h1>
+      <p>Real-time intake error monitoring · Human · Bot · API</p>
+    </div>
+    <div class="hdr-r">
+      <div class="big" id="hTot">...</div>
+      <div id="hMode">This Week</div>
+      <div style="color:#fca5a5" id="hPnd">Loading...</div>
+    </div>
+  </div>
+  <div class="nav" id="navBar"></div>
+  <div id="sec-dashboard" class="sec on"><div class="loading">Connecting to database...</div></div>
+  <div id="sec-summary" class="sec"></div>
+  <div id="sec-trends" class="sec"></div>
+  <div id="sec-staff" class="sec"></div>
+  <div id="sec-member" class="sec"></div>
+  <div id="sec-log" class="sec"></div>
+  <div id="sec-import" class="sec"></div>
+  <div id="sec-entries" class="sec"></div>
+</div>
+
+<script>
+// ── Firebase ───────────────────────────────────────────────────────────────
+var firebaseConfig = {
+  apiKey: "AIzaSyChlPFwzh-VBA5OcpM4umePMBMaP49u94g",
+  authDomain: "intake-error-tracker.firebaseapp.com",
+  databaseURL: "https://intake-error-tracker-default-rtdb.firebaseio.com",
+  projectId: "intake-error-tracker",
+  storageBucket: "intake-error-tracker.firebasestorage.app",
+  messagingSenderId: "603495939691",
+  appId: "1:603495939691:web:b1353cd898268dd328bb2e"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+var errRef = db.ref("errors");
+var fbiRef = db.ref("fbi");
+
+// ── Constants ──────────────────────────────────────────────────────────────
+var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Prescriber","Wrong Quantity","Wrong Quick Sig","Entered Under Wrong PT","Self Prescribed","Wrong Written Date","Wrong Patient"];
+var TM=["Intake","PCR 3","TLAC","Ups","RPH"];
+var SR=["Human","Bot","API"];
+var TC=["#6366f1","#f59e0b","#10b981","#ef4444","#3b82f6","#ec4899","#8b5cf6","#14b8a6","#f97316","#64748b","#a855f7"];
+var TLC={};
+TLC["Intake"]="#6366f1";TLC["PCR 3"]="#f59e0b";TLC["TLAC"]="#10b981";TLC["Ups"]="#ef4444";TLC["RPH"]="#3b82f6";TLC["Bot"]="#8b5cf6";TLC["API"]="#ec4899";
+var SM={};
+SM["Intake"]=[];SM["PCR 3"]=[];SM["TLAC"]=[];SM["Ups"]=[];SM["RPH"]=[];
+var FX=["New Erx","Refill Response","Fax","Verbal","Transfer"];
+
+// ── State ──────────────────────────────────────────────────────────────────
+var D=[], FBI={};
+var idS=Date.now();
+function mkId(){return idS++;}
+var today=new Date();
+var todayStr=fmtD(today);
+var thisWk=getWk(todayStr);
+var curV="dashboard", dashMode="weekly", selWk=null, trendM="weekly";
+var mvTm="All",mvWho="",mvTy="All",mvWk="All";
+var eFF="All",eFT="All",eFS="All",eFSt="All";
+var charts={};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtD(d){var m=d.getMonth()+1,dy=d.getDate();return d.getFullYear()+"-"+(m<10?"0"+m:m)+"-"+(dy<10?"0"+dy:dy);}
+function pDate(s){var p=s.split("/");if(p.length!==3)return s;var y=p[2];if(y.length>4)y=y.slice(0,4);var mo=p[0].length===1?"0"+p[0]:p[0],dy=p[1].length===1?"0"+p[1]:p[1];var dt=new Date(y+"-"+mo+"-"+dy);return isNaN(dt)?s:fmtD(dt);}
+function getWk(ds){try{var d=new Date(ds),j=new Date(d.getFullYear(),0,1);return Math.ceil(((d-j)/86400000+j.getDay()+1)/7);}catch(e){return 1;}}
+function tyC(t){var i=ET.indexOf(t);return i>=0?TC[i]:"#6366f1";}
+function bdg(txt,col){return '<span class="bdg" style="background:'+col+'33;color:'+col+'">'+txt+'</span>';}
+function allWks(){var w={};for(var i=0;i<D.length;i++)w[D[i].week]=1;return Object.keys(w).map(Number).sort(function(a,b){return a-b;});}
+function tmOpts(sel){var h="";for(var i=0;i<TM.length;i++)h+='<option'+(TM[i]===sel?" selected":"")+'>'+TM[i]+'</option>';return h;}
+function etOpts(sel){var h="";for(var i=0;i<ET.length;i++)h+='<option'+(ET[i]===sel?" selected":"")+'>'+ET[i]+'</option>';return h;}
+function srOpts(sel){var h="";for(var i=0;i<SR.length;i++)h+='<option'+(SR[i]===sel?" selected":"")+'>'+SR[i]+'</option>';return h;}
+function fxOpts(sel){var h="";for(var i=0;i<FX.length;i++)h+='<option'+(FX[i]===sel?" selected":"")+'>'+FX[i]+'</option>';return h;}
+function whoOpts(team,sel){var h='<option value="">Select</option>';var n=SM[team]||[];for(var i=0;i<n.length;i++)h+='<option'+(n[i]===sel?" selected":"")+'>'+n[i]+'</option>';return h;}
+function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+function getSubset(){
+  if(dashMode==="daily")return D.filter(function(e){return e.date===todayStr;});
+  if(dashMode==="weekly")return D.filter(function(e){return e.week===thisWk;});
+  return D;
+}
+
+// ── Firebase listeners ─────────────────────────────────────────────────────
+errRef.on("value",function(snap){
+  var val=snap.val();
+  D=[];
+  if(val){for(var k in val)D.push(val[k]);}
+  D.sort(function(a,b){return b.date.localeCompare(a.date);});
+  upHdr();render(curV);
+});
+fbiRef.on("value",function(snap){
+  FBI=snap.val()||{};
+  upHdr();render(curV);
+});
+
+function saveErr(row){errRef.child(String(row.id)).set(row);}
+function delErr(id){errRef.child(String(id)).remove();fbiRef.child(String(id)).remove();}
+function saveInit(id,init,date){fbiRef.child(String(id)).set({initials:init,date:date});}
+function clearInit(id){fbiRef.child(String(id)).remove();}
+
+// ── Nav ────────────────────────────────────────────────────────────────────
+var NAVS=[
+  {k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},
+  {k:"trends",l:"Trends"},{k:"staff",l:"Staff"},
+  {k:"member",l:"Member View"},{k:"log",l:"Log Error"},
+  {k:"import",l:"Import"},{k:"entries",l:"All Entries"}
+];
+function buildNav(){
+  var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';
+  document.getElementById("navBar").innerHTML=h;
+}
+function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
+function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,staff:rStaff,member:rMember,log:rLog,import:rImport,entries:rEntries};if(fn[v])fn[v]();}
+function upHdr(){
+  var sub=getSubset();
+  document.getElementById("hTot").textContent=sub.length;
+  document.getElementById("hPnd").textContent=(D.length-Object.keys(FBI).length)+" Pending Feedback";
+  document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────────
+function rDash(){
+  var sec=document.getElementById("sec-dashboard");
+  var sub=getSubset();
+  var human=sub.filter(function(e){return e.source==="Human";}).length;
+  var bot=sub.filter(function(e){return e.source==="Bot";}).length;
+  var api=sub.filter(function(e){return e.source==="API";}).length;
+  var etCnts={};for(var i=0;i<sub.length;i++){var et=sub[i].errorType;etCnts[et]=(etCnts[et]||0)+1;}
+  var topET="None",topEV=0;for(var k in etCnts){if(etCnts[k]>topEV){topEV=etCnts[k];topET=k;}}
+  var tmCnts={};for(var i2=0;i2<sub.length;i2++){if(sub[i2].source==="Human"&&sub[i2].team){tmCnts[sub[i2].team]=(tmCnts[sub[i2].team]||0)+1;}}
+  var topTM="None",topTV=0;for(var k2 in tmCnts){if(tmCnts[k2]>topTV){topTV=tmCnts[k2];topTM=k2;}}
+  var stCnts={};for(var i3=0;i3<sub.length;i3++){if(sub[i3].who){stCnts[sub[i3].who]=(stCnts[sub[i3].who]||0)+1;}}
+  var topST="None",topSV=0;for(var k3 in stCnts){if(stCnts[k3]>topSV){topSV=stCnts[k3];topST=k3;}}
+  var prevSub=dashMode==="daily"?D.filter(function(e){var yd=new Date(today);yd.setDate(today.getDate()-1);return e.date===fmtD(yd);}):dashMode==="weekly"?D.filter(function(e){return e.week===thisWk-1;}):[];
+  var delta=sub.length-prevSub.length;
+  var deltaStr=delta===0?"Same as last "+(dashMode==="daily"?"day":"week"):delta>0?"+"+delta+" vs last "+(dashMode==="daily"?"day":"week"):delta+" vs last "+(dashMode==="daily"?"day":"week");
+  var deltaColor=delta>0?"#ef4444":delta<0?"#10b981":"#94a3b8";
+  var alerts="";
+  if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+' — needs attention</div></div>';
+  if(topTM!=="None"&&topTV>=5)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">TEAM ALERT</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+topTM+'</strong> team leading with <strong>'+topTV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
+  if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#1e293b;margin-top:2px">No critical thresholds exceeded.</div></div>';
+  var kpis=[
+    {l:"Total Errors",v:sub.length,c:"#6366f1",sub:deltaStr,subC:deltaColor},
+    {l:"Human",v:human,c:"#3b82f6",sub:Math.round(sub.length?human/sub.length*100:0)+"% of total",subC:"#94a3b8"},
+    {l:"Bot",v:bot,c:"#8b5cf6",sub:Math.round(sub.length?bot/sub.length*100:0)+"% of total",subC:"#94a3b8"},
+    {l:"API",v:api,c:"#ec4899",sub:Math.round(sub.length?api/sub.length*100:0)+"% of total",subC:"#94a3b8"},
+    {l:"Top Error",v:topEV>0?topET:"None",c:"#ef4444",sub:topEV>0?topEV+" occurrences":"",subC:"#94a3b8",sm:true},
+    {l:"Top Team",v:topTM,c:TLC[topTM]||"#64748b",sub:topTV>0?topTV+" errors":"",subC:"#94a3b8",sm:true},
+    {l:"Top Staff",v:topST,c:"#f97316",sub:topSV>0?topSV+" errors":"",subC:"#94a3b8",sm:true}
+  ];
+  var kh="";for(var ki=0;ki<kpis.length;ki++)kh+='<div class="kpi" style="border-left-color:'+kpis[ki].c+'"><div class="lb">'+kpis[ki].l+'</div><div class="vl" style="font-size:'+(kpis[ki].sm?13:20)+'px;line-height:1.2">'+kpis[ki].v+'</div>'+(kpis[ki].sub?'<div class="sub" style="color:'+kpis[ki].subC+'">'+kpis[ki].sub+'</div>':'')+'</div>';
+  var tD=[];for(var j=0;j<ET.length;j++)tD.push(sub.filter(function(e){return e.errorType===ET[j];}).length);
+  var allSrc=TM.concat(["Bot","API"]),pD=[],pC=[],pL=[];
+  for(var k4=0;k4<allSrc.length;k4++){var cnt=allSrc[k4]==="Bot"?bot:allSrc[k4]==="API"?api:sub.filter(function(e){return e.source==="Human"&&e.team===allSrc[k4];}).length;if(cnt>0){pL.push(allSrc[k4]);pC.push(TLC[allSrc[k4]]||"#ccc");pD.push(cnt);}}
+  var days=["Mon","Tue","Wed","Thu","Fri"],dayData=[];
+  var wkStart=new Date(today),dow=wkStart.getDay(),diff=dow===0?6:dow-1;wkStart.setDate(wkStart.getDate()-diff);
+  for(var d=0;d<5;d++){var dd=new Date(wkStart);dd.setDate(wkStart.getDate()+d);dayData.push(D.filter(function(e){return e.date===fmtD(dd);}).length);}
+  var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
+  var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";
+  sec.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#1e293b">Overview</h2>'+tog+'</div><div class="kpi-row">'+kh+'</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px"><div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:240px"><canvas id="ch-ty"></canvas></div></div><div class="card" style="flex:1;min-width:260px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:240px"><canvas id="ch-tm"></canvas></div></div><div class="card" style="flex:1;min-width:260px;margin-bottom:0"><div class="section-title">Daily Errors This Week</div><div class="ch-wrap" style="height:240px"><canvas id="ch-day"></canvas></div></div></div><div><div class="section-title">Alerts &amp; Insights</div>'+alerts+'</div>';
+  dChart("ch-ty");
+  charts["ch-ty"]=new Chart(document.getElementById("ch-ty"),{type:"bar",data:{labels:ET.map(function(t){return t.length>16?t.slice(0,14)+"...":t;}),datasets:[{data:tD,backgroundColor:TC,borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
+  dChart("ch-tm");
+  if(pD.length>0)charts["ch-tm"]=new Chart(document.getElementById("ch-tm"),{type:"doughnut",data:{labels:pL,datasets:[{data:pD,backgroundColor:pC,borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  dChart("ch-day");
+  charts["ch-day"]=new Chart(document.getElementById("ch-day"),{type:"bar",data:{labels:days,datasets:[{label:"Errors",data:dayData,backgroundColor:"#6366f1",borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────
+function rSum(){
+  var sec=document.getElementById("sec-summary");var wks=allWks();if(!selWk||wks.indexOf(selWk)<0)selWk=wks[wks.length-1];
+  if(!selWk){sec.innerHTML='<div class="card loading">No data yet.</div>';return;}
+  var sM={},tM={};
+  for(var wi=0;wi<wks.length;wi++){var w=wks[wi];sM[w]={};tM[w]={};for(var ei=0;ei<ET.length;ei++){sM[w][ET[ei]]={Human:0,Bot:0,API:0,Total:0};tM[w][ET[ei]]={Total:0};for(var ti=0;ti<TM.length;ti++)tM[w][ET[ei]][TM[ti]]=0;}}
+  for(var di=0;di<D.length;di++){var e=D[di];if(sM[e.week]&&sM[e.week][e.errorType]){sM[e.week][e.errorType][e.source]++;sM[e.week][e.errorType].Total++;}if(e.source==="Human"&&tM[e.week]&&tM[e.week][e.errorType]&&TM.indexOf(e.team)>=0){tM[e.week][e.errorType][e.team]++;tM[e.week][e.errorType].Total++;}}
+  var sR=sM[selWk]||{},tR=tM[selWk]||{},sT={Human:0,Bot:0,API:0,Total:0},tT={Total:0};
+  for(var tmi=0;tmi<TM.length;tmi++)tT[TM[tmi]]=0;
+  for(var eti=0;eti<ET.length;eti++){var t=ET[eti];if(sR[t]){sT.Human+=sR[t].Human;sT.Bot+=sR[t].Bot;sT.API+=sR[t].API;sT.Total+=sR[t].Total;}if(tR[t]){for(var tmi2=0;tmi2<TM.length;tmi2++)tT[TM[tmi2]]+=tR[t][TM[tmi2]]||0;tT.Total+=tR[t].Total||0;}}
+  var wB="";for(var wbi=0;wbi<wks.length;wbi++)wB+='<button class="wk-btn'+(wks[wbi]===selWk?" on":"")+'" onclick="selWk='+wks[wbi]+';rSum()">Week '+wks[wbi]+'</button>';
+  var sBody="";for(var si2=0;si2<ET.length;si2++){var sr=sR[ET[si2]]||{Human:0,Bot:0,API:0,Total:0};sBody+='<tr'+(si2%2===0?' class="alt"':'')+'><td>'+ET[si2]+'</td><td style="text-align:center">'+sr.Human+'</td><td style="text-align:center">'+sr.Bot+'</td><td style="text-align:center">'+sr.API+'</td><td style="text-align:center;font-weight:700;background:#1e40af22">'+sr.Total+'</td></tr>';}
+  var tmH="",tmF="",tBody="";for(var thi=0;thi<TM.length;thi++){tmH+='<th>'+TM[thi]+'</th>';tmF+='<td>'+tT[TM[thi]]+'</td>';}
+  for(var tbi=0;tbi<ET.length;tbi++){var tr2=tR[ET[tbi]]||{};tBody+='<tr'+(tbi%2===0?' class="alt"':'')+'><td>'+ET[tbi]+'</td>';for(var tmi3=0;tmi3<TM.length;tmi3++)tBody+='<td style="text-align:center">'+(tr2[TM[tmi3]]||0)+'</td>';tBody+='<td style="text-align:center;font-weight:700;background:#1e40af22">'+(tr2.Total||0)+'</td></tr>';}
+  sec.innerHTML='<div class="card"><span style="font-size:13px;font-weight:700;color:#1e293b;margin-right:10px">Select Week:</span>'+wB+'</div><div class="card"><h3 style="font-size:14px;color:#1e293b;margin-bottom:12px">Week '+selWk+' — By Source</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th><th>Human</th><th>Bot</th><th>API</th><th>Total</th></tr></thead><tbody>'+sBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td><td>'+sT.Human+'</td><td>'+sT.Bot+'</td><td>'+sT.API+'</td><td>'+sT.Total+'</td></tr></tfoot></table></div></div><div class="card"><h3 style="font-size:14px;color:#1e293b;margin-bottom:12px">Week '+selWk+' — By Team</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th>'+tmH+'<th>Total</th></tr></thead><tbody>'+tBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td>'+tmF+'<td>'+tT.Total+'</td></tr></tfoot></table></div></div>';
+}
+
+// ── Trends ─────────────────────────────────────────────────────────────────
+function rTrend(){
+  var sec=document.getElementById("sec-trends");
+  sec.innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;color:#374151">Error Trend</h3><div style="display:flex;gap:6px"><button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div><div class="card"><h3 style="font-size:13px;color:#374151;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:210px"><canvas id="ch-di"></canvas></div></div>';
+  dChart("ch-tr");var lbs=[],hum=[],bot=[],api=[];
+  if(trendM==="daily"){var dm={};for(var i=13;i>=0;i--){var dd=new Date(today);dd.setDate(today.getDate()-i);var kk=fmtD(dd);dm[kk]={Human:0,Bot:0,API:0};}for(var di=0;di<D.length;di++){if(dm[D[di].date])dm[D[di].date][D[di].source]++;}var dkeys=Object.keys(dm);for(var dk=0;dk<dkeys.length;dk++){lbs.push(dkeys[dk].slice(5));hum.push(dm[dkeys[dk]].Human);bot.push(dm[dkeys[dk]].Bot);api.push(dm[dkeys[dk]].API);}}
+  else{var wks2=allWks(),wmap={};for(var wi=0;wi<wks2.length;wi++)wmap[wks2[wi]]={Human:0,Bot:0,API:0};for(var di2=0;di2<D.length;di2++){if(wmap[D[di2].week])wmap[D[di2].week][D[di2].source]++;}for(var wk2=0;wk2<wks2.length;wk2++){lbs.push("Wk "+wks2[wk2]);hum.push(wmap[wks2[wk2]].Human);bot.push(wmap[wks2[wk2]].Bot);api.push(wmap[wks2[wk2]].API);}}
+  charts["ch-tr"]=new Chart(document.getElementById("ch-tr"),{type:"bar",data:{labels:lbs,datasets:[{label:"Human",data:hum,backgroundColor:"#3b82f6",stack:"a"},{label:"Bot",data:bot,backgroundColor:"#8b5cf6",stack:"a"},{label:"API",data:api,backgroundColor:"#ec4899",stack:"a"}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  dChart("ch-di");var dL=[],dD=[];for(var eti=0;eti<ET.length;eti++){dL.push(ET[eti].length>14?ET[eti].slice(0,13)+"...":ET[eti]);dD.push(D.filter(function(e){return e.errorType===ET[eti];}).length);}
+  charts["ch-di"]=new Chart(document.getElementById("ch-di"),{type:"bar",data:{labels:dL,datasets:[{data:dD,backgroundColor:TC,borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},maxRotation:25}},y:{ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+}
+
+// ── Staff ──────────────────────────────────────────────────────────────────
+function rStaff(){
+  var sec=document.getElementById("sec-staff"),stats={};
+  for(var i=0;i<D.length;i++){var e=D[i];if(!e.who)continue;if(!stats[e.who])stats[e.who]={name:e.who,team:e.team,total:0,wk:0};stats[e.who].total++;if(e.week===thisWk)stats[e.who].wk++;}
+  var rows=[];for(var k in stats)rows.push(stats[k]);rows.sort(function(a,b){return b.wk-a.wk||b.total-a.total;});
+  var tBody="";
+  for(var ri=0;ri<rows.length;ri++){var s=rows[ri],isTop=ri===0&&s.wk>0;tBody+='<tr style="background:'+(isTop?"#fff7ed":"")+'"><td style="font-weight:600">'+s.name+(isTop?' <span class="bdg" style="background:#f97316;color:#fff;font-size:9px">TOP THIS WEEK</span>':'')+'</td><td>'+bdg(s.team,TLC[s.team]||"#6366f1")+'</td><td style="text-align:center;font-weight:700;color:#f97316">'+s.wk+'</td><td style="text-align:center">'+s.total+'</td></tr>';}
+  var sBoxes="";for(var ti=0;ti<TM.length;ti++){var t=TM[ti],names=SM[t]||[];sBoxes+='<div class="sbx"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:4px">'+t+'</div>';for(var ni=0;ni<names.length;ni++)sBoxes+='<div style="color:#475569;padding:1px 0">'+names[ni]+'</div>';sBoxes+='</div>';}
+  sec.innerHTML='<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="sNm" placeholder="Full name" style="width:180px"><select id="sTm" style="width:130px">'+tmOpts("")+'</select><button class="btn" style="margin-top:0" onclick="addSt()">Add</button></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+sBoxes+'</div></div><div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div>';
+}
+function addSt(){var n=document.getElementById("sNm").value.trim(),t=document.getElementById("sTm").value;if(!n)return;if(!SM[t])SM[t]=[];SM[t].push(n);document.getElementById("sNm").value="";rStaff();}
+
+// ── Member View ────────────────────────────────────────────────────────────
+function rMember(){
+  var sec=document.getElementById("sec-member"),wks=allWks(),members={};
+  for(var i=0;i<D.length;i++){var e=D[i];if(e.source==="Human"&&(mvTm==="All"||e.team===mvTm)&&e.who)members[e.who]=1;}
+  var mList=Object.keys(members).sort(),mv=[];
+  for(var di=0;di<D.length;di++){var e2=D[di];if(e2.source==="Human"&&(mvTm==="All"||e2.team===mvTm)&&(!mvWho||e2.who===mvWho)&&(mvTy==="All"||e2.errorType===mvTy)&&(mvWk==="All"||e2.week==mvWk))mv.push(e2);}
+  var typeCnts={};for(var mi=0;mi<mv.length;mi++){typeCnts[mv[mi].errorType]=(typeCnts[mv[mi].errorType]||0)+1;}
+  var topE="None",topN=0;for(var te in typeCnts){if(typeCnts[te]>topN){topN=typeCnts[te];topE=te;}}
+  var tmOpt='<option value="All"'+(mvTm==="All"?" selected":"")+'>All Teams</option>';for(var tmi=0;tmi<TM.length;tmi++)tmOpt+='<option'+(mvTm===TM[tmi]?" selected":"")+'>'+TM[tmi]+'</option>';
+  var whOpt='<option value="">All Members</option>';for(var wmi=0;wmi<mList.length;wmi++)whOpt+='<option'+(mvWho===mList[wmi]?" selected":"")+'>'+mList[wmi]+'</option>';
+  var tyOpt='<option'+(mvTy==="All"?" selected":"")+'>All</option>';for(var tyi=0;tyi<ET.length;tyi++)tyOpt+='<option'+(mvTy===ET[tyi]?" selected":"")+'>'+ET[tyi]+'</option>';
+  var wkOpt='<option value="All"'+(mvWk==="All"?" selected":"")+'>All Weeks</option>';for(var wki=0;wki<wks.length;wki++)wkOpt+='<option value="'+wks[wki]+'"'+(mvWk==wks[wki]?" selected":"")+'>Week '+wks[wki]+'</option>';
+  var kpis2=[{l:"Total",v:mv.length,c:"#6366f1"},{l:"Top Error",v:topE,c:"#ef4444",sm:true}];
+  var kHtml="";for(var ki=0;ki<kpis2.length;ki++)kHtml+='<div class="kpi" style="border-left-color:'+kpis2[ki].c+';padding:10px 14px"><div class="lb">'+kpis2[ki].l+'</div><div style="font-size:'+(kpis2[ki].sm?11:20)+'px;font-weight:800;color:#1e293b;line-height:1.2">'+kpis2[ki].v+'</div></div>';
+  var tRows="";
+  for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#f8fafc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#94a3b8">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#6366f1"):"")+'</td><td style="color:#64748b">'+(me.faxErx||"—")+'</td><td style="color:#374151">'+(me.drug||"—")+'</td><td style="color:#374151">'+(me.rxNum||"—")+'</td><td style="color:#94a3b8;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(me.notes||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td></tr>';}
+  var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#1e293b">'+mv.length+'</div><div style="font-size:12px;color:#64748b">total errors</div></div></div></div>';
+  if(mv.length>0){
+    inner+='<div class="kpi-row">'+kHtml+'</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px"><div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h4 style="font-size:13px;margin-bottom:10px">Errors by Type</h4><div class="ch-wrap" style="height:190px"><canvas id="ch-mv1"></canvas></div></div><div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h4 style="font-size:13px;margin-bottom:10px">Weekly Trend</h4><div class="ch-wrap" style="height:190px"><canvas id="ch-mv2"></canvas></div></div></div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Wk</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>';
+  }else{inner+='<div class="card" style="text-align:center;color:#94a3b8;padding:40px">No entries found.</div>';}
+  sec.innerHTML=inner;
+  if(mv.length>0){
+    dChart("ch-mv1");var tbL=[],tbD=[],tbC=[];for(var eti2=0;eti2<ET.length;eti2++){var cnt=typeCnts[ET[eti2]]||0;if(cnt>0){tbL.push(ET[eti2].length>14?ET[eti2].slice(0,13)+"...":ET[eti2]);tbD.push(cnt);tbC.push(TC[eti2]);}}
+    charts["ch-mv1"]=new Chart(document.getElementById("ch-mv1"),{type:"bar",data:{labels:tbL,datasets:[{data:tbD,backgroundColor:tbC,borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
+    dChart("ch-mv2");var wtL=[],wtD=[];for(var wti=0;wti<wks.length;wti++){var wc=0;for(var wci=0;wci<mv.length;wci++)if(mv[wci].week===wks[wti])wc++;wtL.push("Wk "+wks[wti]);wtD.push(wc);}
+    charts["ch-mv2"]=new Chart(document.getElementById("ch-mv2"),{type:"line",data:{labels:wtL,datasets:[{label:"Errors",data:wtD,borderColor:"#6366f1",backgroundColor:"#6366f144",tension:.3,pointRadius:4,fill:true}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+  }
+}
+function setI(id,val){var v=val.trim().toUpperCase();if(v)saveInit(id,v,fmtD(new Date()));}
+
+// ── Log Error ──────────────────────────────────────────────────────────────
+function rLog(){
+  document.getElementById("sec-log").innerHTML=
+    '<div class="card" style="max-width:540px"><h3 style="font-size:15px;color:#1e293b;margin-bottom:16px">Log New Intake Error</h3>'+
+    '<div class="fgrid">'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="lSr" onchange="upLF()">'+srOpts("Human")+'</select></div>'+
+    '<div class="fhalf" id="lTmW"><label class="flb" style="margin-top:0">Team</label><select id="lTm" onchange="upLW()">'+tmOpts("Intake")+'</select></div>'+
+    '<div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label><select id="lWh">'+whoOpts("Intake","")+'</select></div>'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="lFx">'+fxOpts("")+'</select></div>'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><input type="text" id="lDrug" placeholder="e.g. Metformin 500mg"></div>'+
+    '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
+    '</div>'+
+    '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
+    '<button class="btn btn-full" onclick="subLog()">Log Error</button></div>';
+}
+function upLF(){var s=document.getElementById("lSr").value,show=s==="Human";document.getElementById("lTmW").style.display=show?"block":"none";document.getElementById("lWhW").style.display=show?"block":"none";}
+function upLW(){var t=document.getElementById("lTm").value;document.getElementById("lWh").innerHTML=whoOpts(t,"");}
+function subLog(){
+  var src=document.getElementById("lSr").value,date=document.getElementById("lDt").value;
+  if(!date){alert("Please select a date.");return;}
+  var row={};
+  row.id=mkId();row.date=date;row.week=getWk(date);row.errorType=document.getElementById("lTy").value;
+  row.source=src;row.team=src==="Human"?document.getElementById("lTm").value:"";
+  row.who=src==="Human"?document.getElementById("lWh").value:"";
+  row.faxErx=document.getElementById("lFx").value;
+  row.drug=document.getElementById("lDrug").value.trim();
+  row.rxNum=document.getElementById("lRx").value.trim();
+  row.notes=document.getElementById("lNt").value;
+  saveErr(row);
+  document.getElementById("lDrug").value="";
+  document.getElementById("lRx").value="";
+  document.getElementById("lNt").value="";
+  alert("Error logged successfully.");
+}
+
+// ── Import ─────────────────────────────────────────────────────────────────
+function rImport(){
+  document.getElementById("sec-import").innerHTML=
+    '<div class="card" style="max-width:640px">'+
+    '<h3 style="font-size:15px;margin-bottom:6px">Import Errors via CSV</h3>'+
+    '<p style="font-size:12px;color:#64748b;margin-bottom:14px">Columns: date, errorType, source, team, who, faxErx, drug, rxNum, notes</p>'+
+    '<label class="flb" style="margin-top:0">Upload CSV File</label>'+
+    '<input type="file" accept=".csv" id="csvF" onchange="loadCSVFile(this)">'+
+    '<label class="flb">Or Paste Rows</label>'+
+    '<textarea id="blkT" rows="8" placeholder="Paste CSV rows here..." style="font-family:monospace;font-size:11px" oninput="upBC()"></textarea>'+
+    '<div id="blkC" style="font-size:11px;color:#6366f1;margin:6px 0"></div>'+
+    '<div id="blkM" style="font-size:12px;color:#10b981;font-weight:600;margin-bottom:8px"></div>'+
+    '<button class="btn btn-full" onclick="impBulk()">Import Rows</button></div>';
+}
+function loadCSVFile(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){document.getElementById("blkT").value=e.target.result;upBC();};r.readAsText(f);}
+function upBC(){var t=document.getElementById("blkT").value.trim();var n=t?t.split("\n").filter(function(l){return l.trim();}).length:0;document.getElementById("blkC").textContent=n?n+" rows ready":"";}
+function impBulk(){
+  var lines=document.getElementById("blkT").value.trim().split("\n"),added=0,skipped=0;
+  for(var i=0;i<lines.length;i++){
+    var p=lines[i].split(",");if(p.length<3){skipped++;continue;}
+    var date=p[0].trim(),et=p[1].trim(),src=p[2].trim();if(!date||!et||!src){skipped++;continue;}
+    var row={};row.id=mkId();row.date=date;row.week=getWk(date);row.errorType=et;
+    row.source=SR.indexOf(src)>=0?src:"Human";row.team=TM.indexOf((p[3]||"").trim())>=0?(p[3]||"").trim():"";
+    row.who=(p[4]||"").trim();row.faxErx=(p[5]||"").trim();row.drug=(p[6]||"").trim();row.rxNum=(p[7]||"").trim();row.notes=p.slice(8).join(",").trim();
+    saveErr(row);added++;
+  }
+  document.getElementById("blkM").textContent="Added "+added+" entries"+(skipped?", skipped "+skipped+" invalid rows":"");
+  document.getElementById("blkT").value="";document.getElementById("blkC").textContent="";
+}
+
+// ── All Entries ────────────────────────────────────────────────────────────
+function rEntries(){
+  var sec=document.getElementById("sec-entries"),fil=[];
+  for(var i=0;i<D.length;i++){var e=D[i];if((eFF==="All"||e.team===eFF||(eFF==="Bot"&&e.source==="Bot")||(eFF==="API"&&e.source==="API"))&&(eFT==="All"||e.errorType===eFT)&&(eFS==="All"||e.source===eFS)&&(eFSt==="All"||(eFSt==="Feedback Given"&&!!FBI[e.id])||(eFSt==="Pending"&&!FBI[e.id])))fil.push(e);}
+  var ffO='<option'+(eFF==="All"?" selected":"")+'>All</option>';for(var ti=0;ti<TM.length;ti++)ffO+='<option'+(eFF===TM[ti]?" selected":"")+'>'+TM[ti]+'</option>';ffO+='<option'+(eFF==="Bot"?" selected":"")+'>Bot</option><option'+(eFF==="API"?" selected":"")+'>API</option>';
+  var ftO='<option'+(eFT==="All"?" selected":"")+'>All</option>';for(var ei2=0;ei2<ET.length;ei2++)ftO+='<option'+(eFT===ET[ei2]?" selected":"")+'>'+ET[ei2]+'</option>';
+  var fsO='<option'+(eFS==="All"?" selected":"")+'>All</option>';for(var si2=0;si2<SR.length;si2++)fsO+='<option'+(eFS===SR[si2]?" selected":"")+'>'+SR[si2]+'</option>';
+  var rows="",shown=fil.length>300?fil.slice(0,300):fil;
+  for(var ri=0;ri<shown.length;ri++){
+    var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#f8fafc":"#fff");
+    rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td>'+
+    '<td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td>'+
+    '<td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td>'+
+    '<td style="white-space:nowrap">'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':"")+
+    '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';
+  }
+  sec.innerHTML='<div class="card fbar" style="margin-bottom:10px">'+
+    '<label style="font-size:11px;color:#64748b">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select>'+
+    '<label style="font-size:11px;color:#64748b">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select>'+
+    '<label style="font-size:11px;color:#64748b">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select>'+
+    '<label style="font-size:11px;color:#64748b">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Feedback Given"?" selected":"")+'>Feedback Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select>'+
+    '<span style="font-size:11px;color:#94a3b8;margin-left:auto">'+fil.length+' entries</span></div>'+
+    '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr>'+
+    '<th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>Lead Initials</th><th>FB Date</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+function setIE(id,val){var v=val.trim().toUpperCase();if(v)saveInit(id,v,fmtD(new Date()));}
+function clrI(id){clearInit(id);}
+function delE(id){if(!confirm("Delete this entry?"))return;delErr(id);}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+buildNav();
+</script>
+</body>
+</html>
