@@ -69,6 +69,10 @@ tr.alt td{background:#f8fafc}
 .sync-btn{padding:4px 12px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer}
 .sync-btn:hover{background:rgba(255,255,255,.2)}
 .sync-bar.saving .sync-btn{border-color:rgba(0,0,0,.2);color:#1a1a1a}
+.rph-tag{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;margin:2px}
+.rph-tag button{background:none;border:none;cursor:pointer;color:#93c5fd;font-size:13px;line-height:1;padding:0}
+.rph-tag button:hover{color:#ef4444}
+.rph-box{min-height:36px;border:1px solid #e2e8f0;border-radius:7px;padding:4px 8px;background:#f8fafc;display:flex;flex-wrap:wrap;gap:4px;align-items:center;cursor:text}
 </style>
 </head>
 <body>
@@ -88,6 +92,7 @@ tr.alt td{background:#f8fafc}
   <div id="sec-dashboard" class="sec on"></div>
   <div id="sec-summary" class="sec"></div>
   <div id="sec-trends" class="sec"></div>
+  <div id="sec-rph" class="sec"></div>
   <div id="sec-staff" class="sec"></div>
   <div id="sec-member" class="sec"></div>
   <div id="sec-log" class="sec"></div>
@@ -108,6 +113,31 @@ tr.alt td{background:#f8fafc}
         <div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="eRx"></div>
       </div>
       <label class="flb">Notes</label><textarea id="eNt" rows="2"></textarea>
+      <div style="margin-top:14px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+        <div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:10px">🔍 RPH Verification</div>
+        <div class="fgrid">
+          <div class="fhalf">
+            <label class="flb" style="margin-top:0">Verified by RPH?</label>
+            <select id="eRphVerified" onchange="upEditRphFields()">
+              <option value="">-- Select --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="fhalf" id="eRphCountW" style="display:none">
+            <label class="flb" style="margin-top:0">How many times?</label>
+            <input type="number" id="eRphCount" min="1" max="20" placeholder="e.g. 2">
+          </div>
+        </div>
+        <div id="eRphNamesW" style="display:none">
+          <label class="flb">Which RPH(s)?</label>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <select id="eRphSel" style="flex:1"></select>
+            <button type="button" onclick="addEditRph()" style="padding:6px 14px;background:#1e40af;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+          </div>
+          <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
+        </div>
+      </div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn btn-full" onclick="saveEdit()">Save Changes</button>
         <button onclick="closeEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>
@@ -241,10 +271,10 @@ function exportData(){
 }
 
 // ── Nav ────────────────────────────────────────────────────────────────────
-var NAVS=[{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"admin",l:"Admin"}];
+var NAVS=[{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"admin",l:"Admin"}];
 function buildNav(){var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';document.getElementById("navBar").innerHTML=h;}
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
-function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,admin:rAdmin};if(fn[v])fn[v]();}
+function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,admin:rAdmin};if(fn[v])fn[v]();}
 function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;document.getElementById("hPnd").textContent=(D.length-Object.keys(FBI).length)+" Pending";document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -254,6 +284,11 @@ function rDash(){
   var human=sub.filter(function(e){return e.source==="Human";}).length;
   var bot=sub.filter(function(e){return e.source==="Bot";}).length;
   var api=sub.filter(function(e){return e.source==="API";}).length;
+  // RPH stats
+  var rphVerifiedCount=sub.filter(function(e){return e.rphVerified==="Yes";}).length;
+  var rphUnverified=sub.filter(function(e){return e.rphVerified==="No";}).length;
+  var rphPct=sub.length?Math.round(rphVerifiedCount/sub.length*100):0;
+  var rphErrors=sub.filter(function(e){return e.source==="Human"&&e.team==="RPH";}).length;
   var etC={};for(var i=0;i<sub.length;i++){etC[sub[i].errorType]=(etC[sub[i].errorType]||0)+1;}
   var topET="None",topEV=0;for(var k in etC){if(etC[k]>topEV){topEV=etC[k];topET=k;}}
   var tmC={};for(var i2=0;i2<sub.length;i2++){if(sub[i2].source==="Human"&&sub[i2].team)tmC[sub[i2].team]=(tmC[sub[i2].team]||0)+1;}
@@ -267,8 +302,20 @@ function rDash(){
   var alerts="";
   if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
   if(topTM!=="None"&&topTV>=4)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">TEAM ALERT</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+topTM+'</strong> leading with <strong>'+topTV+'</strong> errors</div></div>';
+  if(rphErrors>=3)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">RPH ERRORS</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+rphErrors+'</strong> errors logged from the RPH team — review needed</div></div>';
   if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#1e293b;margin-top:2px">No critical thresholds exceeded.</div></div>';
-  var kpis=[{l:"Total Errors",v:sub.length,c:"#6366f1",s:dStr,sc:dCol},{l:"Human",v:human,c:"#3b82f6",s:Math.round(sub.length?human/sub.length*100:0)+"% of total",sc:"#94a3b8"},{l:"Bot",v:bot,c:"#8b5cf6",s:Math.round(sub.length?bot/sub.length*100:0)+"% of total",sc:"#94a3b8"},{l:"API",v:api,c:"#ec4899",s:Math.round(sub.length?api/sub.length*100:0)+"% of total",sc:"#94a3b8"},{l:"Top Error",v:topEV>0?topET:"None",c:"#ef4444",s:topEV>0?topEV+" occurrences":"",sc:"#94a3b8",sm:true},{l:"Top Team",v:topTM,c:TLC[topTM]||"#64748b",s:topTV>0?topTV+" errors":"",sc:"#94a3b8",sm:true},{l:"Top Staff",v:topST,c:"#f97316",s:topSV>0?topSV+" errors":"",sc:"#94a3b8",sm:true}];
+  var kpis=[
+    {l:"Total Errors",v:sub.length,c:"#6366f1",s:dStr,sc:dCol},
+    {l:"Human",v:human,c:"#3b82f6",s:Math.round(sub.length?human/sub.length*100:0)+"% of total",sc:"#94a3b8"},
+    {l:"Bot",v:bot,c:"#8b5cf6",s:Math.round(sub.length?bot/sub.length*100:0)+"% of total",sc:"#94a3b8"},
+    {l:"API",v:api,c:"#ec4899",s:Math.round(sub.length?api/sub.length*100:0)+"% of total",sc:"#94a3b8"},
+    {l:"RPH Verified",v:rphVerifiedCount,c:"#10b981",s:rphPct+"% of errors verified",sc:rphPct>=50?"#10b981":"#ef4444"},
+    {l:"Not Verified",v:rphUnverified,c:"#ef4444",s:sub.length?(100-rphPct)+"% unverified":"",sc:"#94a3b8"},
+    {l:"RPH Errors",v:rphErrors,c:"#f97316",s:"errors from RPH team",sc:"#94a3b8"},
+    {l:"Top Error",v:topEV>0?topET:"None",c:"#ef4444",s:topEV>0?topEV+" occurrences":"",sc:"#94a3b8",sm:true},
+    {l:"Top Team",v:topTM,c:TLC[topTM]||"#64748b",s:topTV>0?topTV+" errors":"",sc:"#94a3b8",sm:true},
+    {l:"Top Staff",v:topST,c:"#f97316",s:topSV>0?topSV+" errors":"",sc:"#94a3b8",sm:true}
+  ];
   var kh="";for(var ki=0;ki<kpis.length;ki++)kh+='<div class="kpi" style="border-left-color:'+kpis[ki].c+'"><div class="lb">'+kpis[ki].l+'</div><div class="vl" style="font-size:'+(kpis[ki].sm?13:20)+'px;line-height:1.2">'+kpis[ki].v+'</div>'+(kpis[ki].s?'<div class="sub" style="color:'+kpis[ki].sc+'">'+kpis[ki].s+'</div>':'')+'</div>';
   var tD=[];for(var j=0;j<ET.length;j++)tD.push(sub.filter(function(e){return e.errorType===ET[j];}).length);
   var aS=TM.concat(["Bot","API"]),pD=[],pC=[],pL=[];
@@ -278,10 +325,133 @@ function rDash(){
   for(var d=0;d<5;d++){var dd=new Date(ws);dd.setDate(ws.getDate()+d);dayData.push(D.filter(function(e){return e.date===fmtD(dd);}).length);}
   var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";
   var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
-  sec.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#1e293b">Overview</h2>'+tog+'</div><div class="kpi-row">'+kh+'</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px"><div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:240px"><canvas id="ch-ty"></canvas></div></div><div class="card" style="flex:1;min-width:260px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:240px"><canvas id="ch-tm"></canvas></div></div><div class="card" style="flex:1;min-width:260px;margin-bottom:0"><div class="section-title">Daily Errors This Week</div><div class="ch-wrap" style="height:240px"><canvas id="ch-day"></canvas></div></div></div><div><div class="section-title">Alerts &amp; Insights</div>'+alerts+'</div>';
+  sec.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#1e293b">Overview</h2>'+tog+'</div>'+
+    '<div class="kpi-row">'+kh+'</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-ty"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-tm"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">RPH Verification <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-rph"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">Daily Errors This Week</div><div class="ch-wrap" style="height:220px"><canvas id="ch-day"></canvas></div></div>'+
+    '</div>'+
+    '<div><div class="section-title">Alerts &amp; Insights</div>'+alerts+'</div>';
   dChart("ch-ty");charts["ch-ty"]=new Chart(document.getElementById("ch-ty"),{type:"bar",data:{labels:ET.map(function(t){return t.length>16?t.slice(0,14)+"...":t;}),datasets:[{data:tD,backgroundColor:TC,borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
   dChart("ch-tm");if(pD.length>0)charts["ch-tm"]=new Chart(document.getElementById("ch-tm"),{type:"doughnut",data:{labels:pL,datasets:[{data:pD,backgroundColor:pC,borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  // RPH Verification doughnut
+  dChart("ch-rph");
+  var rphNoData=sub.filter(function(e){return !e.rphVerified||e.rphVerified==="";}).length;
+  charts["ch-rph"]=new Chart(document.getElementById("ch-rph"),{type:"doughnut",data:{labels:["Verified","Not Verified","Not Recorded"],datasets:[{data:[rphVerifiedCount,rphUnverified,rphNoData],backgroundColor:["#10b981","#ef4444","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
   dChart("ch-day");charts["ch-day"]=new Chart(document.getElementById("ch-day"),{type:"bar",data:{labels:days,datasets:[{label:"Errors",data:dayData,backgroundColor:"#6366f1",borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+}
+
+// ── RPH Report ─────────────────────────────────────────────────────────────
+function rRph(){
+  var sec=document.getElementById("sec-rph");
+  var total=D.length;
+  var verified=D.filter(function(e){return e.rphVerified==="Yes";});
+  var notVerified=D.filter(function(e){return e.rphVerified==="No";});
+  var rphTeamErrors=D.filter(function(e){return e.source==="Human"&&e.team==="RPH";});
+  var verPct=total?Math.round(verified.length/total*100):0;
+
+  // Total verifications (sum of rphCount across verified entries)
+  var totalVerifications=0;
+  for(var i=0;i<verified.length;i++){var c=parseInt(verified[i].rphCount||"1");if(!isNaN(c))totalVerifications+=c;}
+
+  // Per-RPH breakdown
+  var rphStats={};
+  for(var vi=0;vi<verified.length;vi++){
+    var names=verified[vi].rphNames||[];
+    for(var ni=0;ni<names.length;ni++){
+      if(!rphStats[names[ni]])rphStats[names[ni]]={verified:0,verifications:0};
+      rphStats[names[ni]].verified++;
+      var cnt=parseInt(verified[vi].rphCount||"1");
+      if(!isNaN(cnt))rphStats[names[ni]].verifications+=cnt;
+    }
+  }
+
+  // RPH team errors by type
+  var rphEtC={};
+  for(var ri=0;ri<rphTeamErrors.length;ri++){var et=rphTeamErrors[ri].errorType;rphEtC[et]=(rphEtC[et]||0)+1;}
+
+  // KPI cards
+  var kh=
+    '<div class="kpi" style="border-left-color:#10b981"><div class="lb">Verified by RPH</div><div class="vl">'+verified.length+'</div><div class="sub" style="color:'+(verPct>=50?"#10b981":"#ef4444")+'">'+verPct+'% of all errors</div></div>'+
+    '<div class="kpi" style="border-left-color:#ef4444"><div class="lb">Not Verified</div><div class="vl">'+notVerified.length+'</div><div class="sub" style="color:#94a3b8">'+(total-verified.length-notVerified.length)+' not recorded</div></div>'+
+    '<div class="kpi" style="border-left-color:#3b82f6"><div class="lb">Total Verifications</div><div class="vl">'+totalVerifications+'</div><div class="sub" style="color:#94a3b8">sum of all RPH checks</div></div>'+
+    '<div class="kpi" style="border-left-color:#f97316"><div class="lb">RPH Team Errors</div><div class="vl">'+rphTeamErrors.length+'</div><div class="sub" style="color:#94a3b8">errors logged by RPH</div></div>';
+
+  // Per-RPH table
+  var rphRows="";
+  var rphNames2=Object.keys(rphStats);
+  rphNames2.sort(function(a,b){return rphStats[b].verified-rphStats[a].verified;});
+  if(rphNames2.length===0){
+    rphRows='<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:20px">No RPH verification data yet.</td></tr>';
+  } else {
+    for(var rni=0;rni<rphNames2.length;rni++){
+      var nm=rphNames2[rni],st=rphStats[nm];
+      rphRows+='<tr'+(rni%2===0?' class="alt"':'')+'><td style="font-weight:600">'+nm+'</td><td style="text-align:center">'+st.verified+'</td><td style="text-align:center;font-weight:700;color:#3b82f6">'+st.verifications+'</td></tr>';
+    }
+  }
+
+  // RPH team error rows
+  var rphErrRows="";
+  if(rphTeamErrors.length===0){
+    rphErrRows='<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No errors from RPH team logged yet.</td></tr>';
+  } else {
+    for(var rei=0;rei<rphTeamErrors.length&&rei<100;rei++){
+      var re=rphTeamErrors[rei],tc=tyC(re.errorType);
+      rphErrRows+='<tr'+(rei%2===0?' class="alt"':'')+'><td style="white-space:nowrap">'+re.date+'</td><td>'+bdg(re.errorType,tc)+'</td><td>'+(re.who||"—")+'</td><td style="color:#64748b">'+(re.drug||"—")+'</td><td style="color:#374151">'+(re.rxNum||"—")+'</td></tr>';
+    }
+  }
+
+  // Error type breakdown for RPH errors chart data
+  var rphEtLabels=[],rphEtData=[];
+  for(var et2 in rphEtC){rphEtLabels.push(et2.length>14?et2.slice(0,13)+"...":et2);rphEtData.push(rphEtC[et2]);}
+
+  sec.innerHTML=
+    '<div class="kpi-row">'+kh+'</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0">'+
+        '<div class="section-title">Verification Status (All Time)</div>'+
+        '<div class="ch-wrap" style="height:220px"><canvas id="ch-rph2"></canvas></div>'+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0">'+
+        '<div class="section-title">Verified vs Unverified by Week</div>'+
+        '<div class="ch-wrap" style="height:220px"><canvas id="ch-rphwk"></canvas></div>'+
+      '</div>'+
+      (rphEtData.length>0?
+      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0">'+
+        '<div class="section-title">RPH Team — Error Types</div>'+
+        '<div class="ch-wrap" style="height:220px"><canvas id="ch-rphet"></canvas></div>'+
+      '</div>':'')+
+    '</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap">'+
+      '<div class="card" style="flex:1;min-width:280px">'+
+        '<h3 style="font-size:13px;margin-bottom:12px">RPH Verification by Member</h3>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>RPH Name</th><th style="text-align:center">Errors Verified</th><th style="text-align:center">Total Checks</th></tr></thead><tbody>'+rphRows+'</tbody></table></div>'+
+      '</div>'+
+      '<div class="card" style="flex:2;min-width:320px">'+
+        '<h3 style="font-size:13px;margin-bottom:12px">RPH Team — Error Log <span style="font-size:10px;color:#94a3b8;font-weight:400">(errors where team = RPH)</span></h3>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Who</th><th>Drug</th><th>RX</th></tr></thead><tbody>'+rphErrRows+'</tbody></table></div>'+
+      '</div>'+
+    '</div>';
+
+  // Verification doughnut
+  dChart("ch-rph2");
+  var noRecord=D.filter(function(e){return !e.rphVerified||e.rphVerified==="";}).length;
+  charts["ch-rph2"]=new Chart(document.getElementById("ch-rph2"),{type:"doughnut",data:{labels:["Verified","Not Verified","Not Recorded"],datasets:[{data:[verified.length,notVerified.length,noRecord],backgroundColor:["#10b981","#ef4444","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+
+  // Weekly stacked bar
+  dChart("ch-rphwk");
+  var wks4=allWks(),wlbs=[],wVer=[],wNot=[];
+  for(var wwi=0;wwi<wks4.length;wwi++){var wk4=wks4[wwi];var wkE=D.filter(function(e){return e.week===wk4;});wlbs.push("Wk "+wk4);wVer.push(wkE.filter(function(e){return e.rphVerified==="Yes";}).length);wNot.push(wkE.filter(function(e){return e.rphVerified==="No";}).length);}
+  charts["ch-rphwk"]=new Chart(document.getElementById("ch-rphwk"),{type:"bar",data:{labels:wlbs,datasets:[{label:"Verified",data:wVer,backgroundColor:"#10b981",stack:"s",borderRadius:3},{label:"Not Verified",data:wNot,backgroundColor:"#ef4444",stack:"s",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+
+  // RPH team error types chart
+  if(rphEtData.length>0){
+    dChart("ch-rphet");
+    charts["ch-rphet"]=new Chart(document.getElementById("ch-rphet"),{type:"bar",data:{labels:rphEtLabels,datasets:[{data:rphEtData,backgroundColor:"#f97316",borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
+  }
 }
 
 // ── Summary ────────────────────────────────────────────────────────────────
@@ -304,11 +474,29 @@ function rSum(){
 // ── Trends ─────────────────────────────────────────────────────────────────
 function rTrend(){
   var sec=document.getElementById("sec-trends");
-  sec.innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;color:#374151">Error Trend</h3><div style="display:flex;gap:6px"><button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div><div class="card"><h3 style="font-size:13px;color:#374151;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:210px"><canvas id="ch-di"></canvas></div></div>';
+  sec.innerHTML=
+    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;color:#374151">Error Trend by Source</h3><div style="display:flex;gap:6px"><button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#374151;margin-bottom:10px">RPH Verification Over Time</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-rphtr"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h3 style="font-size:13px;color:#374151;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-di"></canvas></div></div>'+
+    '</div>';
+  // Source trend
   dChart("ch-tr");var lbs=[],hum=[],bot=[],api=[];
   if(trendM==="daily"){var dm={};for(var i=13;i>=0;i--){var dd=new Date(today);dd.setDate(today.getDate()-i);var kk=fmtD(dd);dm[kk]={Human:0,Bot:0,API:0};}for(var di=0;di<D.length;di++){if(dm[D[di].date])dm[D[di].date][D[di].source]++;}var dk=Object.keys(dm);for(var dki=0;dki<dk.length;dki++){lbs.push(dk[dki].slice(5));hum.push(dm[dk[dki]].Human);bot.push(dm[dk[dki]].Bot);api.push(dm[dk[dki]].API);}}
   else{var wks2=allWks(),wm={};for(var wi=0;wi<wks2.length;wi++)wm[wks2[wi]]={Human:0,Bot:0,API:0};for(var di2=0;di2<D.length;di2++){if(wm[D[di2].week])wm[D[di2].week][D[di2].source]++;}for(var wk2=0;wk2<wks2.length;wk2++){lbs.push("Wk "+wks2[wk2]);hum.push(wm[wks2[wk2]].Human);bot.push(wm[wks2[wk2]].Bot);api.push(wm[wks2[wk2]].API);}}
   charts["ch-tr"]=new Chart(document.getElementById("ch-tr"),{type:"bar",data:{labels:lbs,datasets:[{label:"Human",data:hum,backgroundColor:"#3b82f6",stack:"a"},{label:"Bot",data:bot,backgroundColor:"#8b5cf6",stack:"a"},{label:"API",data:api,backgroundColor:"#ec4899",stack:"a"}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  // RPH verification trend (weekly always)
+  dChart("ch-rphtr");
+  var wks3=allWks(),rlbs=[],rVer=[],rNot=[];
+  for(var rwi=0;rwi<wks3.length;rwi++){
+    var wk=wks3[rwi];
+    var wkE=D.filter(function(e){return e.week===wk;});
+    rlbs.push("Wk "+wk);
+    rVer.push(wkE.filter(function(e){return e.rphVerified==="Yes";}).length);
+    rNot.push(wkE.filter(function(e){return e.rphVerified==="No";}).length);
+  }
+  charts["ch-rphtr"]=new Chart(document.getElementById("ch-rphtr"),{type:"bar",data:{labels:rlbs,datasets:[{label:"Verified",data:rVer,backgroundColor:"#10b981",stack:"r",borderRadius:3},{label:"Not Verified",data:rNot,backgroundColor:"#ef4444",stack:"r",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+  // Error type dist
   dChart("ch-di");var dL=[],dD=[];for(var eti=0;eti<ET.length;eti++){dL.push(ET[eti].length>14?ET[eti].slice(0,13)+"...":ET[eti]);dD.push(D.filter(function(e){return e.errorType===ET[eti];}).length);}
   charts["ch-di"]=new Chart(document.getElementById("ch-di"),{type:"bar",data:{labels:dL,datasets:[{data:dD,backgroundColor:TC,borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},maxRotation:25}},y:{ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
 }
@@ -351,8 +539,91 @@ function rMember(){
 function setI(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rMember();}}
 
 // ── Log Error ──────────────────────────────────────────────────────────────
+function rphOpts(){var h='<option value="">-- Select RPH --</option>';var rphList=SM["RPH"]||[];for(var i=0;i<rphList.length;i++)h+='<option value="'+rphList[i]+'">'+rphList[i]+'</option>';return h;}
+
+function addLogRph(){
+  var sel=document.getElementById("lRphSel");
+  var val=sel.value.trim();
+  if(!val)return;
+  // Prevent duplicates
+  var existing=document.querySelectorAll(".lrph-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag lrph-tag";
+  tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  document.getElementById("lRphTags").appendChild(tag);
+  sel.value="";
+}
+
+function getLogRphs(){
+  var tags=document.querySelectorAll(".lrph-tag");
+  var names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+
+function upRphFields(){
+  var v=document.getElementById("lRphVerified").value;
+  document.getElementById("lRphDetails").style.display=v==="Yes"?"block":"none";
+}
+
 function rLog(){
-  document.getElementById("sec-log").innerHTML='<div class="card" style="max-width:540px"><h3 style="font-size:15px;color:#1e293b;margin-bottom:16px">Log New Intake Error</h3><div class="fgrid"><div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div><div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div><div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="lSr" onchange="upLF()">'+srOpts("Human")+'</select></div><div class="fhalf" id="lTmW"><label class="flb" style="margin-top:0">Team</label><select id="lTm" onchange="upLW()">'+tmOpts("Intake")+'</select></div><div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label><select id="lWh">'+whoOpts("Intake","")+'</select></div><div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="lFx">'+fxOpts("")+'</select></div><div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><select id="lDrugSel" onchange="upDF()">'+drugOpts("")+'</select></div><div class="fhalf" id="lDrugCW" style="display:none"><label class="flb" style="margin-top:0">Custom Drug</label><input type="text" id="lDrug" placeholder="Type drug name"></div><div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div></div><label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea><button class="btn btn-full" onclick="subLog()">Log Error</button></div>';
+  var rphList=SM["RPH"]||[];
+  var rphNote=rphList.length===0?'<div style="font-size:11px;color:#f59e0b;margin-top:4px">⚠ No RPH staff added yet. Go to <strong>Staff</strong> tab to add RPH members.</div>':'';
+  document.getElementById("sec-log").innerHTML=
+    '<div class="card" style="max-width:560px">'+
+    '<h3 style="font-size:15px;color:#1e293b;margin-bottom:16px">Log New Intake Error</h3>'+
+    '<div class="fgrid">'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="lSr" onchange="upLF()">'+srOpts("Human")+'</select></div>'+
+      '<div class="fhalf" id="lTmW"><label class="flb" style="margin-top:0">Team</label><select id="lTm" onchange="upLW()">'+tmOpts("Intake")+'</select></div>'+
+      '<div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label><select id="lWh">'+whoOpts("Intake","")+'</select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="lFx">'+fxOpts("")+'</select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><select id="lDrugSel" onchange="upDF()">'+drugOpts("")+'</select></div>'+
+      '<div class="fhalf" id="lDrugCW" style="display:none"><label class="flb" style="margin-top:0">Custom Drug</label><input type="text" id="lDrug" placeholder="Type drug name"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
+    '</div>'+
+    '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
+    // ── RPH Verification block ──
+    '<div style="margin-top:16px;padding:14px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">'+
+      '<div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:10px">🔍 RPH Verification</div>'+
+      '<div class="fgrid">'+
+        '<div class="fhalf">'+
+          '<label class="flb" style="margin-top:0">Verified by RPH?</label>'+
+          '<select id="lRphVerified" onchange="upRphFields()">'+
+            '<option value="">-- Select --</option>'+
+            '<option value="Yes">Yes</option>'+
+            '<option value="No">No</option>'+
+          '</select>'+
+        '</div>'+
+        '<div class="fhalf" id="lRphDetails" style="display:none">'+
+          '<label class="flb" style="margin-top:0">How many times verified?</label>'+
+          '<input type="number" id="lRphCount" min="1" max="20" placeholder="e.g. 2" style="width:100%">'+
+        '</div>'+
+      '</div>'+
+      '<div id="lRphDetails" style="display:none">'+
+        '<label class="flb">Which RPH(s) verified?</label>'+
+        rphNote+
+        '<div style="display:flex;gap:6px;margin-top:4px">'+
+          '<select id="lRphSel" style="flex:1">'+rphOpts()+'</select>'+
+          '<button type="button" onclick="addLogRph()" style="padding:6px 14px;background:#1e40af;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+        '</div>'+
+        '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
+      '</div>'+
+    '</div>'+
+    '<button class="btn btn-full" onclick="subLog()">Log Error</button>'+
+    '</div>';
+  // Fix: both divs had same id, re-wire the show/hide
+  upRphFields();
+}
+
+function upRphFields(){
+  var v=document.getElementById("lRphVerified");
+  if(!v)return;
+  var details=document.querySelectorAll("#lRphDetails");
+  for(var i=0;i<details.length;i++)details[i].style.display=v.value==="Yes"?"block":"none";
 }
 function upDF(){var v=document.getElementById("lDrugSel").value;document.getElementById("lDrugCW").style.display=v==="__other__"?"block":"none";}
 function upLF(){var s=document.getElementById("lSr").value,show=s==="Human";document.getElementById("lTmW").style.display=show?"block":"none";document.getElementById("lWhW").style.display=show?"block":"none";}
@@ -362,7 +633,26 @@ function subLog(){
   if(!date){alert("Please select a date.");return;}
   var ds=document.getElementById("lDrugSel").value;
   var drug=ds==="__other__"?document.getElementById("lDrug").value.trim():ds;
-  var row={};row.id=mkId();row.date=date;row.week=getWk(date);row.errorType=document.getElementById("lTy").value;row.source=src;row.team=src==="Human"?document.getElementById("lTm").value:"";row.who=src==="Human"?document.getElementById("lWh").value:"";row.faxErx=document.getElementById("lFx").value;row.drug=drug;row.rxNum=document.getElementById("lRx").value.trim();row.notes=document.getElementById("lNt").value;
+  var rphVerified=document.getElementById("lRphVerified").value||"No";
+  var rphCount="";var rphNames=[];
+  if(rphVerified==="Yes"){
+    var cEl=document.getElementById("lRphCount");
+    rphCount=cEl?cEl.value.trim():"";
+    rphNames=getLogRphs();
+  }
+  var row={};
+  row.id=mkId();row.date=date;row.week=getWk(date);
+  row.errorType=document.getElementById("lTy").value;
+  row.source=src;
+  row.team=src==="Human"?document.getElementById("lTm").value:"";
+  row.who=src==="Human"?document.getElementById("lWh").value:"";
+  row.faxErx=document.getElementById("lFx").value;
+  row.drug=drug;
+  row.rxNum=document.getElementById("lRx").value.trim();
+  row.notes=document.getElementById("lNt").value;
+  row.rphVerified=rphVerified;
+  row.rphCount=rphCount;
+  row.rphNames=rphNames;
   D.unshift(row);save();upHdr();rLog();alert("Error logged successfully.");
 }
 
@@ -393,6 +683,28 @@ function impBulk(){
 }
 
 // ── Edit Modal ─────────────────────────────────────────────────────────────
+function upEditRphFields(){
+  var v=document.getElementById("eRphVerified").value;
+  var show=v==="Yes";
+  document.getElementById("eRphCountW").style.display=show?"block":"none";
+  document.getElementById("eRphNamesW").style.display=show?"block":"none";
+}
+function addEditRph(){
+  var sel=document.getElementById("eRphSel");
+  var val=sel.value.trim();if(!val)return;
+  var existing=document.querySelectorAll(".erph-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  document.getElementById("eRphTags").appendChild(tag);
+  sel.value="";
+}
+function getEditRphs(){
+  var tags=document.querySelectorAll(".erph-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
 function openEdit(id){
   var e=null;for(var i=0;i<D.length;i++)if(D[i].id===id){e=D[i];break;}
   if(!e)return;editId=id;
@@ -405,6 +717,21 @@ function openEdit(id){
   document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
   document.getElementById("eRx").value=e.rxNum||"";
   document.getElementById("eNt").value=e.notes||"";
+  // RPH fields
+  document.getElementById("eRphVerified").value=e.rphVerified||"";
+  document.getElementById("eRphCount").value=e.rphCount||"";
+  document.getElementById("eRphSel").innerHTML=rphOpts();
+  // Clear and repopulate rph tags
+  var tagsBox=document.getElementById("eRphTags");tagsBox.innerHTML="";
+  if(e.rphNames&&e.rphNames.length){
+    for(var ri=0;ri<e.rphNames.length;ri++){
+      var tag=document.createElement("span");
+      tag.className="rph-tag erph-tag";tag.dataset.name=e.rphNames[ri];
+      tag.innerHTML=e.rphNames[ri]+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+      tagsBox.appendChild(tag);
+    }
+  }
+  upEditRphFields();
   var show=(e.source||"Human")==="Human";
   document.getElementById("eTmW").style.display=show?"block":"none";
   document.getElementById("eWhW").style.display=show?"block":"none";
@@ -418,7 +745,26 @@ function saveEdit(){
   var src=document.getElementById("eSr").value,date=document.getElementById("eDt").value;
   var ds=document.getElementById("eDrug").value;
   var drug=ds==="__other__"?(prompt("Enter drug name:",""))||"":ds;
-  for(var i=0;i<D.length;i++){if(D[i].id===editId){D[i].date=date;D[i].week=getWk(date);D[i].errorType=document.getElementById("eTy").value;D[i].source=src;D[i].team=src==="Human"?document.getElementById("eTm").value:"";D[i].who=src==="Human"?document.getElementById("eWh").value:"";D[i].faxErx=document.getElementById("eFx").value;D[i].drug=drug;D[i].rxNum=document.getElementById("eRx").value.trim();D[i].notes=document.getElementById("eNt").value;break;}}
+  var rphVerified=document.getElementById("eRphVerified").value||"";
+  var rphCount=rphVerified==="Yes"?(document.getElementById("eRphCount").value||""):"";
+  var rphNames=rphVerified==="Yes"?getEditRphs():[];
+  for(var i=0;i<D.length;i++){
+    if(D[i].id===editId){
+      D[i].date=date;D[i].week=getWk(date);
+      D[i].errorType=document.getElementById("eTy").value;
+      D[i].source=src;
+      D[i].team=src==="Human"?document.getElementById("eTm").value:"";
+      D[i].who=src==="Human"?document.getElementById("eWh").value:"";
+      D[i].faxErx=document.getElementById("eFx").value;
+      D[i].drug=drug;
+      D[i].rxNum=document.getElementById("eRx").value.trim();
+      D[i].notes=document.getElementById("eNt").value;
+      D[i].rphVerified=rphVerified;
+      D[i].rphCount=rphCount;
+      D[i].rphNames=rphNames;
+      break;
+    }
+  }
   save();closeEdit();rEntries();
 }
 
@@ -430,8 +776,18 @@ function rEntries(){
   var ftO='<option'+(eFT==="All"?" selected":"")+'>All</option>';for(var ei2=0;ei2<ET.length;ei2++)ftO+='<option'+(eFT===ET[ei2]?" selected":"")+'>'+ET[ei2]+'</option>';
   var fsO='<option'+(eFS==="All"?" selected":"")+'>All</option>';for(var si2=0;si2<SR.length;si2++)fsO+='<option'+(eFS===SR[si2]?" selected":"")+'>'+SR[si2]+'</option>';
   var rows="",shown=fil.length>300?fil.slice(0,300):fil;
-  for(var ri=0;ri<shown.length;ri++){var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#f8fafc":"#fff");rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap"><button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;cursor:pointer;margin-right:3px">Edit</button>'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+'<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';}
-  sec.innerHTML='<div class="card fbar" style="margin-bottom:10px"><label style="font-size:11px;color:#64748b">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select><label style="font-size:11px;color:#64748b">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select><label style="font-size:11px;color:#64748b">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select><label style="font-size:11px;color:#64748b">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select><span style="font-size:11px;color:#94a3b8;margin-left:auto">'+fil.length+' entries</span></div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>Lead Initials</th><th>FB Date</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  for(var ri=0;ri<shown.length;ri++){var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#f8fafc":"#fff");
+    var rphBdg="—";
+    if(e2.rphVerified==="Yes"){
+      rphBdg='<span class="bdg" style="background:#dcfce7;color:#16a34a">✓ Yes</span>';
+      if(e2.rphCount)rphBdg+=' <span style="font-size:10px;color:#64748b">×'+e2.rphCount+'</span>';
+      if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#475569">'+e2.rphNames.join(", ")+'</span>';
+    } else if(e2.rphVerified==="No"){
+      rphBdg='<span class="bdg" style="background:#fee2e2;color:#dc2626">✗ No</span>';
+    }
+    rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap"><button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;cursor:pointer;margin-right:3px">Edit</button>'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+'<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';
+  }
+  sec.innerHTML='<div class="card fbar" style="margin-bottom:10px"><label style="font-size:11px;color:#64748b">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select><label style="font-size:11px;color:#64748b">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select><label style="font-size:11px;color:#64748b">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select><label style="font-size:11px;color:#64748b">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select><span style="font-size:11px;color:#94a3b8;margin-left:auto">'+fil.length+' entries</span></div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Lead Initials</th><th>FB Date</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
 function setIE(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rEntries();}}
 function clrI(id){delete FBI[id];save();upHdr();rEntries();}
