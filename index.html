@@ -230,11 +230,76 @@ function rStaff(){
   var rows=[];for(var k in stats)rows.push(stats[k]);rows.sort(function(a,b){return b.wk-a.wk||b.total-a.total;});
   var tBody="";for(var ri=0;ri<rows.length;ri++){var s=rows[ri],isTop=ri===0&&s.wk>0;tBody+='<tr style="background:'+(isTop?"#fff7ed":"")+'"><td style="font-weight:600">'+s.name+(isTop?' <span class="bdg" style="background:#f97316;color:#fff;font-size:9px">TOP THIS WEEK</span>':'')+'</td><td>'+bdg(s.team,TLC[s.team]||"#6366f1")+'</td><td style="text-align:center;font-weight:700;color:#f97316">'+s.wk+'</td><td style="text-align:center">'+s.total+'</td></tr>';}
   var sBoxes="";
-  for(var ti=0;ti<TM.length;ti++){var t=TM[ti],names=SM[t]||[];sBoxes+='<div class="sbx"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:6px">'+t+'</div>';for(var ni=0;ni<names.length;ni++){sBoxes+='<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0"><span style="color:#475569;font-size:12px">'+names[ni]+'</span><button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:9px;padding:1px 5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:4px;cursor:pointer">x</button></div>';}sBoxes+='</div>';}
-  sec.innerHTML='<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="sNm" placeholder="Full name" style="width:180px"><select id="sTm" style="width:130px">'+tmOpts("")+'</select><button class="btn" style="margin-top:0" onclick="addSt()">Add</button></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+sBoxes+'</div></div><div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div>';
+  for(var ti=0;ti<TM.length;ti++){
+    var t=TM[ti],names=SM[t]||[];
+    sBoxes+='<div class="sbx" style="min-width:200px"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:8px;font-size:12px">'+t+'</div>';
+    if(names.length===0){sBoxes+='<div style="color:#94a3b8;font-size:11px;padding:4px 0">No staff added</div>';}
+    for(var ni=0;ni<names.length;ni++){
+      sBoxes+='<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f1f5f9">'+
+        '<span style="flex:1;color:#475569;font-size:12px">'+names[ni]+'</span>'+
+        '<button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;border-radius:5px;cursor:pointer">Edit</button>'+
+        '<button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button>'+
+      '</div>';
+    }
+    sBoxes+='</div>';
+  }
+  sec.innerHTML=
+    '<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    '<input id="sNm" placeholder="Full name" style="width:200px">'+
+    '<select id="sTm" style="width:140px">'+tmOpts("")+'</select>'+
+    '<button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button>'+
+    '</div></div>'+
+    '<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Current Staff <span style="font-size:11px;color:#94a3b8;font-weight:400">(click Edit to rename or change team)</span></h3>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div></div>'+
+    '<div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div>'+
+    '<div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center">'+
+    '<div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%">'+
+    '<h3 style="font-size:16px;color:#1e293b;margin-bottom:16px">Edit Staff Member</h3>'+
+    '<label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name">'+
+    '<label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+    '<button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button>'+
+    '<button onclick="closeStaffEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>'+
+    '</div></div></div>';
 }
+
+var editStaffTeam=null, editStaffIdx=null;
+
+function editStaff(team, idx){
+  editStaffTeam=team; editStaffIdx=idx;
+  var name=(SM[team]||[])[idx]||"";
+  document.getElementById("editStaffName").value=name;
+  document.getElementById("editStaffTeam").value=team;
+  document.getElementById("editStaffModal").style.display="flex";
+}
+
+function saveStaffEdit(){
+  var newName=document.getElementById("editStaffName").value.trim();
+  var newTeam=document.getElementById("editStaffTeam").value;
+  if(!newName){alert("Please enter a name.");return;}
+  var oldName=(SM[editStaffTeam]||[])[editStaffIdx];
+  SM[editStaffTeam].splice(editStaffIdx,1);
+  if(!SM[newTeam])SM[newTeam]=[];
+  SM[newTeam].push(newName);
+  for(var i=0;i<D.length;i++){
+    if(D[i].who===oldName&&D[i].team===editStaffTeam){
+      D[i].who=newName;
+      D[i].team=newTeam;
+    }
+  }
+  save();closeStaffEdit();rStaff();
+}
+
+function closeStaffEdit(){
+  var m=document.getElementById("editStaffModal");
+  if(m)m.style.display="none";
+  editStaffTeam=null;editStaffIdx=null;
+}
+
 function addSt(){var n=document.getElementById("sNm").value.trim(),t=document.getElementById("sTm").value;if(!n)return;if(!SM[t])SM[t]=[];SM[t].push(n);save();document.getElementById("sNm").value="";rStaff();}
-function removeSt(team,idx){if(!confirm("Remove this staff member?"))return;SM[team].splice(idx,1);save();rStaff();}
+function removeSt(team,idx){if(!confirm("Delete "+((SM[team]||[])[idx]||"this staff member")+"? This cannot be undone."))return;SM[team].splice(idx,1);save();rStaff();}
 
 // ── Member View ────────────────────────────────────────────────────────────
 function rMember(){
