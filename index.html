@@ -3,82 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pharmacy Error Tracker</title>
+<title>Pharmacy Error Tracker — gifthealth</title>
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
-body{background:#f1f5f9;min-height:100vh;padding:16px}
+:root{
+  --purple:#440B39;--purple-xd:#2E0326;--beige:#FFF1EE;
+  --pink:#DC5AEE;--pink-lt:#F6AFFF;
+  --orange:#FF764D;--orange-lt:#FFC5B9;
+  --blue:#A9F5FF;--blue-lt:#EAFDFF;
+  --white:#FFFFFF;--text:#2E0326;--muted:#7c5c76;
+  --border:#e8d5e4;--page-bg:#FFF1EE;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Funnel Display',system-ui,sans-serif}
+body{background:var(--page-bg);min-height:100vh;padding:16px}
 .wrap{max-width:1200px;margin:0 auto}
-.hdr{background:#1e40af;border-radius:12px;padding:16px 24px;margin-bottom:14px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.hdr h1{font-size:20px;font-weight:800;margin:0}
-.hdr p{font-size:12px;opacity:.75;margin-top:2px}
+.hdr{background:linear-gradient(135deg,var(--purple-xd) 0%,var(--purple) 65%,#6b1a5e 100%);border-radius:14px;padding:18px 26px;margin-bottom:14px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;box-shadow:0 4px 24px rgba(68,11,57,.3)}
+.hdr h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.3px}
+.hdr .sub{font-size:11px;opacity:.7;margin-top:2px}
+.hdr .credit{font-size:10px;opacity:.5;margin-top:3px;font-weight:300}
 .hdr-r{text-align:right;font-size:12px;color:#fff}
-.big{font-size:22px;font-weight:800}
+.big{font-size:24px;font-weight:800}
 .nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.nav button{padding:7px 13px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#475569}
-.nav button.on{background:#4f46e5;color:#fff}
-.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px}
+.nav button{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);transition:all .15s;font-family:'Funnel Display',system-ui,sans-serif}
+.nav button:hover{border-color:var(--purple);color:var(--purple)}
+.nav button.on{background:var(--purple);color:#fff;border-color:var(--purple)}
+.card{background:var(--white);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(68,11,57,.06)}
 .kpi-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.kpi{background:#fff;border-radius:10px;padding:11px 14px;border-left:4px solid #6366f1;min-width:120px;flex-grow:1}
-.kpi .lb{font-size:10px;color:#94a3b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
-.kpi .vl{font-size:20px;font-weight:800;color:#1e293b}
-.kpi .sub{font-size:10px;color:#94a3b8;margin-top:1px}
+.kpi{background:var(--white);border-radius:12px;padding:12px 16px;border:1px solid var(--border);border-left:4px solid var(--purple);min-width:120px;flex-grow:1;box-shadow:0 1px 3px rgba(68,11,57,.05)}
+.kpi .lb{font-size:10px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.kpi .vl{font-size:20px;font-weight:800;color:var(--text)}
+.kpi .sub{font-size:10px;color:var(--muted);margin-top:1px}
 .sec{display:none}.sec.on{display:block}
-label.flb{display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:3px;margin-top:10px}
-input,select,textarea{width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;color:#1e293b;background:#f8fafc;box-sizing:border-box}
+label.flb{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:3px;margin-top:10px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:#fdf8fc;box-sizing:border-box;font-family:'Funnel Display',system-ui,sans-serif;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple)}
 textarea{resize:vertical}
-.btn{padding:9px 16px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px}
+.btn{padding:9px 18px;background:var(--purple);color:#fff;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;font-family:'Funnel Display',system-ui,sans-serif;transition:background .15s}
+.btn:hover{background:var(--purple-xd)}
 .btn-full{width:100%;display:block}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{padding:9px 10px;text-align:left;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;background:#1e40af}
-td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
-tr.alt td{background:#f8fafc}
-.bdg{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;display:inline-block;white-space:nowrap}
+th{padding:9px 12px;text-align:left;color:#fff;font-weight:700;font-size:11px;white-space:nowrap;background:var(--purple);text-transform:uppercase;letter-spacing:.4px}
+td{padding:8px 12px;border-bottom:1px solid #f3e8f1}
+tr.alt td{background:#fdf5fb}
+.bdg{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;display:inline-block;white-space:nowrap}
 .tbl-wrap{overflow-x:auto}
-.wk-btn{padding:5px 11px;border-radius:7px;border:1px solid #e2e8f0;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#374151;margin:2px}
-.wk-btn.on{background:#1e40af;color:#fff}
-.tfr td{background:#1e40af;color:#fff;font-weight:700;padding:8px 12px;text-align:center}
+.wk-btn{padding:5px 12px;border-radius:14px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);margin:2px;transition:all .15s;font-family:'Funnel Display',system-ui,sans-serif}
+.wk-btn.on{background:var(--purple);color:#fff;border-color:var(--purple)}
+.tfr td{background:var(--purple);color:#fff;font-weight:700;padding:8px 12px;text-align:center}
 .tfr td:first-child{text-align:left}
-.ii{width:46px;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;text-align:center;background:#fffbeb}
+.ii{width:46px;padding:3px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;text-align:center;background:#fffbeb}
 .fgrid{display:flex;gap:12px;flex-wrap:wrap}
 .fhalf{width:47%;min-width:180px}
 .fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 14px}
-.sbx{font-size:11px;background:#f1f5f9;border-radius:6px;padding:6px 10px;min-width:120px}
+.sbx{font-size:11px;background:#fdf5fb;border-radius:8px;padding:6px 10px;min-width:120px;border:1px solid var(--border)}
 .ch-wrap{position:relative;width:100%}
-.toggle-group{display:flex;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
-.tgl{padding:5px 14px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#475569}
-.tgl.on{background:#4f46e5;color:#fff}
-.alert-card{border-radius:10px;padding:12px 16px;margin-bottom:10px;border-left:4px solid #ef4444;background:#fff}
-.alert-card.warn{border-left-color:#f59e0b}
+.toggle-group{display:flex;border:1.5px solid var(--border);border-radius:20px;overflow:hidden}
+.tgl{padding:5px 16px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);font-family:'Funnel Display',system-ui,sans-serif}
+.tgl.on{background:var(--purple);color:#fff}
+.alert-card{border-radius:12px;padding:12px 16px;margin-bottom:10px;border-left:4px solid #ef4444;background:var(--white);border:1px solid var(--border);border-left:4px solid #ef4444}
+.alert-card.warn{border-left-color:var(--orange)}
 .alert-card.good{border-left-color:#10b981}
-.section-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto}
-.modal-box{background:#fff;border-radius:12px;padding:24px;max-width:560px;margin:40px auto}
-.admin-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9}
-.sync-bar{border-radius:8px;padding:10px 16px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;transition:background .3s}
-.sync-bar.synced{background:#1e40af;color:#fff}
-.sync-bar.saving{background:#f59e0b;color:#1a1a1a}
+.section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(46,3,38,.55);z-index:1000;overflow-y:auto}
+.modal-box{background:#fff;border-radius:16px;padding:26px;max-width:560px;margin:40px auto;box-shadow:0 8px 40px rgba(68,11,57,.2)}
+.admin-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3e8f1}
+.sync-bar{border-radius:10px;padding:10px 16px;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;transition:background .3s}
+.sync-bar.synced{background:var(--purple);color:#fff}
+.sync-bar.saving{background:var(--orange);color:#fff}
 .sync-bar.error{background:#ef4444;color:#fff}
-.sync-bar.loading{background:#6366f1;color:#fff}
+.sync-bar.loading{background:var(--purple-xd);color:#fff}
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
-.sync-dot.green{background:#4ade80}
-.sync-dot.yellow{background:#fef08a;animation:pulse .8s infinite}
+.sync-dot.green{background:var(--pink-lt)}
+.sync-dot.yellow{background:var(--orange-lt);animation:pulse .8s infinite}
 .sync-dot.red{background:#fca5a5}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .sync-actions{display:flex;gap:8px;align-items:center}
-.sync-btn{padding:4px 12px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer}
-.sync-btn:hover{background:rgba(255,255,255,.2)}
-.sync-bar.saving .sync-btn{border-color:rgba(0,0,0,.2);color:#1a1a1a}
-.rph-tag{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;margin:2px}
-.rph-tag button{background:none;border:none;cursor:pointer;color:#93c5fd;font-size:13px;line-height:1;padding:0}
-.rph-tag button:hover{color:#ef4444}
-.rph-box{min-height:36px;border:1px solid #e2e8f0;border-radius:7px;padding:4px 8px;background:#f8fafc;display:flex;flex-wrap:wrap;gap:4px;align-items:center;cursor:text}
+.sync-btn{padding:4px 13px;border:1.5px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Funnel Display',system-ui,sans-serif}
+.sync-btn:hover{background:rgba(255,255,255,.15)}
+.rph-tag{display:inline-flex;align-items:center;gap:4px;background:#f3e0f7;border:1px solid var(--pink-lt);color:var(--purple);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;margin:2px}
+.rph-tag button{background:none;border:none;cursor:pointer;color:var(--pink);font-size:13px;line-height:1;padding:0}
+.rph-box{min-height:36px;border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;background:#fdf8fc;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hdr">
-    <div><h1>Pharmacy Error Tracker</h1><p>Real-time intake error monitoring · Human · Bot · API</p></div>
+    <div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;opacity:.6;text-transform:uppercase;margin-bottom:4px">gifthealth</div>
+      <h1>Pharmacy Error Tracker</h1>
+      <div class="sub">Real-time intake error monitoring · Human · Bot · API</div>
+      <div class="credit">Created by Dom London</div>
+    </div>
     <div class="hdr-r"><div class="big" id="hTot">0</div><div id="hMode">This Week</div><div style="color:#fca5a5" id="hPnd">0 Pending</div></div>
   </div>
   <div id="syncBar" class="sync-bar loading">
@@ -101,7 +117,7 @@ tr.alt td{background:#f8fafc}
   <div id="sec-admin" class="sec"></div>
   <div id="editModal" class="modal-bg">
     <div class="modal-box">
-      <h3 style="font-size:16px;color:#1e293b;margin-bottom:16px">Edit Error Entry</h3>
+      <h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Error Entry</h3>
       <div class="fgrid">
         <div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="eDt"></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="eTy"></select></div>
@@ -167,7 +183,7 @@ tr.alt td{background:#f8fafc}
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn btn-full" onclick="saveEdit()">Save Changes</button>
-        <button onclick="closeEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>
+        <button onclick="closeEdit()" style="padding:9px 16px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>
       </div>
     </div>
   </div>
@@ -182,8 +198,8 @@ var BIN_URL="https://api.jsonbin.io/v3/b/"+BIN_ID;
 var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Prescriber","Wrong Quantity","Wrong Quick Sig","Entered Under Wrong PT","Self Prescribed","Wrong Written Date","Wrong Patient"];
 var TM=["Intake","PCR 3","TLAC","Ups","RPH"];
 var SR=["Human","Bot","API"];
-var TC=["#6366f1","#f59e0b","#10b981","#ef4444","#3b82f6","#ec4899","#8b5cf6","#14b8a6","#f97316","#64748b","#a855f7"];
-var TLC={Intake:"#6366f1","PCR 3":"#f59e0b",TLAC:"#10b981",Ups:"#ef4444",RPH:"#3b82f6",Bot:"#8b5cf6",API:"#ec4899"};
+var TC=["#440B39","#FF764D","#DC5AEE","#A9F5FF","#FFC5B9","#F6AFFF","#10b981","#2E0326","#ef4444","#7c5c76","#f59e0b"];
+var TLC={Intake:"#440B39","PCR 3":"#FF764D",TLAC:"#10b981",Ups:"#DC5AEE",RPH:"#A9F5FF",Bot:"#F6AFFF",API:"#FFC5B9"};
 var SM={Intake:[],"PCR 3":[],TLAC:[],Ups:[],RPH:[]};
 var FX=["New Erx","Refill Response","Fax","Verbal","Transfer"];
 var DRUGS=["Metformin 500mg","Metformin 1000mg","Lisinopril 10mg","Ozempic 0.5mg","Ozempic 1mg","Ozempic 2mg","Mounjaro 5mg","Mounjaro 10mg","Wegovy 1.7mg","Semaglutide 7.5mg","Humira 40mg","Lantus 100u","Jardiance 10mg","Tirzepatide 7.5mg"];
@@ -191,7 +207,7 @@ var idS=Date.now();
 function mkId(){return idS++;}
 function fmtD(d){var m=d.getMonth()+1,dy=d.getDate();return d.getFullYear()+"-"+(m<10?"0"+m:m)+"-"+(dy<10?"0"+dy:dy);}
 function getWk(ds){try{var d=new Date(ds),j=new Date(d.getFullYear(),0,1);return Math.ceil(((d-j)/86400000+j.getDay()+1)/7);}catch(e){return 1;}}
-function tyC(t){var i=ET.indexOf(t);return i>=0?TC[i]:"#6366f1";}
+function tyC(t){var i=ET.indexOf(t);return i>=0?TC[i]:"#440B39";}
 function bdg(txt,col){return'<span class="bdg" style="background:'+col+'33;color:'+col+'">'+txt+'</span>';}
 function allWks(){var w={};for(var i=0;i<D.length;i++)w[D[i].week]=1;return Object.keys(w).map(Number).sort(function(a,b){return a-b;});}
 function tmOpts(sel){var h="";for(var i=0;i<TM.length;i++)h+='<option'+(TM[i]===sel?" selected":"")+'>'+TM[i]+'</option>';return h;}
@@ -327,23 +343,23 @@ function rDash(){
   var prev=dashMode==="daily"?D.filter(function(e){var yd=new Date(today);yd.setDate(today.getDate()-1);return e.date===fmtD(yd);}):dashMode==="weekly"?D.filter(function(e){return e.week===thisWk-1;}):[];
   var delta=sub.length-prev.length;
   var dStr=delta===0?"Same as last "+(dashMode==="daily"?"day":"week"):delta>0?"+"+delta+" vs last "+(dashMode==="daily"?"day":"week"):delta+" vs last "+(dashMode==="daily"?"day":"week");
-  var dCol=delta>0?"#ef4444":delta<0?"#10b981":"#94a3b8";
+  var dCol=delta>0?"#ef4444":delta<0?"#10b981":"#7c5c76";
   var alerts="";
-  if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
-  if(topTM!=="None"&&topTV>=4)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">TEAM ALERT</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+topTM+'</strong> leading with <strong>'+topTV+'</strong> errors</div></div>';
-  if(rphErrors>=3)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">RPH ERRORS</div><div style="font-size:13px;color:#1e293b;margin-top:2px"><strong>'+rphErrors+'</strong> errors logged from the RPH team — review needed</div></div>';
-  if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#1e293b;margin-top:2px">No critical thresholds exceeded.</div></div>';
+  if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
+  if(topTM!=="None"&&topTV>=4)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">TEAM ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topTM+'</strong> leading with <strong>'+topTV+'</strong> errors</div></div>';
+  if(rphErrors>=3)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">RPH ERRORS</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+rphErrors+'</strong> errors logged from the RPH team — review needed</div></div>';
+  if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#2E0326;margin-top:2px">No critical thresholds exceeded.</div></div>';
   var kpis=[
-    {l:"Total Errors",v:sub.length,c:"#6366f1",s:dStr,sc:dCol},
-    {l:"Human",v:human,c:"#3b82f6",s:Math.round(sub.length?human/sub.length*100:0)+"% of total",sc:"#94a3b8"},
-    {l:"Bot",v:bot,c:"#8b5cf6",s:Math.round(sub.length?bot/sub.length*100:0)+"% of total",sc:"#94a3b8"},
-    {l:"API",v:api,c:"#ec4899",s:Math.round(sub.length?api/sub.length*100:0)+"% of total",sc:"#94a3b8"},
+    {l:"Total Errors",v:sub.length,c:"#440B39",s:dStr,sc:dCol},
+    {l:"Human",v:human,c:"#3b82f6",s:Math.round(sub.length?human/sub.length*100:0)+"% of total",sc:"#7c5c76"},
+    {l:"Bot",v:bot,c:"#8b5cf6",s:Math.round(sub.length?bot/sub.length*100:0)+"% of total",sc:"#7c5c76"},
+    {l:"API",v:api,c:"#ec4899",s:Math.round(sub.length?api/sub.length*100:0)+"% of total",sc:"#7c5c76"},
     {l:"⚠ Dispensed w/ Error",v:rphVerifiedCount,c:"#ef4444",s:rphPct+"% of errors slipped through",sc:rphVerifiedCount>0?"#ef4444":"#10b981"},
     {l:"✅ Good Catches",v:rphGoodCount,c:"#10b981",s:"RPH caught before dispensing",sc:"#10b981"},
-    {l:"RPH Team Errors",v:rphErrors,c:"#f97316",s:"errors from RPH team",sc:"#94a3b8"},
-    {l:"Top Error",v:topEV>0?topET:"None",c:"#ef4444",s:topEV>0?topEV+" occurrences":"",sc:"#94a3b8",sm:true},
-    {l:"Top Team",v:topTM,c:TLC[topTM]||"#64748b",s:topTV>0?topTV+" errors":"",sc:"#94a3b8",sm:true},
-    {l:"Top Staff",v:topST,c:"#f97316",s:topSV>0?topSV+" errors":"",sc:"#94a3b8",sm:true}
+    {l:"RPH Team Errors",v:rphErrors,c:"#f97316",s:"errors from RPH team",sc:"#7c5c76"},
+    {l:"Top Error",v:topEV>0?topET:"None",c:"#ef4444",s:topEV>0?topEV+" occurrences":"",sc:"#7c5c76",sm:true},
+    {l:"Top Team",v:topTM,c:TLC[topTM]||"#7c5c76",s:topTV>0?topTV+" errors":"",sc:"#7c5c76",sm:true},
+    {l:"Top Staff",v:topST,c:"#f97316",s:topSV>0?topSV+" errors":"",sc:"#7c5c76",sm:true}
   ];
   var kh="";for(var ki=0;ki<kpis.length;ki++)kh+='<div class="kpi" style="border-left-color:'+kpis[ki].c+'"><div class="lb">'+kpis[ki].l+'</div><div class="vl" style="font-size:'+(kpis[ki].sm?13:20)+'px;line-height:1.2">'+kpis[ki].v+'</div>'+(kpis[ki].s?'<div class="sub" style="color:'+kpis[ki].sc+'">'+kpis[ki].s+'</div>':'')+'</div>';
   var tD=[];for(var j=0;j<ET.length;j++)tD.push(sub.filter(function(e){return e.errorType===ET[j];}).length);
@@ -355,12 +371,12 @@ function rDash(){
   var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";
   var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
   sec.innerHTML=
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#1e293b">Overview</h2>'+tog+'</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#2E0326">Overview</h2>'+tog+'</div>'+
     '<div class="kpi-row">'+kh+'</div>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-ty"></canvas></div></div>'+
-      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-tm"></canvas></div></div>'+
-      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">RPH Verification <span style="font-size:10px;color:#94a3b8;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-rph"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-ty"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-tm"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">RPH Verification <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-rph"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">Daily Errors This Week</div><div class="ch-wrap" style="height:220px"><canvas id="ch-day"></canvas></div></div>'+
     '</div>'+
     '<div><div class="section-title">Alerts &amp; Insights</div>'+alerts+'</div>';
@@ -370,8 +386,8 @@ function rDash(){
   var rphNoData=sub.filter(function(e){return e.goodCatch!=="Yes"&&e.dispensedWithError!=="Yes"&&e.rphVerified!=="dispensed_with_error"&&e.rphVerified!=="good_catch";}).length;
   var rphGoodDash=sub.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length;
   var rphBadDash=sub.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";}).length;
-  charts["ch-rph"]=new Chart(document.getElementById("ch-rph"),{type:"doughnut",data:{labels:["⚠ Dispensed w/ Error","✅ Good Catch","❌ Not Verified / No RPH"],datasets:[{data:[rphBadDash,rphGoodDash,rphNoData],backgroundColor:["#ef4444","#10b981","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
-  dChart("ch-day");charts["ch-day"]=new Chart(document.getElementById("ch-day"),{type:"bar",data:{labels:days,datasets:[{label:"Errors",data:dayData,backgroundColor:"#6366f1",borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+  charts["ch-rph"]=new Chart(document.getElementById("ch-rph"),{type:"doughnut",data:{labels:["⚠ Dispensed w/ Error","✅ Good Catch","❌ Not Verified / No RPH"],datasets:[{data:[rphBadDash,rphGoodDash,rphNoData],backgroundColor:["#ef4444","#10b981","#7c5c76"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  dChart("ch-day");charts["ch-day"]=new Chart(document.getElementById("ch-day"),{type:"bar",data:{labels:days,datasets:[{label:"Errors",data:dayData,backgroundColor:"#440B39",borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:10}},beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
 }
 
 // ── RPH Report ─────────────────────────────────────────────────────────────
@@ -382,12 +398,12 @@ function rRph(){
   var wks=allWks();
   if(!rphSelWk||wks.indexOf(rphSelWk)<0) rphSelWk=wks.length>0?wks[wks.length-1]:thisWk;
 
-  var wkBtns='<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="font-size:11px;font-weight:700;color:#475569;margin-right:6px">Week:</span>';
+  var wkBtns='<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="font-size:11px;font-weight:700;color:#7c5c76;margin-right:6px">Week:</span>';
   for(var wbi2=0;wbi2<wks.length;wbi2++){wkBtns+='<button class="wk-btn'+(wks[wbi2]===rphSelWk?" on":"")+'" onclick="rphSelWk='+wks[wbi2]+';rRph()">Wk '+wks[wbi2]+(wks[wbi2]===thisWk?' ★':'')+'</button>';}
-  if(wks.length===0)wkBtns+='<span style="font-size:11px;color:#94a3b8">No data yet</span>';
+  if(wks.length===0)wkBtns+='<span style="font-size:11px;color:#7c5c76">No data yet</span>';
   wkBtns+='</div>';
 
-  var wkD=D.filter(function(e){return e.week===rphSelWk;});
+  var wkD=D.filter(function(e){return Number(e.week)===Number(rphSelWk);});
   var total=wkD.length;
   var dispensed=wkD.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";});
   var goodCatch=wkD.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";});
@@ -433,15 +449,15 @@ function rRph(){
   var kh=
     '<div class="kpi" style="border-left-color:#ef4444"><div class="lb">⚠ Dispensed w/ Error</div><div class="vl" style="color:#ef4444">'+dispensed.length+'</div><div class="sub" style="color:'+(dispensedPct>0?"#ef4444":"#10b981")+'">'+dispensedPct+'% of week\'s errors</div></div>'+
     '<div class="kpi" style="border-left-color:#10b981"><div class="lb">✅ Good Catches</div><div class="vl" style="color:#10b981">'+goodCatch.length+'</div><div class="sub" style="color:#10b981">'+catchPct+'% caught before dispensing</div></div>'+
-    '<div class="kpi" style="border-left-color:#3b82f6"><div class="lb">RPH Checks</div><div class="vl">'+totalChecks+'</div><div class="sub" style="color:#94a3b8">total verifications this week</div></div>'+
-    '<div class="kpi" style="border-left-color:#f97316"><div class="lb">RPH Team Errors</div><div class="vl">'+rphTeamErrors.length+'</div><div class="sub" style="color:#94a3b8">errors by RPH team</div></div>'+
+    '<div class="kpi" style="border-left-color:#3b82f6"><div class="lb">RPH Checks</div><div class="vl">'+totalChecks+'</div><div class="sub" style="color:#7c5c76">total verifications this week</div></div>'+
+    '<div class="kpi" style="border-left-color:#f97316"><div class="lb">RPH Team Errors</div><div class="vl">'+rphTeamErrors.length+'</div><div class="sub" style="color:#7c5c76">errors by RPH team</div></div>'+
     (topCatcher?'<div class="kpi" style="border-left-color:#f59e0b;background:#fffbeb"><div class="lb">🏆 Top Catcher</div><div class="vl" style="font-size:13px;color:#92400e">'+topCatcher+'</div><div class="sub" style="color:#b45309">'+topCatchCount+' good catch'+(topCatchCount!==1?"es":"")+'</div></div>':"");
 
   var rphRows="";
   var rphNames2=Object.keys(rphStats);
   rphNames2.sort(function(a,b){return rphStats[b].goodCatch-rphStats[a].goodCatch||rphStats[a].dispensed-rphStats[b].dispensed;});
   if(rphNames2.length===0){
-    rphRows='<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:20px">No RPH verification data for this week.</td></tr>';
+    rphRows='<tr><td colspan="4" style="text-align:center;color:#7c5c76;padding:20px">No RPH verification data for this week.</td></tr>';
   } else {
     for(var rni=0;rni<rphNames2.length;rni++){
       var nm=rphNames2[rni],st=rphStats[nm];
@@ -450,7 +466,7 @@ function rRph(){
         '<td style="font-weight:700">'+(isTop?'🏆 ':'')+nm+(isTop?' <span class="bdg" style="background:#f59e0b;color:#fff;font-size:9px">TOP CATCHER</span>':'')+'</td>'+
         '<td style="text-align:center;font-weight:700;color:#10b981">'+st.goodCatch+'</td>'+
         '<td style="text-align:center;font-weight:700;color:#ef4444">'+st.dispensed+'</td>'+
-        '<td style="text-align:center;color:#64748b">'+st.checks+'</td>'+
+        '<td style="text-align:center;color:#7c5c76">'+st.checks+'</td>'+
       '</tr>';
     }
   }
@@ -467,27 +483,47 @@ function rRph(){
         '<td>'+(de.who||"—")+'</td>'+
         '<td>'+(de.rphNames&&de.rphNames.length?de.rphNames.join(", "):"—")+'</td>'+
         '<td>'+(de.rphCount||"—")+'</td>'+
-        '<td style="color:#64748b">'+(de.drug||"—")+'</td>'+
-        '<td style="color:#374151">'+(de.rxNum||"—")+'</td>'+
+        '<td style="color:#7c5c76">'+(de.drug||"—")+'</td>'+
+        '<td style="color:#2E0326">'+(de.rxNum||"—")+'</td>'+
       '</tr>';
     }
   }
 
   var rphErrRows="";
   if(rphTeamErrors.length===0){
-    rphErrRows='<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No RPH team errors this week.</td></tr>';
+    rphErrRows='<tr><td colspan="5" style="text-align:center;color:#7c5c76;padding:20px">No RPH team errors this week.</td></tr>';
   } else {
     for(var rei=0;rei<rphTeamErrors.length;rei++){
       var re=rphTeamErrors[rei],tc2=tyC(re.errorType);
-      rphErrRows+='<tr'+(rei%2===0?' class="alt"':'')+'><td style="white-space:nowrap">'+re.date+'</td><td>'+bdg(re.errorType,tc2)+'</td><td>'+(re.who||"—")+'</td><td style="color:#64748b">'+(re.drug||"—")+'</td><td style="color:#374151">'+(re.rxNum||"—")+'</td></tr>';
+      rphErrRows+='<tr'+(rei%2===0?' class="alt"':'')+'><td style="white-space:nowrap">'+re.date+'</td><td>'+bdg(re.errorType,tc2)+'</td><td>'+(re.who||"—")+'</td><td style="color:#7c5c76">'+(re.drug||"—")+'</td><td style="color:#2E0326">'+(re.rxNum||"—")+'</td></tr>';
     }
   }
 
+  // ── Debug panel — shows raw field values for this week's entries ──
   var rphEtLabels=[],rphEtData=[];
   for(var et2 in rphEtC){rphEtLabels.push(et2.length>14?et2.slice(0,13)+"...":et2);rphEtData.push(rphEtC[et2]);}
 
+  var debugRows="";
+  for(var dbi=0;dbi<wkD.length&&dbi<10;dbi++){
+    var de2=wkD[dbi];
+    debugRows+='<tr style="font-size:10px">'+
+      '<td style="white-space:nowrap">'+de2.date+'</td>'+
+      '<td style="color:#7c5c76;max-width:120px;overflow:hidden;text-overflow:ellipsis">'+de2.errorType+'</td>'+
+      '<td style="color:'+(de2.goodCatch==="Yes"?"#16a34a":"#7c5c76")+'">'+JSON.stringify(de2.goodCatch||"—")+'</td>'+
+      '<td style="color:#7c5c76">'+JSON.stringify(de2.gcWho||"—")+'</td>'+
+      '<td style="color:'+(de2.dispensedWithError==="Yes"?"#dc2626":"#7c5c76")+'">'+JSON.stringify(de2.dispensedWithError||"—")+'</td>'+
+      '<td style="color:#7c5c76">'+JSON.stringify(de2.rphVerified||"—")+'</td>'+
+      '<td style="color:#7c5c76">'+JSON.stringify(de2.rphNames||[])+'</td>'+
+    '</tr>';
+  }
+  var debugPanel='<details style="margin-bottom:12px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:#440B39;padding:8px 12px;background:#eef2ff;border-radius:8px">🔍 Debug — Raw Field Values (Week '+rphSelWk+', first 10 entries)</summary>'+
+    '<div class="tbl-wrap" style="margin-top:4px"><table><thead><tr><th>Date</th><th>Error Type</th><th>goodCatch</th><th>gcWho</th><th>dispensedWithError</th><th>rphVerified</th><th>rphNames</th></tr></thead><tbody>'+
+    (debugRows||'<tr><td colspan="7" style="text-align:center;color:#7c5c76;padding:12px">No entries for this week</td></tr>')+
+    '</tbody></table></div></details>';
+
   sec.innerHTML=
     wkBtns+
+    debugPanel+
     '<div class="kpi-row">'+kh+'</div>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div class="card" style="flex:1;min-width:220px;margin-bottom:0"><div class="section-title">Week '+rphSelWk+' Outcome Breakdown</div><div class="ch-wrap" style="height:210px"><canvas id="ch-rph2"></canvas></div></div>'+
@@ -495,20 +531,20 @@ function rRph(){
       (rphEtData.length>0?'<div class="card" style="flex:1;min-width:220px;margin-bottom:0"><div class="section-title">RPH Team Error Types — Wk '+rphSelWk+'</div><div class="ch-wrap" style="height:210px"><canvas id="ch-rphet"></canvas></div></div>':'')+
     '</div>'+
     '<div class="card" style="margin-bottom:12px">'+
-      '<h3 style="font-size:13px;margin-bottom:4px">RPH Member Breakdown — Week '+rphSelWk+' <span style="font-size:10px;color:#94a3b8;font-weight:400">sorted by most good catches</span></h3>'+
+      '<h3 style="font-size:13px;margin-bottom:4px">RPH Member Breakdown — Week '+rphSelWk+' <span style="font-size:10px;color:#7c5c76;font-weight:400">sorted by most good catches</span></h3>'+
       '<div class="tbl-wrap"><table><thead><tr><th>RPH Name</th><th style="text-align:center;background:#10b98199">✅ Good Catches</th><th style="text-align:center;background:#ef444499">⚠ Dispensed w/ Error</th><th style="text-align:center">Total Checks</th></tr></thead><tbody>'+rphRows+'</tbody></table></div>'+
     '</div>'+
     '<div class="card" style="margin-bottom:12px">'+
-      '<h3 style="font-size:13px;margin-bottom:4px;color:#dc2626">⚠ Dispensed WITH Error — Week '+rphSelWk+' <span style="font-size:10px;color:#94a3b8;font-weight:400">primary risk log</span></h3>'+
+      '<h3 style="font-size:13px;margin-bottom:4px;color:#dc2626">⚠ Dispensed WITH Error — Week '+rphSelWk+' <span style="font-size:10px;color:#7c5c76;font-weight:400">primary risk log</span></h3>'+
       '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Who Made Error</th><th>RPH(s)</th><th>Times</th><th>Drug</th><th>RX</th></tr></thead><tbody>'+dispensedRows+'</tbody></table></div>'+
     '</div>'+
     '<div class="card">'+
-      '<h3 style="font-size:13px;margin-bottom:12px">RPH Team Errors — Week '+rphSelWk+' <span style="font-size:10px;color:#94a3b8;font-weight:400">(errors where team = RPH)</span></h3>'+
+      '<h3 style="font-size:13px;margin-bottom:12px">RPH Team Errors — Week '+rphSelWk+' <span style="font-size:10px;color:#7c5c76;font-weight:400">(errors where team = RPH)</span></h3>'+
       '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Who</th><th>Drug</th><th>RX</th></tr></thead><tbody>'+rphErrRows+'</tbody></table></div>'+
     '</div>';
 
   dChart("ch-rph2");
-  charts["ch-rph2"]=new Chart(document.getElementById("ch-rph2"),{type:"doughnut",data:{labels:["⚠ Dispensed w/ Error","✅ Good Catch","No RPH Involvement"],datasets:[{data:[dispensed.length,goodCatch.length,notVerified.length],backgroundColor:["#ef4444","#10b981","#94a3b8"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  charts["ch-rph2"]=new Chart(document.getElementById("ch-rph2"),{type:"doughnut",data:{labels:["⚠ Dispensed w/ Error","✅ Good Catch","No RPH Involvement"],datasets:[{data:[dispensed.length,goodCatch.length,notVerified.length],backgroundColor:["#ef4444","#10b981","#7c5c76"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
 
   dChart("ch-rphwk");
   var wks4=allWks(),wlbs=[],wBad=[],wGood=[];
@@ -524,7 +560,7 @@ function rRph(){
 // ── Summary ────────────────────────────────────────────────────────────────
 function rSum(){
   var sec=document.getElementById("sec-summary");var wks=allWks();if(!selWk||wks.indexOf(selWk)<0)selWk=wks[wks.length-1];
-  if(!selWk){sec.innerHTML='<div class="card" style="text-align:center;color:#94a3b8;padding:40px">No data yet. Start logging errors!</div>';return;}
+  if(!selWk){sec.innerHTML='<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No data yet. Start logging errors!</div>';return;}
   var sM={},tM={};
   for(var wi=0;wi<wks.length;wi++){var w=wks[wi];sM[w]={};tM[w]={};for(var ei=0;ei<ET.length;ei++){sM[w][ET[ei]]={Human:0,Bot:0,API:0,Total:0};tM[w][ET[ei]]={Total:0};for(var ti=0;ti<TM.length;ti++)tM[w][ET[ei]][TM[ti]]=0;}}
   for(var di=0;di<D.length;di++){var e=D[di];if(sM[e.week]&&sM[e.week][e.errorType]){sM[e.week][e.errorType][e.source]++;sM[e.week][e.errorType].Total++;}if(e.source==="Human"&&tM[e.week]&&tM[e.week][e.errorType]&&TM.indexOf(e.team)>=0){tM[e.week][e.errorType][e.team]++;tM[e.week][e.errorType].Total++;}}
@@ -532,20 +568,20 @@ function rSum(){
   for(var tmi=0;tmi<TM.length;tmi++)tT[TM[tmi]]=0;
   for(var eti=0;eti<ET.length;eti++){var t=ET[eti];if(sR[t]){sT.Human+=sR[t].Human;sT.Bot+=sR[t].Bot;sT.API+=sR[t].API;sT.Total+=sR[t].Total;}if(tR[t]){for(var tmi2=0;tmi2<TM.length;tmi2++)tT[TM[tmi2]]+=tR[t][TM[tmi2]]||0;tT.Total+=tR[t].Total||0;}}
   var wB="";for(var wbi=0;wbi<wks.length;wbi++)wB+='<button class="wk-btn'+(wks[wbi]===selWk?" on":"")+'" onclick="selWk='+wks[wbi]+';rSum()">Week '+wks[wbi]+'</button>';
-  var sBody="";for(var si2=0;si2<ET.length;si2++){var sr=sR[ET[si2]]||{Human:0,Bot:0,API:0,Total:0};sBody+='<tr'+(si2%2===0?' class="alt"':'')+'><td>'+ET[si2]+'</td><td style="text-align:center">'+sr.Human+'</td><td style="text-align:center">'+sr.Bot+'</td><td style="text-align:center">'+sr.API+'</td><td style="text-align:center;font-weight:700;background:#1e40af22">'+sr.Total+'</td></tr>';}
+  var sBody="";for(var si2=0;si2<ET.length;si2++){var sr=sR[ET[si2]]||{Human:0,Bot:0,API:0,Total:0};sBody+='<tr'+(si2%2===0?' class="alt"':'')+'><td>'+ET[si2]+'</td><td style="text-align:center">'+sr.Human+'</td><td style="text-align:center">'+sr.Bot+'</td><td style="text-align:center">'+sr.API+'</td><td style="text-align:center;font-weight:700;background:#440B3922">'+sr.Total+'</td></tr>';}
   var tmH="",tmF="",tBody="";for(var thi=0;thi<TM.length;thi++){tmH+='<th>'+TM[thi]+'</th>';tmF+='<td>'+tT[TM[thi]]+'</td>';}
-  for(var tbi=0;tbi<ET.length;tbi++){var tr2=tR[ET[tbi]]||{};tBody+='<tr'+(tbi%2===0?' class="alt"':'')+'><td>'+ET[tbi]+'</td>';for(var tmi3=0;tmi3<TM.length;tmi3++)tBody+='<td style="text-align:center">'+(tr2[TM[tmi3]]||0)+'</td>';tBody+='<td style="text-align:center;font-weight:700;background:#1e40af22">'+(tr2.Total||0)+'</td></tr>';}
-  sec.innerHTML='<div class="card"><span style="font-size:13px;font-weight:700;color:#1e293b;margin-right:10px">Select Week:</span>'+wB+'</div><div class="card"><h3 style="font-size:14px;color:#1e293b;margin-bottom:12px">Week '+selWk+' — By Source</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th><th>Human</th><th>Bot</th><th>API</th><th>Total</th></tr></thead><tbody>'+sBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td><td>'+sT.Human+'</td><td>'+sT.Bot+'</td><td>'+sT.API+'</td><td>'+sT.Total+'</td></tr></tfoot></table></div></div><div class="card"><h3 style="font-size:14px;color:#1e293b;margin-bottom:12px">Week '+selWk+' — By Team</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th>'+tmH+'<th>Total</th></tr></thead><tbody>'+tBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td>'+tmF+'<td>'+tT.Total+'</td></tr></tfoot></table></div></div>';
+  for(var tbi=0;tbi<ET.length;tbi++){var tr2=tR[ET[tbi]]||{};tBody+='<tr'+(tbi%2===0?' class="alt"':'')+'><td>'+ET[tbi]+'</td>';for(var tmi3=0;tmi3<TM.length;tmi3++)tBody+='<td style="text-align:center">'+(tr2[TM[tmi3]]||0)+'</td>';tBody+='<td style="text-align:center;font-weight:700;background:#440B3922">'+(tr2.Total||0)+'</td></tr>';}
+  sec.innerHTML='<div class="card"><span style="font-size:13px;font-weight:700;color:#2E0326;margin-right:10px">Select Week:</span>'+wB+'</div><div class="card"><h3 style="font-size:14px;color:#2E0326;margin-bottom:12px">Week '+selWk+' — By Source</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th><th>Human</th><th>Bot</th><th>API</th><th>Total</th></tr></thead><tbody>'+sBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td><td>'+sT.Human+'</td><td>'+sT.Bot+'</td><td>'+sT.API+'</td><td>'+sT.Total+'</td></tr></tfoot></table></div></div><div class="card"><h3 style="font-size:14px;color:#2E0326;margin-bottom:12px">Week '+selWk+' — By Team</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th>'+tmH+'<th>Total</th></tr></thead><tbody>'+tBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td>'+tmF+'<td>'+tT.Total+'</td></tr></tfoot></table></div></div>';
 }
 
 // ── Trends ─────────────────────────────────────────────────────────────────
 function rTrend(){
   var sec=document.getElementById("sec-trends");
   sec.innerHTML=
-    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;color:#374151">Error Trend by Source</h3><div style="display:flex;gap:6px"><button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div>'+
+    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;color:#2E0326">Error Trend by Source</h3><div style="display:flex;gap:6px"><button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#374151;margin-bottom:10px">RPH Verification Over Time</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-rphtr"></canvas></div></div>'+
-      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h3 style="font-size:13px;color:#374151;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-di"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">RPH Verification Over Time</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-rphtr"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-di"></canvas></div></div>'+
     '</div>';
   // Source trend
   dChart("ch-tr");var lbs=[],hum=[],bot=[],api=[];
@@ -573,10 +609,10 @@ function rStaff(){
   var sec=document.getElementById("sec-staff"),stats={};
   for(var i=0;i<D.length;i++){var e=D[i];if(!e.who)continue;if(!stats[e.who])stats[e.who]={name:e.who,team:e.team,total:0,wk:0};stats[e.who].total++;if(e.week===thisWk)stats[e.who].wk++;}
   var rows=[];for(var k in stats)rows.push(stats[k]);rows.sort(function(a,b){return b.wk-a.wk||b.total-a.total;});
-  var tBody="";for(var ri=0;ri<rows.length;ri++){var s=rows[ri],isTop=ri===0&&s.wk>0;tBody+='<tr style="background:'+(isTop?"#fff7ed":"")+'"><td style="font-weight:600">'+s.name+(isTop?' <span class="bdg" style="background:#f97316;color:#fff;font-size:9px">TOP THIS WEEK</span>':'')+'</td><td>'+bdg(s.team,TLC[s.team]||"#6366f1")+'</td><td style="text-align:center;font-weight:700;color:#f97316">'+s.wk+'</td><td style="text-align:center">'+s.total+'</td></tr>';}
+  var tBody="";for(var ri=0;ri<rows.length;ri++){var s=rows[ri],isTop=ri===0&&s.wk>0;tBody+='<tr style="background:'+(isTop?"#fff7ed":"")+'"><td style="font-weight:600">'+s.name+(isTop?' <span class="bdg" style="background:#f97316;color:#fff;font-size:9px">TOP THIS WEEK</span>':'')+'</td><td>'+bdg(s.team,TLC[s.team]||"#440B39")+'</td><td style="text-align:center;font-weight:700;color:#f97316">'+s.wk+'</td><td style="text-align:center">'+s.total+'</td></tr>';}
   var sBoxes="";
-  for(var ti=0;ti<TM.length;ti++){var t=TM[ti],names=SM[t]||[];sBoxes+='<div class="sbx" style="min-width:200px"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:8px;font-size:12px">'+t+'</div>';if(names.length===0){sBoxes+='<div style="color:#94a3b8;font-size:11px;padding:4px 0">No staff added</div>';}for(var ni=0;ni<names.length;ni++){sBoxes+='<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f1f5f9"><span style="flex:1;color:#475569;font-size:12px">'+names[ni]+'</span><button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;border-radius:5px;cursor:pointer">Edit</button><button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button></div>';}sBoxes+='</div>';}
-  sec.innerHTML='<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="sNm" placeholder="Full name" style="width:200px"><select id="sTm" style="width:140px">'+tmOpts("")+'</select><button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button></div></div><div class="card"><h3 style="font-size:13px;margin-bottom:12px">Current Staff <span style="font-size:11px;color:#94a3b8;font-weight:400">(click Edit to rename or change team)</span></h3><div style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div></div><div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div><div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center"><div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%"><h3 style="font-size:16px;color:#1e293b;margin-bottom:16px">Edit Staff Member</h3><label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name"><label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select><div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button><button onclick="closeStaffEdit()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button></div></div></div>';
+  for(var ti=0;ti<TM.length;ti++){var t=TM[ti],names=SM[t]||[];sBoxes+='<div class="sbx" style="min-width:200px"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:8px;font-size:12px">'+t+'</div>';if(names.length===0){sBoxes+='<div style="color:#7c5c76;font-size:11px;padding:4px 0">No staff added</div>';}for(var ni=0;ni<names.length;ni++){sBoxes+='<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #FFF1EE"><span style="flex:1;color:#7c5c76;font-size:12px">'+names[ni]+'</span><button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;cursor:pointer">Edit</button><button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button></div>';}sBoxes+='</div>';}
+  sec.innerHTML='<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="sNm" placeholder="Full name" style="width:200px"><select id="sTm" style="width:140px">'+tmOpts("")+'</select><button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button></div></div><div class="card"><h3 style="font-size:13px;margin-bottom:12px">Current Staff <span style="font-size:11px;color:#7c5c76;font-weight:400">(click Edit to rename or change team)</span></h3><div style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div></div><div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div><div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center"><div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%"><h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Staff Member</h3><label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name"><label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select><div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button><button onclick="closeStaffEdit()" style="padding:9px 16px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button></div></div></div>';
 }
 var editStaffTeam=null,editStaffIdx=null;
 function editStaff(team,idx){editStaffTeam=team;editStaffIdx=idx;var name=(SM[team]||[])[idx]||"";document.getElementById("editStaffName").value=name;document.getElementById("editStaffTeam").value=team;document.getElementById("editStaffModal").style.display="flex";}
@@ -597,10 +633,10 @@ function rMember(){
   var whOpt='<option value="">All Members</option>';for(var wmi=0;wmi<mList.length;wmi++)whOpt+='<option'+(mvWho===mList[wmi]?" selected":"")+'>'+mList[wmi]+'</option>';
   var tyOpt='<option'+(mvTy==="All"?" selected":"")+'>All</option>';for(var tyi=0;tyi<ET.length;tyi++)tyOpt+='<option'+(mvTy===ET[tyi]?" selected":"")+'>'+ET[tyi]+'</option>';
   var wkOpt='<option value="All"'+(mvWk==="All"?" selected":"")+'>All Weeks</option>';for(var wki=0;wki<wks.length;wki++)wkOpt+='<option value="'+wks[wki]+'"'+(mvWk==wks[wki]?" selected":"")+'>Week '+wks[wki]+'</option>';
-  var kHtml='<div class="kpi" style="border-left-color:#6366f1;padding:10px 14px"><div class="lb">Total</div><div style="font-size:20px;font-weight:800;color:#1e293b">'+mv.length+'</div></div><div class="kpi" style="border-left-color:#ef4444;padding:10px 14px"><div class="lb">Top Error</div><div style="font-size:11px;font-weight:800;color:#1e293b;line-height:1.2">'+topE+'</div></div>';
-  var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#f8fafc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#94a3b8">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#6366f1"):"")+'</td><td style="color:#64748b">'+(me.faxErx||"—")+'</td><td style="color:#374151">'+(me.drug||"—")+'</td><td style="color:#374151">'+(me.rxNum||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b">'+(hi?hi.date:"—")+'</td></tr>';}
-  var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#1e293b">'+mv.length+'</div><div style="font-size:12px;color:#64748b">total errors</div></div></div></div>';
-  inner+=(mv.length>0?'<div class="kpi-row">'+kHtml+'</div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Wk</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>':'<div class="card" style="text-align:center;color:#94a3b8;padding:40px">No entries found.</div>');
+  var kHtml='<div class="kpi" style="border-left-color:#440B39;padding:10px 14px"><div class="lb">Total</div><div style="font-size:20px;font-weight:800;color:#2E0326">'+mv.length+'</div></div><div class="kpi" style="border-left-color:#ef4444;padding:10px 14px"><div class="lb">Top Error</div><div style="font-size:11px;font-weight:800;color:#2E0326;line-height:1.2">'+topE+'</div></div>';
+  var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#fdf8fc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#7c5c76">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#440B39"):"")+'</td><td style="color:#7c5c76">'+(me.faxErx||"—")+'</td><td style="color:#2E0326">'+(me.drug||"—")+'</td><td style="color:#2E0326">'+(me.rxNum||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#7c5c76">'+(hi?hi.date:"—")+'</td></tr>';}
+  var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div></div></div>';
+  inner+=(mv.length>0?'<div class="kpi-row">'+kHtml+'</div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Wk</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>':'<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No entries found.</div>');
   sec.innerHTML=inner;
 }
 function setI(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rMember();}}
@@ -683,7 +719,7 @@ function rLog(){
 
   document.getElementById("sec-log").innerHTML=
     '<div class="card" style="max-width:580px">'+
-    '<h3 style="font-size:15px;color:#1e293b;margin-bottom:16px">Log New Intake Error</h3>'+
+    '<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">Log New Intake Error</h3>'+
     '<div class="fgrid">'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
@@ -800,7 +836,7 @@ function subLog(){
 
 // ── Import ─────────────────────────────────────────────────────────────────
 function rImport(){
-  document.getElementById("sec-import").innerHTML='<div class="card" style="max-width:640px"><h3 style="font-size:15px;margin-bottom:6px">Import / Load Backup</h3><p style="font-size:12px;color:#64748b;margin-bottom:14px">Load a previously exported JSON backup file to restore data.</p><label class="flb" style="margin-top:0">Load JSON Export File</label><input type="file" accept=".json" id="jsonF" onchange="loadJSON(this)"><hr style="margin:20px 0;border:none;border-top:1px solid #e2e8f0"><h3 style="font-size:15px;margin-bottom:6px">Import via CSV</h3><p style="font-size:12px;color:#64748b;margin-bottom:14px">Columns: date, errorType, source, team, who, faxErx, drug, rxNum, notes</p><label class="flb" style="margin-top:0">Upload CSV File</label><input type="file" accept=".csv" id="csvF" onchange="loadCSVF(this)"><label class="flb">Or Paste Rows</label><textarea id="blkT" rows="6" placeholder="Paste CSV rows here..." style="font-family:monospace;font-size:11px"></textarea><div id="blkM" style="font-size:12px;color:#10b981;font-weight:600;margin:6px 0"></div><button class="btn btn-full" onclick="impBulk()">Import CSV Rows</button></div>';
+  document.getElementById("sec-import").innerHTML='<div class="card" style="max-width:640px"><h3 style="font-size:15px;margin-bottom:6px">Import / Load Backup</h3><p style="font-size:12px;color:#7c5c76;margin-bottom:14px">Load a previously exported JSON backup file to restore data.</p><label class="flb" style="margin-top:0">Load JSON Export File</label><input type="file" accept=".json" id="jsonF" onchange="loadJSON(this)"><hr style="margin:20px 0;border:none;border-top:1px solid #e8d5e4"><h3 style="font-size:15px;margin-bottom:6px">Import via CSV</h3><p style="font-size:12px;color:#7c5c76;margin-bottom:14px">Columns: date, errorType, source, team, who, faxErx, drug, rxNum, notes</p><label class="flb" style="margin-top:0">Upload CSV File</label><input type="file" accept=".csv" id="csvF" onchange="loadCSVF(this)"><label class="flb">Or Paste Rows</label><textarea id="blkT" rows="6" placeholder="Paste CSV rows here..." style="font-family:monospace;font-size:11px"></textarea><div id="blkM" style="font-size:12px;color:#10b981;font-weight:600;margin:6px 0"></div><button class="btn btn-full" onclick="impBulk()">Import CSV Rows</button></div>';
 }
 function loadJSON(input){
   var f=input.files[0];if(!f)return;
@@ -949,19 +985,19 @@ function rEntries(){
   var ftO='<option'+(eFT==="All"?" selected":"")+'>All</option>';for(var ei2=0;ei2<ET.length;ei2++)ftO+='<option'+(eFT===ET[ei2]?" selected":"")+'>'+ET[ei2]+'</option>';
   var fsO='<option'+(eFS==="All"?" selected":"")+'>All</option>';for(var si2=0;si2<SR.length;si2++)fsO+='<option'+(eFS===SR[si2]?" selected":"")+'>'+SR[si2]+'</option>';
   var rows="",shown=fil.length>300?fil.slice(0,300):fil;
-  for(var ri=0;ri<shown.length;ri++){var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#f8fafc":"#fff");
+  for(var ri=0;ri<shown.length;ri++){var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#fdf8fc":"#fff");
     var rphBdg="";
     if(e2.goodCatch==="Yes"){
       rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ '+( e2.gcWho||e2.gcTeam||"Good Catch")+'</span> ';
     }
     if(e2.dispensedWithError==="Yes"||e2.rphVerified==="dispensed_with_error"){
       rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed</span>';
-      if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#475569">'+e2.rphNames.join(", ")+'</span>';
+      if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">'+e2.rphNames.join(", ")+'</span>';
     }
     if(!rphBdg)rphBdg='<span style="color:#cbd5e1;font-size:11px">—</span>';
-    rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap"><button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;cursor:pointer;margin-right:3px">Edit</button>'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+'<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';
+    rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#440B39")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"—")+'</td><td style="color:#2E0326">'+(e2.drug||"—")+'</td><td style="color:#2E0326">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"—")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap"><button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+'<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';
   }
-  sec.innerHTML='<div class="card fbar" style="margin-bottom:10px"><label style="font-size:11px;color:#64748b">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select><label style="font-size:11px;color:#64748b">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select><label style="font-size:11px;color:#64748b">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select><label style="font-size:11px;color:#64748b">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select><span style="font-size:11px;color:#94a3b8;margin-left:auto">'+fil.length+' entries</span></div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Lead Initials</th><th>FB Date</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  sec.innerHTML='<div class="card fbar" style="margin-bottom:10px"><label style="font-size:11px;color:#7c5c76">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select><label style="font-size:11px;color:#7c5c76">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select><label style="font-size:11px;color:#7c5c76">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select><label style="font-size:11px;color:#7c5c76">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select><span style="font-size:11px;color:#7c5c76;margin-left:auto">'+fil.length+' entries</span></div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Lead Initials</th><th>FB Date</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
 function setIE(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rEntries();}}
 function clrI(id){delete FBI[id];save();upHdr();rEntries();}
@@ -971,13 +1007,13 @@ function delE(id){if(!confirm("Delete this entry?"))return;var nl=[];for(var i=0
 function rAdmin(){
   var sec=document.getElementById("sec-admin");
   var etList=ET.map(function(t,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+t+'</span><button onclick="removeET('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-  var tmList=TM.map(function(t,i){return'<div class="admin-item"><span style="flex:1">'+bdg(t,TLC[t]||"#6366f1")+'</span><button onclick="removeTM('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
+  var tmList=TM.map(function(t,i){return'<div class="admin-item"><span style="flex:1">'+bdg(t,TLC[t]||"#440B39")+'</span><button onclick="removeTM('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
   var drugList=DRUGS.map(function(d,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+d+'</span><button onclick="removeDrug('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-  sec.innerHTML='<p style="font-size:12px;color:#64748b;margin-bottom:14px">Changes here update dropdowns and save to cloud automatically.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Error Types</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Teams</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Drug List</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
+  sec.innerHTML='<p style="font-size:12px;color:#7c5c76;margin-bottom:14px">Changes here update dropdowns and save to cloud automatically.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Error Types</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Teams</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Drug List</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
 }
 function addET(){var v=document.getElementById("newET").value.trim();if(!v)return;ET.push(v);save();document.getElementById("newET").value="";rAdmin();}
 function removeET(i){if(!confirm("Remove?"))return;ET.splice(i,1);save();rAdmin();}
-function addTM(){var v=document.getElementById("newTM").value.trim();if(!v)return;TM.push(v);if(!TLC[v])TLC[v]="#6366f1";save();document.getElementById("newTM").value="";rAdmin();}
+function addTM(){var v=document.getElementById("newTM").value.trim();if(!v)return;TM.push(v);if(!TLC[v])TLC[v]="#440B39";save();document.getElementById("newTM").value="";rAdmin();}
 function removeTM(i){if(!confirm("Remove?"))return;TM.splice(i,1);save();rAdmin();}
 function addDrug(){var v=document.getElementById("newDrug").value.trim();if(!v)return;DRUGS.push(v);save();document.getElementById("newDrug").value="";rAdmin();}
 function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rAdmin();}
