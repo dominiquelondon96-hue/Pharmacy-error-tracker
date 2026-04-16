@@ -1139,7 +1139,7 @@ function rEntries(){
        '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+
        (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+
        '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>';
-    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"—")+'</td><td style="color:#2E0326">'+(e2.drug||"—")+'</td><td style="color:#2E0326">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"—")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap">'+rphLeadCell(e2)+actionBtns+'</td></tr>';
+    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
   }
 
   // Review queue banner
@@ -1186,21 +1186,21 @@ function clrI(id){delete FBI[id];save();upHdr();rEntries();}
 // ── RPH Lead Initials ────────────────────────────────────────────────────────
 // RFBI[entryId][rphName] = {initials, date}
 function rphLeadCell(e){
-  if(e.needsReview||!e.rphNames||!e.rphNames.length) return '<td style="min-width:120px"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
-  var cell='<td style="min-width:130px">';
+  if(e.needsReview||!e.rphNames||!e.rphNames.length) return '<td style="min-width:120px;padding:8px 12px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
+  var cell='<td style="min-width:130px;padding:6px 12px;vertical-align:middle">';
   for(var i=0;i<e.rphNames.length;i++){
     var rn=e.rphNames[i];
     var rfb=(RFBI[e.id]||{})[rn];
     var firstName=rn.split(' ')[0];
     var safeRn=encodeURIComponent(rn);
-    cell+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">';
-    cell+='<span style="font-size:9px;color:#7c5c76;min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+rn+'">'+firstName+':</span>';
+    cell+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:'+(i<e.rphNames.length-1?'5px':'0')+'">';
+    cell+='<span style="font-size:10px;color:#7c5c76;min-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+rn+'">'+firstName+':</span>';
     if(rfb){
-      cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:9px;padding:1px 5px">'+rfb.initials+'</span>';
-      cell+=' <span style="font-size:9px;color:#7c5c76">'+rfb.date+'</span>';
-      cell+=' <button onclick="clrRphI('+e.id+',decodeURIComponent(\''+safeRn+'\'))" style="font-size:9px;padding:1px 4px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">✕</button>';
+      cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:10px;padding:2px 6px">'+rfb.initials+'</span>';
+      cell+='<span style="font-size:10px;color:#7c5c76">'+rfb.date+'</span>';
+      cell+='<button onclick="clrRphI('+e.id+',decodeURIComponent(\''+safeRn+'\'))" style="font-size:10px;padding:1px 5px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">✕</button>';
     } else {
-      cell+='<input class="ii" maxlength="4" placeholder="Init." style="width:38px;font-size:10px" data-id="'+e.id+'" data-rph="'+safeRn+'" onblur="setRphIE(this)">';
+      cell+='<input class="ii" maxlength="4" placeholder="Init." style="width:40px;font-size:11px;padding:3px 5px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" data-id="'+e.id+'" data-rph="'+safeRn+'" onblur="setRphIE(this)">';
     }
     cell+='</div>';
   }
