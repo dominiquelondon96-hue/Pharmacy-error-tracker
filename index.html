@@ -679,9 +679,91 @@ function rStaff(){
   for(var i=0;i<D.length;i++){var e=D[i];if(!e.who)continue;if(!stats[e.who])stats[e.who]={name:e.who,team:e.team,total:0,wk:0};stats[e.who].total++;if(e.week===thisWk)stats[e.who].wk++;}
   var rows=[];for(var k in stats)rows.push(stats[k]);rows.sort(function(a,b){return b.wk-a.wk||b.total-a.total;});
   var tBody="";for(var ri=0;ri<rows.length;ri++){var s=rows[ri],isTop=ri===0&&s.wk>0;tBody+='<tr style="background:'+(isTop?"#fff7ed":"")+'"><td style="font-weight:600">'+s.name+(isTop?' <span class="bdg" style="background:#f97316;color:#fff;font-size:9px">TOP THIS WEEK</span>':'')+'</td><td>'+bdg(s.team,TLC[s.team]||"#440B39")+'</td><td style="text-align:center;font-weight:700;color:#f97316">'+s.wk+'</td><td style="text-align:center">'+s.total+'</td></tr>';}
+
+  // Count total staff
+  var totalStaff=0;for(var ti2=0;ti2<TM.length;ti2++)totalStaff+=(SM[TM[ti2]]||[]).length;
+
+  // Build team boxes with scroll after 5 members
   var sBoxes="";
-  for(var ti=0;ti<TM.length;ti++){var t=TM[ti],names=SM[t]||[];sBoxes+='<div class="sbx" style="min-width:200px"><div style="font-weight:700;color:'+TLC[t]+';margin-bottom:8px;font-size:12px">'+t+'</div>';if(names.length===0){sBoxes+='<div style="color:#7c5c76;font-size:11px;padding:4px 0">No staff added</div>';}for(var ni=0;ni<names.length;ni++){sBoxes+='<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #FFF1EE"><span style="flex:1;color:#7c5c76;font-size:12px">'+names[ni]+'</span><button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;cursor:pointer">Edit</button><button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button></div>';}sBoxes+='</div>';}
-  sec.innerHTML='<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="sNm" placeholder="Full name" style="width:200px"><select id="sTm" style="width:140px">'+tmOpts("")+'</select><button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button></div></div><div class="card"><h3 style="font-size:13px;margin-bottom:12px">Current Staff <span style="font-size:11px;color:#7c5c76;font-weight:400">(click Edit to rename or change team)</span></h3><div style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div></div><div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div></div><div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center"><div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%"><h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Staff Member</h3><label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name"><label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select><div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button><button onclick="closeStaffEdit()" style="padding:9px 16px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button></div></div></div>';
+  for(var ti=0;ti<TM.length;ti++){
+    var t=TM[ti],names=SM[t]||[];
+    var count=names.length;
+    var memberRows="";
+    if(count===0){
+      memberRows='<div style="color:#7c5c76;font-size:11px;padding:8px 0">No staff added</div>';
+    } else {
+      for(var ni=0;ni<count;ni++){
+        memberRows+='<div class="staff-row" data-name="'+names[ni].toLowerCase()+'" style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #FFF1EE">'+
+          '<span style="flex:1;color:#2E0326;font-size:12px;font-weight:500">'+names[ni]+'</span>'+
+          '<button onclick="editStaff(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;cursor:pointer">Edit</button>'+
+          '<button onclick="removeSt(\''+t+'\','+ni+')" style="font-size:10px;padding:2px 7px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Del</button>'+
+        '</div>';
+      }
+    }
+    sBoxes+='<div class="sbx" style="min-width:200px;flex:1">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+        '<div style="font-weight:700;color:'+TLC[t]+';font-size:12px">'+t+'</div>'+
+        '<span style="font-size:10px;color:#7c5c76;background:#f3e8f1;padding:1px 7px;border-radius:10px">'+count+'</span>'+
+      '</div>'+
+      '<div style="'+(count>5?'max-height:200px;overflow-y:auto;':'')+'">'+
+        memberRows+
+      '</div>'+
+    '</div>';
+  }
+
+  sec.innerHTML=
+    // Add Staff card
+    '<div class="card"><h3 style="font-size:13px;margin-bottom:12px">Add Staff Member</h3>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<input id="sNm" placeholder="Full name" style="width:200px">'+
+        '<select id="sTm" style="width:140px">'+tmOpts("")+'</select>'+
+        '<button class="btn" style="margin-top:0" onclick="addSt()">Add Staff</button>'+
+      '</div>'+
+    '</div>'+
+    // Staff search + count
+    '<div class="card" style="padding:12px 16px;margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none">'+
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+        '<h3 style="font-size:13px;margin:0;flex:1">Current Staff <span style="font-size:11px;color:#7c5c76;font-weight:400">('+totalStaff+' total)</span></h3>'+
+        '<div style="position:relative;min-width:220px">'+
+          '<input id="staffSearch" placeholder="🔍  Search staff..." onkeyup="filterStaff()" style="padding-left:10px;font-size:12px;border-radius:20px;border:1.5px solid var(--border);width:100%">'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-bottom:12px">'+
+      '<div id="staffBoxes" style="display:flex;gap:10px;flex-wrap:wrap">'+sBoxes+'</div>'+
+    '</div>'+
+    // Leaderboard
+    '<div class="card"><h3 style="font-size:13px;margin-bottom:4px">Staff Leaderboard <span style="font-size:11px;color:#f97316;font-weight:600">sorted by this week</span></h3>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Team</th><th style="text-align:center">This Week</th><th style="text-align:center">All Time</th></tr></thead><tbody>'+tBody+'</tbody></table></div>'+
+    '</div>'+
+    // Edit modal
+    '<div id="editStaffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center">'+
+      '<div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;width:90%">'+
+        '<h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Staff Member</h3>'+
+        '<label class="flb" style="margin-top:0">Name</label><input id="editStaffName" type="text" placeholder="Full name">'+
+        '<label class="flb">Team</label><select id="editStaffTeam">'+tmOpts("")+'</select>'+
+        '<div style="display:flex;gap:10px;margin-top:16px">'+
+          '<button class="btn btn-full" onclick="saveStaffEdit()">Save Changes</button>'+
+          '<button onclick="closeStaffEdit()" style="padding:9px 16px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+}
+
+function filterStaff(){
+  var q=(document.getElementById('staffSearch').value||'').toLowerCase().trim();
+  var rows=document.querySelectorAll('.staff-row');
+  rows.forEach(function(r){
+    r.style.display=(!q||r.getAttribute('data-name').indexOf(q)>=0)?'flex':'none';
+  });
+  // Show/hide team boxes that have no visible results
+  var boxes=document.querySelectorAll('#staffBoxes .sbx');
+  boxes.forEach(function(box){
+    var visible=box.querySelectorAll('.staff-row[style*="flex"]').length;
+    var all=box.querySelectorAll('.staff-row').length;
+    // If searching and no matches in this team, dim it
+    box.style.opacity=(!q||visible>0)?'1':'0.3';
+  });
 }
 var editStaffTeam=null,editStaffIdx=null;
 function editStaff(team,idx){editStaffTeam=team;editStaffIdx=idx;var name=(SM[team]||[])[idx]||"";document.getElementById("editStaffName").value=name;document.getElementById("editStaffTeam").value=team;document.getElementById("editStaffModal").style.display="flex";}
