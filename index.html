@@ -1049,11 +1049,40 @@ function openEdit(id){
   var ePhotoInput=document.getElementById("ePhoto");
   ePhotoInput.value="";
   ePhotoInput._photoData=e.photo||"";
+  ePhotoInput._driveId=e.driveId||"";
+  ePhotoInput._driveUrl=e.driveUrl||"";
   ePhotoInput._removed=false;
   var wrap=document.getElementById("ePhotoPreviewWrap");
   var prev=document.getElementById("ePhotoPreview");
-  if(e.photo){wrap.style.display="block";prev.src=e.photo;}
-  else{wrap.style.display="none";prev.src="";}
+  if(e.driveUrl){
+    // Drive photo — show as clickable link preview
+    wrap.style.display="block";
+    prev.src="";
+    prev.style.display="none";
+    // Show a Drive link card instead
+    var existing=document.getElementById("eDriveCard");
+    if(existing) existing.remove();
+    var card=document.createElement("div");
+    card.id="eDriveCard";
+    card.style.cssText="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px";
+    card.innerHTML='<span style="font-size:20px">📷</span>'+
+      '<div style="flex:1"><div style="font-size:12px;font-weight:700;color:#15803d">Photo saved in Google Drive</div>'+
+      '<a href="'+e.driveUrl+'" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:underline">Click to view photo ↗</a></div>'+
+      '<button type="button" onclick="removeEditPhoto()" style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✕ Remove</button>';
+    wrap.insertBefore(card, wrap.firstChild);
+  } else if(e.photo){
+    wrap.style.display="block";
+    prev.src=e.photo;
+    prev.style.display="block";
+    var dc=document.getElementById("eDriveCard");
+    if(dc) dc.remove();
+  } else {
+    wrap.style.display="none";
+    prev.src="";
+    prev.style.display="none";
+    var dc2=document.getElementById("eDriveCard");
+    if(dc2) dc2.remove();
+  }
   // Good Catch fields
   document.getElementById("eGC").value=e.goodCatch||"";
   var gcTeamSel=document.getElementById("eGCTeam");
@@ -1104,9 +1133,14 @@ function removeEditPhoto(){
   var input=document.getElementById("ePhoto");
   input.value="";
   input._photoData="";
+  input._driveId="";
+  input._driveUrl="";
   input._removed=true;
+  var card=document.getElementById("eDriveCard");
+  if(card) card.remove();
   document.getElementById("ePhotoPreviewWrap").style.display="none";
   document.getElementById("ePhotoPreview").src="";
+  document.getElementById("ePhotoPreview").style.display="none";
 }
 function upEF(){var s=document.getElementById("eSr").value,show=s==="Human";document.getElementById("eTmW").style.display=show?"block":"none";document.getElementById("eWhW").style.display=show?"block":"none";}
 function upEW(){var t=document.getElementById("eTm").value;document.getElementById("eWh").innerHTML=whoOpts(t,"");}
@@ -1349,12 +1383,12 @@ function requestDriveToken(then){
   driveTokenClient.requestAccessToken({prompt:''});
 }
 
-function uploadToDrive(blob, filename, callback){
+function uploadToDrive(file, filename, callback){
   if(!driveAccessToken){ console.warn('No Drive access token'); callback(null); return; }
   var metadata = {name: filename, parents: [DRIVE_FOLDER_ID]};
   var form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
-  form.append('file', blob);
+  form.append('file', file); // send original file as-is
 
   fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink', {
     method: 'POST',
@@ -1390,48 +1424,54 @@ function uploadToDrive(blob, filename, callback){
 // Compress + upload to Drive, store {driveId, driveUrl} on input element
 function processAndUploadPhoto(file, inputEl, previewEl, onDone){
   if(!file) return;
-  if(file.size > 10*1024*1024){alert('Photo must be under 10MB'); return;}
-  // Show a loading state on preview
-  if(previewEl){previewEl.src='';previewEl.style.display='block';previewEl.style.opacity='0.4';}
+  if(file.size > 20*1024*1024){alert('Photo must be under 20MB'); return;}
+
+  // Show a low-res preview immediately using original file (for UI only)
+  var previewReader=new FileReader();
+  previewReader.onload=function(ev){
+    if(previewEl){
+      previewEl.src=ev.target.result;
+      previewEl.style.display='block';
+      previewEl.style.opacity='1';
+    }
+  };
+  previewReader.readAsDataURL(file);
+
+  // Store small compressed version as local fallback only
   compressPhoto(file, function(compressed){
-    // Show compressed preview immediately
-    if(previewEl){previewEl.src=compressed;previewEl.style.opacity='1';}
-    // Convert base64 to blob for Drive upload
-    var byteStr=atob(compressed.split(',')[1]);
-    var arr=new Uint8Array(byteStr.length);
-    for(var i=0;i<byteStr.length;i++) arr[i]=byteStr.charCodeAt(i);
-    var blob=new Blob([arr],{type:'image/jpeg'});
-    var filename='rx-error-'+(inputEl.getAttribute('data-entry-id')||Date.now())+'-'+Date.now()+'.jpg';
-    // Store compressed as fallback immediately
-    inputEl._photoData = compressed;
+    inputEl._photoData = compressed; // fallback if Drive fails
     inputEl._driveId = null;
     inputEl._driveUrl = null;
     if(onDone) onDone('uploading');
-    // Try uploading to Drive
+
+    // Upload ORIGINAL uncompressed file to Drive for full quality
+    var filename='rx-error-'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.]/g,'_');
+
     function doUpload(){
-      uploadToDrive(blob, filename, function(result){
+      uploadToDrive(file, filename, function(result){
         if(result){
           inputEl._driveId = result.id;
           inputEl._driveUrl = result.url;
-          inputEl._photoData = ''; // don't store base64 — use Drive URL
+          inputEl._photoData = compressed; // keep small version for thumbnail only
           if(onDone) onDone('done', result);
-          showDirToast('📷 Photo saved to Drive');
+          showDirToast('📷 Full quality photo saved to Drive');
         } else {
-          // Fall back to compressed base64 if Drive fails
           inputEl._photoData = compressed;
           if(onDone) onDone('fallback');
-          showDirToast('⚠ Drive upload failed — photo saved locally');
+          showDirToast('⚠ Drive upload failed — compressed photo saved locally');
         }
       });
     }
+
     if(driveAccessToken){
       doUpload();
     } else {
-      window._pendingDriveUpload = {blob:blob, filename:filename, callback:function(result){
+      window._pendingDriveUpload = {blob:file, filename:filename, callback:function(result){
         if(result){
-          inputEl._driveId=result.id;inputEl._driveUrl=result.url;inputEl._photoData='';
+          inputEl._driveId=result.id;inputEl._driveUrl=result.url;
+          inputEl._photoData=compressed;
           if(onDone) onDone('done',result);
-          showDirToast('📷 Photo saved to Drive');
+          showDirToast('📷 Full quality photo saved to Drive');
         } else {
           inputEl._photoData=compressed;
           if(onDone) onDone('fallback');
