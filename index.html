@@ -767,7 +767,29 @@ function filterStaff(){
 }
 var editStaffTeam=null,editStaffIdx=null;
 function editStaff(team,idx){editStaffTeam=team;editStaffIdx=idx;var name=(SM[team]||[])[idx]||"";document.getElementById("editStaffName").value=name;document.getElementById("editStaffTeam").value=team;document.getElementById("editStaffModal").style.display="flex";}
-function saveStaffEdit(){var newName=document.getElementById("editStaffName").value.trim();var newTeam=document.getElementById("editStaffTeam").value;if(!newName){alert("Please enter a name.");return;}var oldName=(SM[editStaffTeam]||[])[editStaffIdx];SM[editStaffTeam].splice(editStaffIdx,1);if(!SM[newTeam])SM[newTeam]=[];SM[newTeam].push(newName);for(var i=0;i<D.length;i++){if(D[i].who===oldName&&D[i].team===editStaffTeam){D[i].who=newName;D[i].team=newTeam;}}save();closeStaffEdit();rStaff();}
+function saveStaffEdit(){
+  var newName=document.getElementById("editStaffName").value.trim();
+  var newTeam=document.getElementById("editStaffTeam").value;
+  if(!newName){alert("Please enter a name.");return;}
+  var oldName=(SM[editStaffTeam]||[])[editStaffIdx];
+  // Update SM
+  SM[editStaffTeam].splice(editStaffIdx,1);
+  if(!SM[newTeam])SM[newTeam]=[];
+  SM[newTeam].push(newName);
+  // Update ALL matching entries — don't restrict by team in case of mismatches
+  var updated=0;
+  for(var i=0;i<D.length;i++){
+    if(D[i].who===oldName){
+      D[i].who=newName;
+      if(D[i].team===editStaffTeam) D[i].team=newTeam;
+      updated++;
+    }
+  }
+  save();
+  closeStaffEdit();
+  rStaff();
+  if(updated>0) showDirToast('✅ '+oldName+' → '+newName+' · '+updated+' entr'+(updated===1?'y':'ies')+' updated');
+}
 function closeStaffEdit(){var m=document.getElementById("editStaffModal");if(m)m.style.display="none";editStaffTeam=null;editStaffIdx=null;}
 function addSt(){var n=document.getElementById("sNm").value.trim(),t=document.getElementById("sTm").value;if(!n)return;if(!SM[t])SM[t]=[];SM[t].push(n);save();document.getElementById("sNm").value="";rStaff();}
 function removeSt(team,idx){if(!confirm("Delete "+((SM[team]||[])[idx]||"this staff member")+"?"))return;SM[team].splice(idx,1);save();rStaff();}
@@ -1769,10 +1791,15 @@ function saveDirEdit(){
     if(SM[newTeam].indexOf(newName)===-1) SM[newTeam].push(newName);
   }
 
-  // Update any error entries that referenced old name
-  if(old.name!==newName){
+  // Update any error entries that referenced old name or team
+  var updated=0;
+  if(old.name!==newName || old.team!==newTeam){
     for(var i=0;i<D.length;i++){
-      if(D[i].who===old.name) D[i].who=newName;
+      if(D[i].who===old.name){
+        if(old.name!==newName) D[i].who=newName;
+        if(old.team&&D[i].team===old.team&&newTeam) D[i].team=newTeam;
+        updated++;
+      }
     }
   }
 
@@ -1780,7 +1807,9 @@ function saveDirEdit(){
   closeDirEdit();
   rDirectory();
   rStaff();
-  showDirToast('✅ '+newName+' updated'+(old.role!==newRole?' — role changed to '+newRole:''));
+  var msg='✅ '+newName+' updated'+(old.role!==newRole?' — role changed to '+newRole:'');
+  if(updated>0) msg+=' · '+updated+' entr'+(updated===1?'y':'ies')+' updated';
+  showDirToast(msg);
 }
 
 function addDirUser(){
