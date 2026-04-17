@@ -1312,8 +1312,12 @@ function rEntries(){
       &&(eReview==="All"||(eReview==="Needs Review"&&e.needsReview)||(eReview==="Complete"&&!e.needsReview)))
       fil.push(e);
   }
-  // Sort newest date first
-  fil.sort(function(a,b){return b.date>a.date?1:b.date<a.date?-1:0;});
+  // Needs Review pinned to top, then newest date first within each group
+  fil.sort(function(a,b){
+    if(a.needsReview && !b.needsReview) return -1;
+    if(!a.needsReview && b.needsReview) return 1;
+    return b.date>a.date?1:b.date<a.date?-1:0;
+  });
   var ffO='<option'+(eFF==="All"?" selected":"")+'>All</option>';
   for(var ti=0;ti<TM.length;ti++)ffO+='<option'+(eFF===TM[ti]?" selected":"")+'>'+TM[ti]+'</option>';
   ffO+='<option'+(eFF==="Bot"?" selected":"")+'>Bot</option><option'+(eFF==="API"?" selected":"")+'>API</option>';
