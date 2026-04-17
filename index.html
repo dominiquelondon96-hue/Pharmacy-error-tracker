@@ -174,7 +174,7 @@ tr.alt td{background:#fdf5fb}
       <label class="flb">Notes</label><textarea id="eNt" rows="2"></textarea>
       <!-- Photo section -->
       <div style="margin-top:12px">
-        <label class="flb" style="margin-top:0">📷 Photo Evidence</label>
+        <label class="flb" style="margin-top:0">📷 Photo Evidence <span style="font-weight:400;font-size:10px;color:#7c5c76">upload, paste (Ctrl+V), or remove</span></label>
         <div id="ePhotoPreviewWrap" style="display:none;margin-bottom:8px;position:relative">
           <img id="ePhotoPreview" src="" alt="Error photo" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;display:block">
           <button type="button" onclick="removeEditPhoto()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">✕ Remove</button>
@@ -294,10 +294,10 @@ function setSyncUI(status,msg){
 function getPayload(){
   // Strip photos from cloud payload — store separately in localStorage
   var dNoPhotos=D.map(function(e){
-    if(!e.photo) return e;
+    if(!e.photo && !e.driveId) return e;
     var copy=Object.assign({},e);
-    copy.photo='';
-    copy.hasPhoto=true;
+    copy.photo=''; // strip base64 from cloud
+    // driveId and driveUrl stay in cloud payload — they're just short strings
     return copy;
   });
   return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
@@ -804,7 +804,7 @@ function rQuickLog(){
     '</div>'+
     '</div>'+
     '<label class="flb">Notes / What happened?</label><textarea id="lNt" rows="3" placeholder="Brief description of the error..."></textarea>'+
-    '<label class="flb" style="margin-top:12px">📷 Photo of the error <span style="font-weight:400;color:#7c5c76">(recommended)</span></label>'+
+    '<label class="flb" style="margin-top:12px">📷 Photo of the error <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
     '<input type="file" id="lPhoto" accept="image/*" onchange="previewLogPhoto()" style="font-size:12px;padding:6px;margin-bottom:4px">'+
     '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
     '<button class="btn btn-full" onclick="subQuickLog()" style="margin-top:16px;background:#10b981">⚡ Submit Quick Log</button>'+
@@ -835,6 +835,8 @@ function subQuickLog(){
   var notes=document.getElementById("lNt").value.trim();
   var ph=document.getElementById("lPhoto");
   var photo=ph&&ph._photoData?ph._photoData:"";
+  var driveId=ph&&ph._driveId?ph._driveId:"";
+  var driveUrl=ph&&ph._driveUrl?ph._driveUrl:"";
 
   var row={};
   row.id=mkId();
@@ -843,7 +845,9 @@ function subQuickLog(){
   row.errorType=errorType;
   row.rxNum=rx;
   row.notes=notes;
-  row.photo=photo;
+  row.photo=driveId?"":photo;
+  row.driveId=driveId;
+  row.driveUrl=driveUrl;
   row.who=rphName;
   row.team="RPH";
   row.source="Human";
@@ -890,7 +894,7 @@ function rFullLog(){
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
     '</div>'+
     '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
-    '<label class="flb" style="margin-top:12px">📷 Photo Evidence <span style="font-weight:400;color:#7c5c76">(optional)</span></label>'+
+    '<label class="flb" style="margin-top:12px">📷 Photo Evidence <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
     '<input type="file" id="lPhoto" accept="image/*" onchange="previewLogPhoto()" style="font-size:12px;padding:6px;margin-bottom:4px">'+
     '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
     '<div style="margin-top:14px;padding:14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">'+
@@ -959,7 +963,9 @@ function subLog(){
   row.rxNum=document.getElementById("lRx").value.trim();
   row.notes=document.getElementById("lNt").value;
   var ph=document.getElementById("lPhoto");
-  row.photo=ph&&ph._photoData?ph._photoData:"";
+  row.photo=ph&&ph._driveId?"":( ph&&ph._photoData?ph._photoData:"");
+  row.driveId=ph&&ph._driveId?ph._driveId:"";
+  row.driveUrl=ph&&ph._driveUrl?ph._driveUrl:"";
   row.goodCatch=gcVal;row.gcTeam=gcTeam;row.gcWho=gcWho;
   row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;
   row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(gcVal==="Yes"?"good_catch":"");
@@ -1085,15 +1091,12 @@ function closeEdit(){document.getElementById("editModal").style.display="none";e
 function previewEditPhoto(){
   var input=document.getElementById("ePhoto");
   if(!input||!input.files[0]) return;
-  var file=input.files[0];
-  if(file.size>5*1024*1024){alert("Photo must be under 5MB");input.value="";return;}
-  compressPhoto(file, function(compressed){
-    input._photoData=compressed;
-    input._removed=false;
-    var wrap=document.getElementById("ePhotoPreviewWrap");
-    var prev=document.getElementById("ePhotoPreview");
-    wrap.style.display="block";
-    prev.src=compressed;
+  var prev=document.getElementById("ePhotoPreview");
+  var wrap=document.getElementById("ePhotoPreviewWrap");
+  wrap.style.display="block";
+  input._removed=false;
+  processAndUploadPhoto(input.files[0], input, prev, function(status){
+    prev.style.display='block';
   });
 }
 
@@ -1132,8 +1135,9 @@ function saveEdit(){
       D[i].notes=document.getElementById("eNt").value;
       // Photo — use new upload, or keep existing, or clear if removed
       var ep=document.getElementById("ePhoto");
-      if(ep._removed) D[i].photo="";
-      else if(ep._photoData&&ep._photoData!==D[i].photo) D[i].photo=ep._photoData;
+      if(ep._removed){D[i].photo="";D[i].driveId="";D[i].driveUrl="";}
+      else if(ep._driveId){D[i].photo="";D[i].driveId=ep._driveId;D[i].driveUrl=ep._driveUrl;}
+      else if(ep._photoData&&ep._photoData!==D[i].photo){D[i].photo=ep._photoData;D[i].driveId="";D[i].driveUrl="";}
       // (else keep existing photo unchanged)
       D[i].goodCatch=gcVal;
       D[i].gcTeam=gcTeam;
@@ -1192,7 +1196,7 @@ function rEntries(){
     }
     var actionBtns=isReview
       ?'<button class="complete-btn" onclick="completeEntry('+e2.id+')">✏ Complete</button> <button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>'
-      :(e2.photo?'<img src="'+e2.photo+'" onclick="showPhotoModal('+e2.id+')" class="photo-thumb" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer" title="View photo">':'')+
+      :(e2.driveUrl?'<button onclick="showPhotoModal('+e2.id+')" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer;border:1px solid #e8d5e4;background:#eef2ff;font-size:11px;padding:0" title="View in Drive">📷</button>':(e2.photo?'<img src="'+e2.photo+'" onclick="showPhotoModal('+e2.id+')" class="photo-thumb" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer" title="View photo">':''))+
        '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+
        (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+
        '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>';
@@ -1313,6 +1317,128 @@ function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rA
 // ═══════════════════════════════════════════════
 // Google OAuth Client ID — replace with your own from console.cloud.google.com
 var GOOGLE_CLIENT_ID = '203752171136-mqi4h82emc96c6sgbdag7k3aa2sd91g9.apps.googleusercontent.com';
+var DRIVE_FOLDER_ID = '1Xv2XGxWiFv6EYx5GULmVdvM73euRd9xN';
+var driveAccessToken = null;  // obtained via OAuth token client
+var driveTokenClient = null;  // GIS token client for drive.file scope
+
+// ── Google Drive Upload ────────────────────────────────────────────────────
+function initDriveTokenClient(){
+  if(!window.google || !google.accounts || !google.accounts.oauth2) return;
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: function(resp){
+      if(resp.error){ console.warn('Drive token error:', resp.error); return; }
+      driveAccessToken = resp.access_token;
+      // Resume any pending upload
+      if(window._pendingDriveUpload){
+        var p = window._pendingDriveUpload;
+        window._pendingDriveUpload = null;
+        uploadToDrive(p.blob, p.filename, p.callback);
+      }
+    }
+  });
+}
+
+function requestDriveToken(then){
+  // If we already have a token try using it; if expired GIS will refresh
+  if(driveAccessToken){then();return;}
+  if(!driveTokenClient){initDriveTokenClient();}
+  if(!driveTokenClient){console.warn('Drive token client not ready'); return;}
+  window._pendingDriveUpload = then; // store callback ref
+  driveTokenClient.requestAccessToken({prompt:''});
+}
+
+function uploadToDrive(blob, filename, callback){
+  // Multipart upload to Drive — stores file in DRIVE_FOLDER_ID
+  var metadata = {name: filename, parents: [DRIVE_FOLDER_ID]};
+  var form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+  form.append('file', blob);
+
+  fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer ' + driveAccessToken},
+    body: form
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.id){
+      // Make file viewable by anyone in the org
+      fetch('https://www.googleapis.com/drive/v3/files/'+data.id+'/permissions', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+driveAccessToken,'Content-Type':'application/json'},
+        body: JSON.stringify({role:'reader', type:'domain', domain:'gifthealth.com'})
+      });
+      callback({id: data.id, url: data.webViewLink || ('https://drive.google.com/file/d/'+data.id+'/view')});
+    } else {
+      console.warn('Drive upload failed:', data);
+      callback(null);
+    }
+  })
+  .catch(function(err){
+    console.warn('Drive upload error:', err);
+    // Token may have expired — try refreshing once
+    driveAccessToken = null;
+    callback(null);
+  });
+}
+
+// Compress + upload to Drive, store {driveId, driveUrl} on input element
+function processAndUploadPhoto(file, inputEl, previewEl, onDone){
+  if(!file) return;
+  if(file.size > 10*1024*1024){alert('Photo must be under 10MB'); return;}
+  // Show a loading state on preview
+  if(previewEl){previewEl.src='';previewEl.style.display='block';previewEl.style.opacity='0.4';}
+  compressPhoto(file, function(compressed){
+    // Show compressed preview immediately
+    if(previewEl){previewEl.src=compressed;previewEl.style.opacity='1';}
+    // Convert base64 to blob for Drive upload
+    var byteStr=atob(compressed.split(',')[1]);
+    var arr=new Uint8Array(byteStr.length);
+    for(var i=0;i<byteStr.length;i++) arr[i]=byteStr.charCodeAt(i);
+    var blob=new Blob([arr],{type:'image/jpeg'});
+    var filename='rx-error-'+(inputEl.getAttribute('data-entry-id')||Date.now())+'-'+Date.now()+'.jpg';
+    // Store compressed as fallback immediately
+    inputEl._photoData = compressed;
+    inputEl._driveId = null;
+    inputEl._driveUrl = null;
+    if(onDone) onDone('uploading');
+    // Try uploading to Drive
+    function doUpload(){
+      uploadToDrive(blob, filename, function(result){
+        if(result){
+          inputEl._driveId = result.id;
+          inputEl._driveUrl = result.url;
+          inputEl._photoData = ''; // don't store base64 — use Drive URL
+          if(onDone) onDone('done', result);
+          showDirToast('📷 Photo saved to Drive');
+        } else {
+          // Fall back to compressed base64 if Drive fails
+          inputEl._photoData = compressed;
+          if(onDone) onDone('fallback');
+          showDirToast('⚠ Drive upload failed — photo saved locally');
+        }
+      });
+    }
+    if(driveAccessToken){
+      doUpload();
+    } else {
+      window._pendingDriveUpload = {blob:blob, filename:filename, callback:function(result){
+        if(result){
+          inputEl._driveId=result.id;inputEl._driveUrl=result.url;inputEl._photoData='';
+          if(onDone) onDone('done',result);
+          showDirToast('📷 Photo saved to Drive');
+        } else {
+          inputEl._photoData=compressed;
+          if(onDone) onDone('fallback');
+        }
+      }};
+      if(!driveTokenClient) initDriveTokenClient();
+      if(driveTokenClient) driveTokenClient.requestAccessToken({prompt:''});
+    }
+  });
+}
 
 // Role directory — stored in JSONBin alongside data
 // Format: { "email@gifthealth.com": "Admin" }
@@ -1327,19 +1453,14 @@ var ROLE_PAGES = {
   'Admin':   ['dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
 };
 
-function onGoogleSignIn(response) {
-  // Decode JWT credential
-  var parts = response.credential.split('.');
-  var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-  var email = payload.email;
-  var name = payload.name;
-  var picture = payload.picture;
+function onGoogleSignInWithInfo(info) {
+  var email = info.email;
+  var name = info.name;
+  var picture = info.picture;
 
-  // Check directory
   var ud = USER_DIRECTORY[email.toLowerCase()];
   var role = ud ? (typeof ud === 'string' ? ud : ud.role) : null;
   if(!role) {
-    // Not in directory — check if Admin backdoor
     if(email.toLowerCase() === 'dominique.l@gifthealth.com') role = 'Admin';
     else {
       document.getElementById('authError').style.display = 'block';
@@ -1348,23 +1469,22 @@ function onGoogleSignIn(response) {
     }
   }
 
-  currentUser = { name, email, picture, role };
+  currentUser = { name: name, email: email, picture: picture, role: role };
   localStorage.setItem('pet_auth', JSON.stringify(currentUser));
 
-  // Show app
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
-
-  // Update user pill in header
   updateUserPill();
-
-  // Rebuild nav with role-filtered pages
   buildNav();
   upHdr();
-
-  // Go to first allowed page
   var pages = ROLE_PAGES[role] || ['log'];
   goTo(pages[0]);
+}
+
+function onGoogleSignIn(response) {
+  var parts = response.credential.split('.');
+  var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+  onGoogleSignInWithInfo({ email: payload.email, name: payload.name, picture: payload.picture });
 }
 
 function updateUserPill() {
@@ -1598,18 +1718,22 @@ function compressPhoto(file, callback){
 function previewLogPhoto() {
   var input = document.getElementById('lPhoto');
   if(!input || !input.files[0]) return;
-  var file = input.files[0];
-  if(file.size > 5 * 1024 * 1024) { alert('Photo must be under 5MB'); input.value=''; return; }
-  compressPhoto(file, function(compressed){
-    input._photoData = compressed;
-    var preview = document.getElementById('lPhotoPreview');
-    if(preview){ preview.src = compressed; preview.style.display = 'block'; }
+  var preview = document.getElementById('lPhotoPreview');
+  processAndUploadPhoto(input.files[0], input, preview, function(status){
+    if(preview) preview.style.display='block';
   });
 }
 
 function showPhotoModal(id) {
   var entry = D.find(function(e){ return e.id == id; });
-  if(!entry || !entry.photo) return;
+  if(!entry) return;
+  // If stored on Drive, open directly in new tab
+  if(entry.driveUrl){
+    window.open(entry.driveUrl, '_blank');
+    return;
+  }
+  // Fallback — show base64 in lightbox
+  if(!entry.photo) return;
   var existing = document.getElementById('photoModal');
   if(existing) existing.remove();
   var modal = document.createElement('div');
@@ -1659,18 +1783,37 @@ async function init(){
       '<button onclick="devLogin(\'Manager\')" style="width:100%;padding:12px;background:#0369a1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">Enter as Manager</button>' +
       '<button onclick="devLogin(\'RPH\')" style="width:100%;padding:12px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">Enter as RPH</button>';
   } else {
-    google.accounts.id.initialize({
+    // Use OAuth2 token client so sign-in and Drive scope happen in ONE popup
+    // This eliminates the separate Drive permission prompt entirely
+    var combinedClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
-      callback: onGoogleSignIn,
-      auto_select: false,
-      cancel_on_tap_outside: false
+      scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
+      callback: function(resp) {
+        if(resp.error){ console.warn('Auth error:', resp.error); return; }
+        driveAccessToken = resp.access_token;
+        // Fetch user info using the access token
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {'Authorization': 'Bearer ' + resp.access_token}
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(info){
+          // Build a credential-like response and pass to existing handler
+          onGoogleSignInWithInfo({
+            email: info.email,
+            name: info.name,
+            picture: info.picture
+          });
+        });
+      }
     });
-    google.accounts.id.renderButton(
-      document.getElementById('googleSignInBtn'),
-      { theme: 'outline', size: 'large', width: 300, text: 'signin_with' }
-    );
-    // Also show One Tap
-    google.accounts.id.prompt();
+
+    // Render a custom sign-in button matching gifthealth style
+    var btn = document.getElementById('googleSignInBtn');
+    btn.innerHTML =
+      '<button onclick="window._gSignIn()" style="display:flex;align-items:center;gap:10px;padding:11px 20px;background:#fff;border:1.5px solid #dadce0;border-radius:24px;font-size:14px;font-weight:600;color:#3c4043;cursor:pointer;width:100%;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.12);transition:box-shadow .2s" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.2)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.12)\'">' +
+      '<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.706c-.18-.54-.282-1.117-.282-1.706s.102-1.166.282-1.706V4.962H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.962L3.964 7.294C4.672 5.167 6.656 3.58 9 3.58z"/></svg>' +
+      'Sign in with Google</button>';
+    window._gSignIn = function(){ combinedClient.requestAccessToken({prompt:'consent'}); };
   }
 }
 
@@ -1689,6 +1832,60 @@ function devLogin(role) {
   upHdr();
   var pages = ROLE_PAGES[role] || ['log'];
   goTo(pages[0]);
+}
+
+// ── Paste image support ────────────────────────────────────────────────────
+// Listens for Ctrl+V / Cmd+V anywhere on the page and routes the image
+// to whichever photo input is currently active (log form or edit modal)
+document.addEventListener('paste', function(ev){
+  var items = (ev.clipboardData || ev.originalEvent && ev.originalEvent.clipboardData || {}).items;
+  if(!items) return;
+  var imageFile = null;
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')!==-1){ imageFile=items[i].getAsFile(); break; }
+  }
+  if(!imageFile) return;
+
+  // Determine which form is visible
+  var editModalOpen = document.getElementById('editModal') &&
+    document.getElementById('editModal').style.display==='block';
+
+  if(editModalOpen){
+    // Route to edit modal photo
+    var input=document.getElementById('ePhoto');
+    var prev=document.getElementById('ePhotoPreview');
+    var wrap=document.getElementById('ePhotoPreviewWrap');
+    if(!input) return;
+    input._removed=false;
+    if(wrap) wrap.style.display='block';
+    processAndUploadPhoto(imageFile, input, prev, function(){
+      if(prev) prev.style.display='block';
+      showPasteBadge('edit');
+    });
+  } else if(document.getElementById('lPhoto')){
+    // Route to log form photo
+    var linput=document.getElementById('lPhoto');
+    var lprev=document.getElementById('lPhotoPreview');
+    if(!linput) return;
+    processAndUploadPhoto(imageFile, linput, lprev, function(){
+      if(lprev){ lprev.style.display='block'; }
+      showPasteBadge('log');
+    });
+  }
+  ev.preventDefault();
+});
+
+function showPasteBadge(context){
+  var targetId = context==='edit' ? 'ePhotoPreview' : 'lPhotoPreview';
+  var target = document.getElementById(targetId);
+  if(!target) return;
+  var badge = document.createElement('div');
+  badge.style.cssText='position:absolute;bottom:8px;left:8px;background:#440B39;color:#fff;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;pointer-events:none;z-index:10';
+  badge.textContent='📋 Pasted';
+  var parent=target.parentNode;
+  if(parent && parent.style.position!=='relative') parent.style.position='relative';
+  parent.appendChild(badge);
+  setTimeout(function(){badge.remove();},2000);
 }
 
 init();
