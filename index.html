@@ -1255,7 +1255,7 @@ function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rA
 // AUTH & ROLES
 // ═══════════════════════════════════════════════
 // Google OAuth Client ID — replace with your own from console.cloud.google.com
-var GOOGLE_CLIENT_ID = ''; // set this to your Google OAuth client ID
+var GOOGLE_CLIENT_ID = '203752171136-mqi4h82emc96c6sgbdag7k3aa2sd91g9.apps.googleusercontent.com';
 
 // Role directory — stored in JSONBin alongside data
 // Format: { "email@gifthealth.com": "Admin" }
@@ -1483,8 +1483,6 @@ async function init(){
   } catch(e) {}
 
   // Show Google Sign-In button
-  // NOTE: You need to set GOOGLE_CLIENT_ID above and enable the Google Identity API
-  // For now, show a temporary bypass for setup
   if(!GOOGLE_CLIENT_ID) {
     // Dev mode — show bypass button
     document.getElementById('googleSignInBtn').innerHTML =
@@ -1497,12 +1495,16 @@ async function init(){
   } else {
     google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
-      callback: onGoogleSignIn
+      callback: onGoogleSignIn,
+      auto_select: false,
+      cancel_on_tap_outside: false
     });
     google.accounts.id.renderButton(
       document.getElementById('googleSignInBtn'),
-      { theme: 'outline', size: 'large', width: 300 }
+      { theme: 'outline', size: 'large', width: 300, text: 'signin_with' }
     );
+    // Also show One Tap
+    google.accounts.id.prompt();
   }
 }
 
