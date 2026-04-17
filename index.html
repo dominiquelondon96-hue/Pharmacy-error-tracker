@@ -172,6 +172,16 @@ tr.alt td{background:#fdf5fb}
         <div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="eRx"></div>
       </div>
       <label class="flb">Notes</label><textarea id="eNt" rows="2"></textarea>
+      <!-- Photo section -->
+      <div style="margin-top:12px">
+        <label class="flb" style="margin-top:0">📷 Photo Evidence</label>
+        <div id="ePhotoPreviewWrap" style="display:none;margin-bottom:8px;position:relative">
+          <img id="ePhotoPreview" src="" alt="Error photo" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;display:block">
+          <button type="button" onclick="removeEditPhoto()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">✕ Remove</button>
+        </div>
+        <input type="file" id="ePhoto" accept="image/*" onchange="previewEditPhoto()" style="font-size:12px;padding:6px">
+        <div style="font-size:10px;color:#7c5c76;margin-top:3px">Upload a new photo or remove the existing one</div>
+      </div>
       <!-- Good Catch section -->
       <div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
         <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:8px">✅ Good Catch</div>
@@ -1020,6 +1030,15 @@ function openEdit(id){
   document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
   document.getElementById("eRx").value=e.rxNum||"";
   document.getElementById("eNt").value=e.notes||"";
+  // Photo — show existing if present
+  var ePhotoInput=document.getElementById("ePhoto");
+  ePhotoInput.value="";
+  ePhotoInput._photoData=e.photo||"";
+  ePhotoInput._removed=false;
+  var wrap=document.getElementById("ePhotoPreviewWrap");
+  var prev=document.getElementById("ePhotoPreview");
+  if(e.photo){wrap.style.display="block";prev.src=e.photo;}
+  else{wrap.style.display="none";prev.src="";}
   // Good Catch fields
   document.getElementById("eGC").value=e.goodCatch||"";
   var gcTeamSel=document.getElementById("eGCTeam");
@@ -1053,6 +1072,32 @@ function openEdit(id){
   document.getElementById("editModal").style.display="block";
 }
 function closeEdit(){document.getElementById("editModal").style.display="none";editId=null;}
+
+function previewEditPhoto(){
+  var input=document.getElementById("ePhoto");
+  if(!input||!input.files[0]) return;
+  var file=input.files[0];
+  if(file.size>2*1024*1024){alert("Photo must be under 2MB");input.value="";return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    input._photoData=ev.target.result;
+    input._removed=false;
+    var wrap=document.getElementById("ePhotoPreviewWrap");
+    var prev=document.getElementById("ePhotoPreview");
+    wrap.style.display="block";
+    prev.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeEditPhoto(){
+  var input=document.getElementById("ePhoto");
+  input.value="";
+  input._photoData="";
+  input._removed=true;
+  document.getElementById("ePhotoPreviewWrap").style.display="none";
+  document.getElementById("ePhotoPreview").src="";
+}
 function upEF(){var s=document.getElementById("eSr").value,show=s==="Human";document.getElementById("eTmW").style.display=show?"block":"none";document.getElementById("eWhW").style.display=show?"block":"none";}
 function upEW(){var t=document.getElementById("eTm").value;document.getElementById("eWh").innerHTML=whoOpts(t,"");}
 function saveEdit(){
@@ -1078,6 +1123,11 @@ function saveEdit(){
       D[i].drug=drug;
       D[i].rxNum=document.getElementById("eRx").value.trim();
       D[i].notes=document.getElementById("eNt").value;
+      // Photo — use new upload, or keep existing, or clear if removed
+      var ep=document.getElementById("ePhoto");
+      if(ep._removed) D[i].photo="";
+      else if(ep._photoData&&ep._photoData!==D[i].photo) D[i].photo=ep._photoData;
+      // (else keep existing photo unchanged)
       D[i].goodCatch=gcVal;
       D[i].gcTeam=gcTeam;
       D[i].gcWho=gcWho;
