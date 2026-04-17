@@ -102,7 +102,7 @@ tr.alt td{background:#fdf5fb}
 .user-pill span{font-size:11px;font-weight:700;color:#fff}
 .access-denied{background:#fee2e2;border-radius:12px;padding:16px;color:#dc2626;font-size:12px;font-weight:600;margin-top:10px}
 /* Photo upload */
-.photo-preview{width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-top:8px;border:1px solid var(--border);display:none}
+.photo-preview{width:100%;max-height:360px;object-fit:contain;border-radius:8px;margin-top:8px;border:1px solid var(--border);display:none}
 .photo-thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)}
 
 .rph-box{min-height:36px;border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;background:#fdf8fc;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
@@ -176,7 +176,7 @@ tr.alt td{background:#fdf5fb}
       <div style="margin-top:12px">
         <label class="flb" style="margin-top:0">📷 Photo Evidence <span style="font-weight:400;font-size:10px;color:#7c5c76">upload, paste (Ctrl+V), or remove</span></label>
         <div id="ePhotoPreviewWrap" style="display:none;margin-bottom:8px;position:relative">
-          <img id="ePhotoPreview" src="" alt="Error photo" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;display:block">
+          <img id="ePhotoPreview" src="" alt="Error photo" style="width:100%;max-height:360px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;display:block">
           <button type="button" onclick="removeEditPhoto()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">✕ Remove</button>
         </div>
         <input type="file" id="ePhoto" accept="image/*" onchange="previewEditPhoto()" style="font-size:12px;padding:6px">
@@ -806,7 +806,7 @@ function rQuickLog(){
     '<label class="flb">Notes / What happened?</label><textarea id="lNt" rows="3" placeholder="Brief description of the error..."></textarea>'+
     '<label class="flb" style="margin-top:12px">📷 Photo of the error <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
     '<input type="file" id="lPhoto" accept="image/*" onchange="previewLogPhoto()" style="font-size:12px;padding:6px;margin-bottom:4px">'+
-    '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
+    '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
     '<button class="btn btn-full" onclick="subQuickLog()" style="margin-top:16px;background:#10b981">⚡ Submit Quick Log</button>'+
     '</div>';
 }
@@ -896,7 +896,7 @@ function rFullLog(){
     '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
     '<label class="flb" style="margin-top:12px">📷 Photo Evidence <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
     '<input type="file" id="lPhoto" accept="image/*" onchange="previewLogPhoto()" style="font-size:12px;padding:6px;margin-bottom:4px">'+
-    '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
+    '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
     '<div style="margin-top:14px;padding:14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">'+
       '<div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:10px">✅ Good Catch</div>'+
       '<div class="fgrid">'+
@@ -1350,7 +1350,7 @@ function requestDriveToken(then){
 }
 
 function uploadToDrive(blob, filename, callback){
-  // Multipart upload to Drive — stores file in DRIVE_FOLDER_ID
+  if(!driveAccessToken){ console.warn('No Drive access token'); callback(null); return; }
   var metadata = {name: filename, parents: [DRIVE_FOLDER_ID]};
   var form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
@@ -1361,7 +1361,10 @@ function uploadToDrive(blob, filename, callback){
     headers: {'Authorization': 'Bearer ' + driveAccessToken},
     body: form
   })
-  .then(function(r){return r.json();})
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(e){ throw new Error(e.error&&e.error.message?e.error.message:'HTTP '+r.status); }); }
+    return r.json();
+  })
   .then(function(data){
     if(data.id){
       // Make file viewable by anyone in the org
@@ -1372,13 +1375,13 @@ function uploadToDrive(blob, filename, callback){
       });
       callback({id: data.id, url: data.webViewLink || ('https://drive.google.com/file/d/'+data.id+'/view')});
     } else {
-      console.warn('Drive upload failed:', data);
+      console.warn('Drive upload — no id in response:', data);
       callback(null);
     }
   })
   .catch(function(err){
-    console.warn('Drive upload error:', err);
-    // Token may have expired — try refreshing once
+    console.warn('Drive upload error:', err.message);
+    showDirToast('⚠ Drive error: ' + err.message);
     driveAccessToken = null;
     callback(null);
   });
