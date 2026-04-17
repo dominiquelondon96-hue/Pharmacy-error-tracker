@@ -1355,11 +1355,16 @@ function rDirectory(){
   var entries=Object.values(USER_DIRECTORY).filter(function(u){return u&&typeof u==='object';});
   var tableRows=entries.sort(function(a,b){return(a.name||'').localeCompare(b.name||'');}).map(function(u){
     var col=roleColors[u.role]||'#440B39';
-    return '<tr><td style="font-weight:600">'+u.name+'</td>'+
+    var safeEmail=encodeURIComponent(u.email);
+    return '<tr>'+
+      '<td style="font-weight:600">'+u.name+'</td>'+
       '<td style="color:#7c5c76;font-size:11px">'+u.email+'</td>'+
       '<td><span class="bdg" style="background:'+col+'22;color:'+col+'">'+u.role+'</span></td>'+
       '<td><span class="bdg" style="background:#f3e8f1;color:#7c5c76">'+(u.team||'—')+'</span></td>'+
-      '<td><button onclick="removeDirUser(this)" data-email="'+u.email+'" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></td></tr>';
+      '<td style="white-space:nowrap">'+
+        '<button onclick="openDirEdit(decodeURIComponent(\''+safeEmail+'\'))" style="padding:2px 8px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;font-size:11px;cursor:pointer;margin-right:4px">Edit</button>'+
+        '<button onclick="removeDirUser(this)" data-email="'+u.email+'" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button>'+
+      '</td></tr>';
   }).join('');
 
   sec.innerHTML=
@@ -1384,7 +1389,92 @@ function rDirectory(){
       '<div class="card" style="padding:0;overflow:hidden;margin-top:12px">'+
         '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Team</th><th></th></tr></thead>'+
         '<tbody>'+tableRows+'</tbody></table></div></div>'
-    :'<div class="card" style="text-align:center;color:#7c5c76;padding:32px;margin-top:12px">No team members yet — add someone above.</div>');
+    :'<div class="card" style="text-align:center;color:#7c5c76;padding:32px;margin-top:12px">No team members yet — add someone above.</div>')+
+    // Edit modal
+    '<div id="dirEditModal" class="modal-bg" style="display:none">'+
+      '<div class="modal-box" style="max-width:480px">'+
+        '<h3 style="font-size:16px;color:#2E0326;margin-bottom:4px">Edit Team Member</h3>'+
+        '<p id="dirEditSub" style="font-size:11px;color:#7c5c76;margin-bottom:16px"></p>'+
+        '<label class="flb" style="margin-top:0">Full Name</label>'+
+        '<input id="dirEditName" placeholder="Full name">'+
+        '<label class="flb">Work Email <span style="font-weight:400;font-size:10px;color:#7c5c76">(changing this updates their login)</span></label>'+
+        '<input id="dirEditEmail" type="email" placeholder="email@gifthealth.com">'+
+        '<label class="flb">Role / Access Level</label>'+
+        '<select id="dirEditRole">'+
+          '<option value="RPH">RPH — Log Error only</option>'+
+          '<option value="Manager">Manager — All except Admin</option>'+
+          '<option value="Admin">Admin — Full access</option>'+
+        '</select>'+
+        '<label class="flb">Team</label>'+
+        '<select id="dirEditTeam">'+teamOpts+'</select>'+
+        '<input type="hidden" id="dirEditOrigEmail">'+
+        '<div style="display:flex;gap:10px;margin-top:16px">'+
+          '<button class="btn btn-full" onclick="saveDirEdit()">Save Changes</button>'+
+          '<button onclick="closeDirEdit()" style="padding:9px 16px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+}
+
+function openDirEdit(email){
+  var u=USER_DIRECTORY[email];
+  if(!u) return;
+  document.getElementById('dirEditModal').style.display='block';
+  document.getElementById('dirEditSub').textContent='Editing: '+u.email;
+  document.getElementById('dirEditName').value=u.name||'';
+  document.getElementById('dirEditEmail').value=u.email||'';
+  document.getElementById('dirEditRole').value=u.role||'RPH';
+  document.getElementById('dirEditTeam').value=u.team||'';
+  document.getElementById('dirEditOrigEmail').value=u.email||'';
+}
+
+function closeDirEdit(){
+  document.getElementById('dirEditModal').style.display='none';
+}
+
+function saveDirEdit(){
+  var origEmail=document.getElementById('dirEditOrigEmail').value;
+  var newName=document.getElementById('dirEditName').value.trim();
+  var newEmail=document.getElementById('dirEditEmail').value.trim().toLowerCase();
+  var newRole=document.getElementById('dirEditRole').value;
+  var newTeam=document.getElementById('dirEditTeam').value;
+
+  if(!newName){alert('Name is required');return;}
+  if(!newEmail||!newEmail.includes('@')){alert('Valid email is required');return;}
+
+  var old=USER_DIRECTORY[origEmail];
+  if(!old) return;
+
+  // Remove old name from SM if team changed or name changed
+  if(old.team&&old.name&&SM[old.team]){
+    var oi=SM[old.team].indexOf(old.name);
+    if(oi>-1) SM[old.team].splice(oi,1);
+  }
+
+  // If email changed, remove old key
+  if(origEmail!==newEmail) delete USER_DIRECTORY[origEmail];
+
+  // Save updated record
+  USER_DIRECTORY[newEmail]={name:newName,email:newEmail,role:newRole,team:newTeam};
+
+  // Add new name to SM
+  if(newTeam){
+    if(!SM[newTeam]) SM[newTeam]=[];
+    if(SM[newTeam].indexOf(newName)===-1) SM[newTeam].push(newName);
+  }
+
+  // Update any error entries that referenced old name
+  if(old.name!==newName){
+    for(var i=0;i<D.length;i++){
+      if(D[i].who===old.name) D[i].who=newName;
+    }
+  }
+
+  save();
+  closeDirEdit();
+  rDirectory();
+  rStaff();
+  showDirToast('✅ '+newName+' updated'+(old.role!==newRole?' — role changed to '+newRole:''));
 }
 
 function addDirUser(){
