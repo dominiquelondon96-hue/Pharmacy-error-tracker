@@ -18,8 +18,8 @@
   --border:#e8d5e4;--page-bg:#FFF1EE;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Funnel Display',system-ui,sans-serif}
-body{background:var(--page-bg);min-height:100vh;padding:16px}
-.wrap{max-width:1200px;margin:0 auto}
+body{background:var(--page-bg);min-height:100vh;padding:10px}
+.wrap{max-width:1600px;margin:0 auto}
 .hdr{background:linear-gradient(135deg,var(--purple-xd) 0%,var(--purple) 65%,#6b1a5e 100%);border-radius:14px;padding:18px 26px;margin-bottom:14px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;box-shadow:0 4px 24px rgba(68,11,57,.3)}
 .hdr h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.3px}
 .hdr .sub{font-size:11px;opacity:.7;margin-top:2px}
@@ -44,7 +44,7 @@ textarea{resize:vertical}
 .btn{padding:9px 18px;background:var(--purple);color:#fff;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;font-family:'Funnel Display',system-ui,sans-serif;transition:background .15s}
 .btn:hover{background:var(--purple-xd)}
 .btn-full{width:100%;display:block}
-table{width:100%;border-collapse:collapse;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:11px}
 th{padding:9px 12px;text-align:left;color:#fff;font-weight:700;font-size:11px;white-space:nowrap;background:var(--purple);text-transform:uppercase;letter-spacing:.4px}
 td{padding:8px 12px;border-bottom:1px solid #f3e8f1}
 tr.alt td{background:#fdf5fb}
@@ -292,7 +292,32 @@ function setSyncUI(status,msg){
 
 // ── JSONBin API ────────────────────────────────────────────────────────────
 function getPayload(){
-  return {D:D,FBI:FBI,RFBI:RFBI,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
+  // Strip photos from cloud payload — store separately in localStorage
+  var dNoPhotos=D.map(function(e){
+    if(!e.photo) return e;
+    var copy=Object.assign({},e);
+    copy.photo='';
+    copy.hasPhoto=true;
+    return copy;
+  });
+  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
+}
+
+function savePhotosLocally(){
+  var photos={};
+  D.forEach(function(e){if(e.photo)photos[e.id]=e.photo;});
+  try{localStorage.setItem('pet_photos',JSON.stringify(photos));}catch(ex){
+    console.warn('Photo storage full');
+  }
+}
+
+function restorePhotosFromLocal(){
+  try{
+    var raw=localStorage.getItem('pet_photos');
+    if(!raw) return;
+    var photos=JSON.parse(raw);
+    D.forEach(function(e){if(photos[e.id])e.photo=photos[e.id];});
+  }catch(ex){}
 }
 
 function applyPayload(p){
@@ -304,9 +329,13 @@ function applyPayload(p){
   if(p.TM&&p.TM.length)TM=p.TM;
   if(p.RFBI)RFBI=p.RFBI;
   if(p.USER_DIRECTORY)USER_DIRECTORY=p.USER_DIRECTORY;
+  restorePhotosFromLocal();
 }
 
-function lsSave(){try{localStorage.setItem("pet_v1",JSON.stringify(getPayload()));}catch(e){}}
+function lsSave(){
+  savePhotosLocally();
+  try{localStorage.setItem("pet_v1",JSON.stringify(getPayload()));}catch(e){}
+}
 function lsLoad(){try{var r=localStorage.getItem("pet_v1");if(r)applyPayload(JSON.parse(r));}catch(e){}}
 
 async function jbLoad(){
@@ -555,31 +584,11 @@ function rRph(){
     }
   }
 
-  // ── Debug panel — shows raw field values for this week's entries ──
   var rphEtLabels=[],rphEtData=[];
   for(var et2 in rphEtC){rphEtLabels.push(et2.length>14?et2.slice(0,13)+"...":et2);rphEtData.push(rphEtC[et2]);}
 
-  var debugRows="";
-  for(var dbi=0;dbi<wkD.length&&dbi<10;dbi++){
-    var de2=wkD[dbi];
-    debugRows+='<tr style="font-size:10px">'+
-      '<td style="white-space:nowrap">'+de2.date+'</td>'+
-      '<td style="color:#7c5c76;max-width:120px;overflow:hidden;text-overflow:ellipsis">'+de2.errorType+'</td>'+
-      '<td style="color:'+(de2.goodCatch==="Yes"?"#16a34a":"#7c5c76")+'">'+JSON.stringify(de2.goodCatch||"—")+'</td>'+
-      '<td style="color:#7c5c76">'+JSON.stringify(de2.gcWho||"—")+'</td>'+
-      '<td style="color:'+(de2.dispensedWithError==="Yes"?"#dc2626":"#7c5c76")+'">'+JSON.stringify(de2.dispensedWithError||"—")+'</td>'+
-      '<td style="color:#7c5c76">'+JSON.stringify(de2.rphVerified||"—")+'</td>'+
-      '<td style="color:#7c5c76">'+JSON.stringify(de2.rphNames||[])+'</td>'+
-    '</tr>';
-  }
-  var debugPanel='<details style="margin-bottom:12px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:#440B39;padding:8px 12px;background:#eef2ff;border-radius:8px">🔍 Debug — Raw Field Values (Week '+rphSelWk+', first 10 entries)</summary>'+
-    '<div class="tbl-wrap" style="margin-top:4px"><table><thead><tr><th>Date</th><th>Error Type</th><th>goodCatch</th><th>gcWho</th><th>dispensedWithError</th><th>rphVerified</th><th>rphNames</th></tr></thead><tbody>'+
-    (debugRows||'<tr><td colspan="7" style="text-align:center;color:#7c5c76;padding:12px">No entries for this week</td></tr>')+
-    '</tbody></table></div></details>';
-
   sec.innerHTML=
     wkBtns+
-    debugPanel+
     '<div class="kpi-row">'+kh+'</div>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div class="card" style="flex:1;min-width:220px;margin-bottom:0"><div class="section-title">Week '+rphSelWk+' Outcome Breakdown</div><div class="ch-wrap" style="height:210px"><canvas id="ch-rph2"></canvas></div></div>'+
@@ -1077,17 +1086,15 @@ function previewEditPhoto(){
   var input=document.getElementById("ePhoto");
   if(!input||!input.files[0]) return;
   var file=input.files[0];
-  if(file.size>2*1024*1024){alert("Photo must be under 2MB");input.value="";return;}
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    input._photoData=ev.target.result;
+  if(file.size>5*1024*1024){alert("Photo must be under 5MB");input.value="";return;}
+  compressPhoto(file, function(compressed){
+    input._photoData=compressed;
     input._removed=false;
     var wrap=document.getElementById("ePhotoPreviewWrap");
     var prev=document.getElementById("ePhotoPreview");
     wrap.style.display="block";
-    prev.src=ev.target.result;
-  };
-  reader.readAsDataURL(file);
+    prev.src=compressed;
+  });
 }
 
 function removeEditPhoto(){
@@ -1566,19 +1573,38 @@ function showDirToast(msg){
 
 
 // ── Photo helpers ──
+// ── Photo compression helper ──────────────────────────────────────────────
+// Compresses image to max 800px wide and JPEG quality 0.7 before storing
+// Reduces a 2MB photo to ~100-200KB in base64
+function compressPhoto(file, callback){
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=800;
+      var w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      var canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      callback(canvas.toDataURL('image/jpeg',0.7));
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function previewLogPhoto() {
   var input = document.getElementById('lPhoto');
   if(!input || !input.files[0]) return;
   var file = input.files[0];
-  if(file.size > 2 * 1024 * 1024) { alert('Photo must be under 2MB'); input.value=''; return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    input._photoData = e.target.result;
+  if(file.size > 5 * 1024 * 1024) { alert('Photo must be under 5MB'); input.value=''; return; }
+  compressPhoto(file, function(compressed){
+    input._photoData = compressed;
     var preview = document.getElementById('lPhotoPreview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+    if(preview){ preview.src = compressed; preview.style.display = 'block'; }
+  });
 }
 
 function showPhotoModal(id) {
