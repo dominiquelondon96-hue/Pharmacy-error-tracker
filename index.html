@@ -276,7 +276,7 @@ function fxOpts(sel){var h="";for(var i=0;i<FX.length;i++)h+='<option'+(FX[i]===
 function whoOpts(team,sel){var h='<option value="">Select</option>';var n=SM[team]||[];for(var i=0;i<n.length;i++)h+='<option'+(n[i]===sel?" selected":"")+'>'+n[i]+'</option>';return h;}
 function drugOpts(sel){var h='<option value="">-- Select Drug --</option>';for(var i=0;i<DRUGS.length;i++)h+='<option'+(DRUGS[i]===sel?" selected":"")+'>'+DRUGS[i]+'</option>';h+='<option value="__other__">Other (type below)</option>';return h;}
 function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
-function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(dashMode==="daily")return base.filter(function(e){return e.date===todayStr;});if(dashMode==="weekly")return base.filter(function(e){return e.week===thisWk;});return base;}
+function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(dashMode==="daily")return base.filter(function(e){return e.date===todayStr;});if(dashMode==="weekly")return base.filter(function(e){return e.week===thisWk;});if(dashMode==="prevweek")return base.filter(function(e){return e.week===thisWk-1;});return base;}
 
 var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
@@ -409,7 +409,7 @@ var NAVS=[{k:"board",l:"📋 Board"},{k:"dashboard",l:"Dashboard"},{k:"summary",
 function buildNav(){var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';document.getElementById("navBar").innerHTML=h;}
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
 function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
-function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;var rv=D.filter(function(e){return e.needsReview;}).length;document.getElementById("hPnd").textContent=(D.filter(function(e){return !e.needsReview;}).length-Object.keys(FBI).length)+" Pending"+(rv>0?" · "+rv+" Needs Review":"");document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";}
+function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;var rv=D.filter(function(e){return e.needsReview;}).length;document.getElementById("hPnd").textContent=(D.filter(function(e){return !e.needsReview;}).length-Object.keys(FBI).length)+" Pending"+(rv>0?" · "+rv+" Needs Review":"");document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Prev Week":"All Time";}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
 function rDash(){
@@ -431,9 +431,10 @@ function rDash(){
   var topTM="None",topTV=0;for(var k2 in tmC){if(tmC[k2]>topTV){topTV=tmC[k2];topTM=k2;}}
   var stC={};for(var i3=0;i3<sub.length;i3++){if(sub[i3].who)stC[sub[i3].who]=(stC[sub[i3].who]||0)+1;}
   var topST="None",topSV=0;for(var k3 in stC){if(stC[k3]>topSV){topSV=stC[k3];topST=k3;}}
-  var prev=dashMode==="daily"?D.filter(function(e){var yd=new Date(today);yd.setDate(today.getDate()-1);return e.date===fmtD(yd);}):dashMode==="weekly"?D.filter(function(e){return e.week===thisWk-1;}):[];
+  var prev=dashMode==="daily"?D.filter(function(e){var yd=new Date(today);yd.setDate(today.getDate()-1);return e.date===fmtD(yd);}):dashMode==="weekly"?D.filter(function(e){return e.week===thisWk-1;}):dashMode==="prevweek"?D.filter(function(e){return e.week===thisWk-2;}):[];
+  var dLabel=dashMode==="daily"?"day":dashMode==="prevweek"?"week before":"week";
   var delta=sub.length-prev.length;
-  var dStr=delta===0?"Same as last "+(dashMode==="daily"?"day":"week"):delta>0?"+"+delta+" vs last "+(dashMode==="daily"?"day":"week"):delta+" vs last "+(dashMode==="daily"?"day":"week");
+  var dStr=delta===0?"Same as last "+dLabel:delta>0?"+"+delta+" vs last "+dLabel:delta+" vs last "+dLabel;
   var dCol=delta>0?"#ef4444":delta<0?"#10b981":"#7c5c76";
   var alerts="";
   if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
@@ -459,11 +460,74 @@ function rDash(){
   var days=["Mon","Tue","Wed","Thu","Fri"],dayData=[];
   var ws=new Date(today),dow=ws.getDay(),diff=dow===0?6:dow-1;ws.setDate(ws.getDate()-diff);
   for(var d=0;d<5;d++){var dd=new Date(ws);dd.setDate(ws.getDate()+d);dayData.push(D.filter(function(e){return e.date===fmtD(dd);}).length);}
-  var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";
-  var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
+  // ── Previous week data ──
+  var prevWk=D.filter(function(e){return !e.needsReview&&e.week===thisWk-1;});
+  var prevHuman=prevWk.filter(function(e){return e.source==="Human";}).length;
+  var prevBot=prevWk.filter(function(e){return e.source==="Bot";}).length;
+  var prevApi=prevWk.filter(function(e){return e.source==="API";}).length;
+  var prevDisp=prevWk.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";}).length;
+  var prevGood=prevWk.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length;
+  var prevEtC={};for(var pi=0;pi<prevWk.length;pi++){prevEtC[prevWk[pi].errorType]=(prevEtC[prevWk[pi].errorType]||0)+1;}
+  var prevTopET="None",prevTopEV=0;for(var pk in prevEtC){if(prevEtC[pk]>prevTopEV){prevTopEV=prevEtC[pk];prevTopET=pk;}}
+
+  function wkDiff(curr,prev){
+    var d=curr-prev;
+    if(d===0) return '<span style="color:#7c5c76">— same</span>';
+    var up=d>0;
+    // For errors, up is bad (red). For good catches, up is good (green).
+    return '<span style="color:'+(up?"#ef4444":"#10b981")+';font-weight:700">'+(up?"▲":"▼")+Math.abs(d)+'</span>';
+  }
+  function wkDiffGood(curr,prev){
+    var d=curr-prev;
+    if(d===0) return '<span style="color:#7c5c76">— same</span>';
+    var up=d>0;
+    return '<span style="color:'+(up?"#10b981":"#ef4444")+';font-weight:700">'+(up?"▲":"▼")+Math.abs(d)+'</span>';
+  }
+
+  var prevPanel='';
+  if(dashMode==="weekly"){
+      '<div class="card" style="margin-bottom:12px">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">'+
+          '<div style="font-size:13px;font-weight:700;color:#2E0326">Week '+thisWk+' vs Week '+(thisWk-1)+'</div>'+
+          (prevWk.length===0?'<span style="font-size:11px;color:#7c5c76">No data for previous week</span>':'')+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">'+
+          _prevCard("Total Errors",      sub.length,      prevWk.length,  false)+
+          _prevCard("Human",             human,           prevHuman,       false)+
+          _prevCard("Bot",               bot,             prevBot,         false)+
+          _prevCard("API",               api,             prevApi,         false)+
+          _prevCard("⚠ Dispensed",       rphVerifiedCount,prevDisp,        false)+
+          _prevCard("✅ Good Catches",    rphGoodCount,    prevGood,        true)+
+        '</div>'+
+        '<div style="margin-top:12px;font-size:11px;color:#7c5c76;border-top:1px solid #f3e8f1;padding-top:10px;display:flex;gap:16px;flex-wrap:wrap">'+
+          '<span>Wk '+(thisWk-1)+' top error: <strong style="color:#2E0326">'+(prevTopEV>0?prevTopET+' ('+prevTopEV+')':'None')+'</strong></span>'+
+          '<span>Wk '+thisWk+' top error: <strong style="color:#2E0326">'+(topEV>0?topET+' ('+topEV+')':'None')+'</strong></span>'+
+        '</div>'+
+      '</div>';
+  }
+
+  function _prevCard(label, curr, prev, higherIsBetter){
+    var d=curr-prev;
+    var arrow=d===0?'<span style="color:#7c5c76;font-size:16px">—</span>':
+      '<span style="font-size:16px;font-weight:800;color:'+(d>0?(higherIsBetter?"#10b981":"#ef4444"):(higherIsBetter?"#ef4444":"#10b981"))+'">'+
+        (d>0?"▲":"▼")+Math.abs(d)+
+      '</span>';
+    return '<div style="text-align:center;padding:10px 8px;background:#fdf8fc;border-radius:10px;border:1px solid #f3e8f1">'+
+      '<div style="font-size:9px;font-weight:700;color:#7c5c76;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+label+'</div>'+
+      '<div style="display:flex;align-items:center;justify-content:center;gap:8px">'+
+        '<div style="text-align:center"><div style="font-size:11px;color:#7c5c76">Wk '+(thisWk-1)+'</div><div style="font-size:18px;font-weight:800;color:#7c5c76">'+prev+'</div></div>'+
+        '<div style="font-size:18px">'+arrow+'</div>'+
+        '<div style="text-align:center"><div style="font-size:11px;color:#2E0326;font-weight:700">Wk '+thisWk+'</div><div style="font-size:18px;font-weight:800;color:#2E0326">'+curr+'</div></div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Week "+(thisWk-1):"All Time";
+  var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="prevweek"?" on":"")+'" onclick="dashMode=\'prevweek\';upHdr();rDash()">Prev Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
   sec.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#2E0326">Overview</h2>'+tog+'</div>'+
     '<div class="kpi-row">'+kh+'</div>'+
+    prevPanel+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-ty"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-tm"></canvas></div></div>'+
