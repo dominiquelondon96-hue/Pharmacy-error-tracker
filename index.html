@@ -936,6 +936,31 @@ function rphNameOpts(){
   return h;
 }
 
+// ── Duplicate Detection ───────────────────────────────────────────────────
+function findDuplicate(rxNum, errorType, excludeId){
+  if(!rxNum || !errorType) return null;
+  var rx = rxNum.trim().toLowerCase();
+  var et = errorType.trim().toLowerCase();
+  for(var i=0;i<D.length;i++){
+    var e=D[i];
+    if(excludeId && e.id===excludeId) continue;
+    if((e.rxNum||'').trim().toLowerCase()===rx && (e.errorType||'').trim().toLowerCase()===et){
+      return e;
+    }
+  }
+  return null;
+}
+
+function dupWarning(existing){
+  return '⚠ Possible duplicate detected!\n\n'+
+    'An entry already exists with:\n'+
+    '  RX: '+existing.rxNum+'\n'+
+    '  Error Type: '+existing.errorType+'\n'+
+    '  Date: '+existing.date+'\n'+
+    '  Logged by: '+(existing.who||'Unknown')+'\n\n'+
+    'Do you still want to save this entry?';
+}
+
 function subQuickLog(){
   var date=document.getElementById("lDt").value;
   if(!date){alert("Please select a date.");return;}
@@ -977,11 +1002,11 @@ function subQuickLog(){
   row.quickLogBy=rphName||(currentUser?currentUser.name:"RPH");
   row.quickLogAt=new Date().toISOString();
 
+  // Check for duplicate
+  var dup=findDuplicate(rx, errorType, null);
+  if(dup && !confirm(dupWarning(dup))) return;
+
   D.unshift(row);
-  save();
-  upHdr();
-  rQuickLog();
-  alert("✅ Quick log submitted! A manager will complete the details.");
 }
 
 function rFullLog(){
@@ -1081,6 +1106,9 @@ function subLog(){
   row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;
   row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(gcVal==="Yes"?"good_catch":"");
   row.needsReview=false;
+  // Check for duplicate
+  var dup2=findDuplicate(row.rxNum, row.errorType, null);
+  if(dup2 && !confirm(dupWarning(dup2))) return;
   D.unshift(row);save();upHdr();rFullLog();alert("Error logged successfully.");
 }
 
@@ -1329,12 +1357,29 @@ function rEntries(){
   var fsO='<option'+(eFS==="All"?" selected":"")+'>All</option>';
   for(var si2=0;si2<SR.length;si2++)fsO+='<option'+(eFS===SR[si2]?" selected":"")+'>'+SR[si2]+'</option>';
 
+  // Build duplicate ID set — entries sharing RX + error type
+  var dupKeys={}, dupIds={};
+  for(var di2=0;di2<fil.length;di2++){
+    var de=fil[di2];
+    if(de.rxNum && de.errorType){
+      var dk=(de.rxNum.trim().toLowerCase())+'|'+(de.errorType.trim().toLowerCase());
+      if(dupKeys[dk]===undefined) dupKeys[dk]=[];
+      dupKeys[dk].push(de.id);
+    }
+  }
+  for(var dk2 in dupKeys){
+    if(dupKeys[dk2].length>1){
+      dupKeys[dk2].forEach(function(id){ dupIds[id]=true; });
+    }
+  }
+
   var rows="",shown=fil.length>300?fil.slice(0,300):fil;
   for(var ri=0;ri<shown.length;ri++){
     var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id];
     var isReview=!!e2.needsReview;
-    var bg=isReview?"#fffbeb":(hi?"#f0fdf4":(ri%2===0?"#fdf8fc":"#fff"));
-    var rowClass=isReview?"review-row":"";
+    var isDup=!!dupIds[e2.id];
+    var bg=isReview?"#fffbeb":isDup?"#fff7ed":(hi?"#f0fdf4":(ri%2===0?"#fdf8fc":"#fff"));
+    var rowClass=isReview?"review-row":isDup?"dup-row":"";
     var rphBdg="";
     if(isReview){
       rphBdg='<span class="bdg" style="background:#fef3c7;color:#92400e">⏳ Needs Review</span>';
@@ -1352,7 +1397,7 @@ function rEntries(){
        '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+
        (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+
        '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>';
-    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
+    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+(isDup?' <span class="bdg" style="background:#fee2e2;color:#dc2626;font-size:9px">&#9888; DUP</span>':'')+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
   }
 
   // Review queue banner
