@@ -156,6 +156,7 @@ tr.alt td{background:#fdf5fb}
   <div id="sec-log" class="sec"></div>
   <div id="sec-import" class="sec"></div>
   <div id="sec-entries" class="sec"></div>
+  <div id="sec-board" class="sec"></div>
   <div id="sec-directory" class="sec"></div>
   <div id="sec-admin" class="sec"></div>
   <div id="editModal" class="modal-bg">
@@ -277,10 +278,10 @@ function drugOpts(sel){var h='<option value="">-- Select Drug --</option>';for(v
 function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(dashMode==="daily")return base.filter(function(e){return e.date===todayStr;});if(dashMode==="weekly")return base.filter(function(e){return e.week===thisWk;});return base;}
 
-var D=[],FBI={},RFBI={};  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
+var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
-var mvTm="All",mvWho="",mvTy="All",mvWk="All";
-var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All";
+var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
+var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="";
 var charts={},editId=null;
 var today=new Date(),todayStr=fmtD(today),thisWk=getWk(todayStr);
 var saveTimer=null;
@@ -304,7 +305,7 @@ function getPayload(){
     // driveId and driveUrl stay in cloud payload — they're just short strings
     return copy;
   });
-  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
+  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,POSTS:POSTS,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
 }
 
 function savePhotosLocally(){
@@ -332,6 +333,7 @@ function applyPayload(p){
   if(p.ET&&p.ET.length)ET=p.ET;
   if(p.TM&&p.TM.length)TM=p.TM;
   if(p.RFBI)RFBI=p.RFBI;
+  if(p.POSTS)POSTS=p.POSTS;
   if(p.USER_DIRECTORY)USER_DIRECTORY=p.USER_DIRECTORY;
   restorePhotosFromLocal();
 }
@@ -403,10 +405,10 @@ function exportData(){
 }
 
 // ── Nav ────────────────────────────────────────────────────────────────────
-var NAVS=[{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"directory",l:"Directory"},{k:"admin",l:"Admin"}];
+var NAVS=[{k:"board",l:"📋 Board"},{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"directory",l:"Directory"},{k:"admin",l:"Admin"}];
 function buildNav(){var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';document.getElementById("navBar").innerHTML=h;}
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
-function render(v){var fn={dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
+function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
 function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;var rv=D.filter(function(e){return e.needsReview;}).length;document.getElementById("hPnd").textContent=(D.filter(function(e){return !e.needsReview;}).length-Object.keys(FBI).length)+" Pending"+(rv>0?" · "+rv+" Needs Review":"");document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":"All Time";}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -799,7 +801,7 @@ function rMember(){
   var sec=document.getElementById("sec-member"),wks=allWks(),members={};
   for(var i=0;i<D.length;i++){var e=D[i];if(e.source==="Human"&&(mvTm==="All"||e.team===mvTm)&&e.who)members[e.who]=1;}
   var mList=Object.keys(members).sort(),mv=[];
-  for(var di=0;di<D.length;di++){var e2=D[di];if(e2.source==="Human"&&(mvTm==="All"||e2.team===mvTm)&&(!mvWho||e2.who===mvWho)&&(mvTy==="All"||e2.errorType===mvTy)&&(mvWk==="All"||e2.week==mvWk))mv.push(e2);}
+  for(var di=0;di<D.length;di++){var e2=D[di];if(e2.source==="Human"&&(mvTm==="All"||e2.team===mvTm)&&(!mvWho||e2.who===mvWho)&&(mvTy==="All"||e2.errorType===mvTy)&&(mvWk==="All"||e2.week==mvWk)&&(!mvRxSearch||(e2.rxNum||"").toLowerCase().indexOf(mvRxSearch.toLowerCase())>=0))mv.push(e2);}
   mv.sort(function(a,b){return b.date>a.date?1:b.date<a.date?-1:0;});
   var tC={};for(var mi=0;mi<mv.length;mi++)tC[mv[mi].errorType]=(tC[mv[mi].errorType]||0)+1;
   var topE="None",topN=0;for(var te in tC){if(tC[te]>topN){topN=tC[te];topE=te;}}
@@ -809,7 +811,7 @@ function rMember(){
   var wkOpt='<option value="All"'+(mvWk==="All"?" selected":"")+'>All Weeks</option>';for(var wki=0;wki<wks.length;wki++)wkOpt+='<option value="'+wks[wki]+'"'+(mvWk==wks[wki]?" selected":"")+'>Week '+wks[wki]+'</option>';
   var kHtml='<div class="kpi" style="border-left-color:#440B39;padding:10px 14px"><div class="lb">Total</div><div style="font-size:20px;font-weight:800;color:#2E0326">'+mv.length+'</div></div><div class="kpi" style="border-left-color:#ef4444;padding:10px 14px"><div class="lb">Top Error</div><div style="font-size:11px;font-weight:800;color:#2E0326;line-height:1.2">'+topE+'</div></div>';
   var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#fdf8fc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#7c5c76">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#440B39"):"")+'</td><td style="color:#7c5c76">'+(me.faxErx||"—")+'</td><td style="color:#2E0326">'+(me.drug||"—")+'</td><td style="color:#2E0326">'+(me.rxNum||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#7c5c76">'+(hi?hi.date:"—")+'</td></tr>';}
-  var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div></div></div>';
+  var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div><label class="flb" style="margin-top:0">RX #</label><input value="'+mvRxSearch+'" placeholder="Search RX..." oninput="mvRxSearch=this.value;rMember()" style="width:120px;padding:7px 10px;font-size:12px;border-radius:20px;border:1.5px solid '+(mvRxSearch?'var(--purple)':'var(--border)')+'"></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div></div></div>';
   inner+=(mv.length>0?'<div class="kpi-row">'+kHtml+'</div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Date</th><th>Wk</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>':'<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No entries found.</div>');
   sec.innerHTML=inner;
 }
@@ -1309,7 +1311,8 @@ function rEntries(){
       &&(eFT==="All"||e.errorType===eFT)
       &&(eFS==="All"||e.source===eFS)
       &&(eFSt==="All"||(eFSt==="Initials Given"&&!!FBI[e.id])||(eFSt==="Pending"&&!FBI[e.id]))
-      &&(eReview==="All"||(eReview==="Needs Review"&&e.needsReview)||(eReview==="Complete"&&!e.needsReview)))
+      &&(eReview==="All"||(eReview==="Needs Review"&&e.needsReview)||(eReview==="Complete"&&!e.needsReview))
+      &&(!eRxSearch||(e.rxNum||"").toLowerCase().indexOf(eRxSearch.toLowerCase())>=0))
       fil.push(e);
   }
   // Needs Review pinned to top, then newest date first within each group
@@ -1369,8 +1372,9 @@ function rEntries(){
       '<label style="font-size:11px;color:#7c5c76">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select>'+
       '<label style="font-size:11px;color:#7c5c76">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select>'+
       '<label style="font-size:11px;color:#7c5c76">Review:</label><select onchange="eReview=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px;border-color:'+(eReview==="Needs Review"?"#f59e0b":"")+'"><option'+(eReview==="All"?" selected":"")+'>All</option><option'+(eReview==="Needs Review"?" selected":"")+'>Needs Review</option><option'+(eReview==="Complete"?" selected":"")+'>Complete</option></select>'+
+      '<input placeholder="🔍 RX #" value="'+eRxSearch+'" oninput="eRxSearch=this.value;rEntries()" style="width:110px;padding:5px 8px;font-size:11px;border-radius:20px;border:1.5px solid '+(eRxSearch?'var(--purple)':'var(--border)')+'">'+
       '<span style="font-size:11px;color:#7c5c76;margin-left:auto">'+fil.length+' entries</span>'+
-      (eReview!=="All"?'<button onclick="eReview=\'All\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear filter ✕</button>':'')+
+      ((eReview!=="All"||eRxSearch)?'<button onclick="eReview=\'All\';eRxSearch=\'\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear all ✕</button>':'')+
     '</div>'+
     '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Intake Lead</th><th>FB Date</th><th>RPH Lead(s)</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
@@ -1606,9 +1610,9 @@ var currentUser = null; // { name, email, picture, role }
 
 // Role permissions
 var ROLE_PAGES = {
-  'RPH':     ['log'],
-  'Manager': ['dashboard','summary','trends','rph','staff','member','log','import','entries','directory'],
-  'Admin':   ['dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
+  'RPH':     ['board','log'],
+  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory'],
+  'Admin':   ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
 };
 
 function onGoogleSignInWithInfo(info) {
@@ -1679,6 +1683,191 @@ function buildNav() {
 }
 
 // ── Admin — User Directory management ──
+// ── Bulletin Board ────────────────────────────────────────────────────────
+var POST_TYPES={
+  announcement:{label:'📢 Announcement',color:'#440B39',bg:'#f3e8f1'},
+  update:      {label:'🔄 Workflow Update',color:'#0369a1',bg:'#eff6ff'},
+  reminder:    {label:'⏰ Reminder',color:'#d97706',bg:'#fffbeb'},
+  sop:         {label:'📄 SOP / Policy',color:'#059669',bg:'#f0fdf4'},
+  urgent:      {label:'🚨 Urgent',color:'#dc2626',bg:'#fff1f2'},
+};
+
+function rBoard(){
+  var sec=document.getElementById('sec-board');
+  if(!sec) return;
+  var canPost=currentUser&&(currentUser.role==='Manager'||currentUser.role==='Admin');
+
+  // Sort: pinned first, then newest
+  var sorted=POSTS.slice().sort(function(a,b){
+    if(a.pinned&&!b.pinned) return -1;
+    if(!a.pinned&&b.pinned) return 1;
+    return b.ts-a.ts;
+  });
+
+  var postCards=sorted.length===0?
+    '<div class="card" style="text-align:center;padding:40px;color:#7c5c76">'+
+      '<div style="font-size:32px;margin-bottom:8px">📋</div>'+
+      '<div style="font-weight:700;font-size:14px;margin-bottom:4px">No posts yet</div>'+
+      '<div style="font-size:12px">Managers and Admins can post announcements, reminders, and workflow updates here</div>'+
+    '</div>'
+  :sorted.map(function(p){
+    var pt=POST_TYPES[p.type]||POST_TYPES.announcement;
+    var ts=new Date(p.ts);
+    var dateStr=ts.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    var timeStr=ts.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="card" style="border-left:4px solid '+pt.color+';'+(p.pinned?'background:#fffdf0;border-top:2px solid #f59e0b;':'')+'">' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">' +
+        '<div style="flex:1">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
+            (p.pinned?'<span style="font-size:10px;font-weight:800;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:10px">📌 PINNED</span>':'')+
+            '<span class="bdg" style="background:'+pt.bg+';color:'+pt.color+'">'+pt.label+'</span>'+
+            '<span style="font-size:11px;font-weight:700;color:#2E0326">'+p.title+'</span>'+
+          '</div>'+
+          '<div style="font-size:13px;color:#2E0326;line-height:1.6;white-space:pre-wrap">'+p.body+'</div>'+
+          '<div style="font-size:10px;color:#7c5c76;margin-top:8px">'+
+            'Posted by <strong>'+p.author+'</strong> · '+dateStr+' at '+timeStr+
+            (p.edited?' · <em>edited</em>':'')+
+          '</div>'+
+        '</div>'+
+        (canPost?
+          '<div style="display:flex;flex-direction:column;gap:4px;min-width:60px;align-items:flex-end">'+
+            '<button onclick="editPost(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;cursor:pointer;white-space:nowrap">Edit</button>'+
+            '<button onclick="togglePin(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #fde68a;background:#fffbeb;color:#d97706;border-radius:5px;cursor:pointer;white-space:nowrap">'+(p.pinned?'Unpin':'📌 Pin')+'</button>'+
+            '<button onclick="deletePost(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Delete</button>'+
+          '</div>'
+        :'')+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  var typeOpts=Object.keys(POST_TYPES).map(function(k){
+    return '<option value="'+k+'">'+POST_TYPES[k].label+'</option>';
+  }).join('');
+
+  sec.innerHTML=
+    // Header
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">'+
+      '<div>'+
+        '<h2 style="font-size:18px;font-weight:800;color:#2E0326;margin:0">📋 Team Board</h2>'+
+        '<div style="font-size:11px;color:#7c5c76;margin-top:2px">Announcements, workflow updates &amp; reminders</div>'+
+      '</div>'+
+      (canPost?'<button onclick="openPostCompose()" class="btn" style="margin:0">+ New Post</button>':'')+
+    '</div>'+
+
+    // Compose form (hidden by default)
+    (canPost?
+      '<div id="boardCompose" class="card" style="display:none;border:2px solid var(--purple);margin-bottom:14px">'+
+        '<h3 style="font-size:14px;color:#2E0326;margin-bottom:12px" id="composeTitle">New Post</h3>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'+
+          '<div><label class="flb" style="margin-top:0">Post Type</label>'+
+            '<select id="postType">'+typeOpts+'</select></div>'+
+          '<div><label class="flb" style="margin-top:0">Title</label>'+
+            '<input id="postTitle" placeholder="e.g. New intake process for eRx"></div>'+
+        '</div>'+
+        '<label class="flb">Message</label>'+
+        '<textarea id="postBody" rows="4" placeholder="Write your announcement, update, or reminder..."></textarea>'+
+        '<div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">'+
+          '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">'+
+            '<input type="checkbox" id="postPin"> Pin to top'+
+          '</label>'+
+          '<button class="btn" onclick="submitPost()" style="margin:0">Post</button>'+
+          '<button onclick="closePostCompose()" style="padding:7px 14px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">Cancel</button>'+
+        '</div>'+
+        '<input type="hidden" id="postEditId">'+
+      '</div>'
+    :'')+
+
+    // Posts
+    postCards;
+}
+
+var _editingPostId=null;
+
+function openPostCompose(){
+  _editingPostId=null;
+  document.getElementById('boardCompose').style.display='block';
+  document.getElementById('composeTitle').textContent='New Post';
+  document.getElementById('postTitle').value='';
+  document.getElementById('postBody').value='';
+  document.getElementById('postType').value='announcement';
+  document.getElementById('postPin').checked=false;
+  document.getElementById('postEditId').value='';
+  document.getElementById('postTitle').focus();
+}
+
+function closePostCompose(){
+  document.getElementById('boardCompose').style.display='none';
+  _editingPostId=null;
+}
+
+function submitPost(){
+  var title=(document.getElementById('postTitle').value||'').trim();
+  var body=(document.getElementById('postBody').value||'').trim();
+  var type=document.getElementById('postType').value;
+  var pin=document.getElementById('postPin').checked;
+  if(!title){alert('Please add a title');return;}
+  if(!body){alert('Please add a message');return;}
+
+  var editId=document.getElementById('postEditId').value;
+  if(editId){
+    // Edit existing
+    for(var i=0;i<POSTS.length;i++){
+      if(POSTS[i].id===editId){
+        POSTS[i].title=title;
+        POSTS[i].body=body;
+        POSTS[i].type=type;
+        POSTS[i].pinned=pin;
+        POSTS[i].edited=true;
+        POSTS[i].editedTs=Date.now();
+        break;
+      }
+    }
+  } else {
+    // New post
+    POSTS.unshift({
+      id:'post_'+Date.now(),
+      type:type,
+      title:title,
+      body:body,
+      pinned:pin,
+      author:currentUser?currentUser.name:'Manager',
+      ts:Date.now(),
+      edited:false
+    });
+  }
+  save();
+  closePostCompose();
+  rBoard();
+  showDirToast(editId?'✅ Post updated':'✅ Post published');
+}
+
+function editPost(id){
+  var p=POSTS.find(function(x){return x.id===id;});
+  if(!p) return;
+  document.getElementById('boardCompose').style.display='block';
+  document.getElementById('composeTitle').textContent='Edit Post';
+  document.getElementById('postType').value=p.type||'announcement';
+  document.getElementById('postTitle').value=p.title||'';
+  document.getElementById('postBody').value=p.body||'';
+  document.getElementById('postPin').checked=!!p.pinned;
+  document.getElementById('postEditId').value=p.id;
+  document.getElementById('postTitle').focus();
+}
+
+function togglePin(id){
+  var p=POSTS.find(function(x){return x.id===id;});
+  if(!p) return;
+  p.pinned=!p.pinned;
+  save();rBoard();
+}
+
+function deletePost(id){
+  if(!confirm('Delete this post?')) return;
+  POSTS=POSTS.filter(function(p){return p.id!==id;});
+  save();rBoard();
+  showDirToast('Post deleted');
+}
+
 // ── Directory ──────────────────────────────────────────────────────────────
 function rDirectory(){
   var sec=document.getElementById('sec-directory');
