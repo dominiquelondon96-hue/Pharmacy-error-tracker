@@ -18,8 +18,8 @@
   --border:#e8d5e4;--page-bg:#FFF1EE;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Funnel Display',system-ui,sans-serif}
-body{background:var(--page-bg);min-height:100vh;padding:10px}
-.wrap{max-width:1600px;margin:0 auto}
+body{background:var(--page-bg);min-height:100vh;padding:6px}
+.wrap{max-width:100%;margin:0 auto;padding:0 4px}
 .hdr{background:linear-gradient(135deg,var(--purple-xd) 0%,var(--purple) 65%,#6b1a5e 100%);border-radius:14px;padding:18px 26px;margin-bottom:14px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;box-shadow:0 4px 24px rgba(68,11,57,.3)}
 .hdr h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.3px}
 .hdr .sub{font-size:11px;opacity:.7;margin-top:2px}
@@ -30,7 +30,7 @@ body{background:var(--page-bg);min-height:100vh;padding:10px}
 .nav button{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);transition:all .15s;font-family:'Funnel Display',system-ui,sans-serif}
 .nav button:hover{border-color:var(--purple);color:var(--purple)}
 .nav button.on{background:var(--purple);color:#fff;border-color:var(--purple)}
-.card{background:var(--white);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(68,11,57,.06)}
+.card{background:var(--white);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(68,11,57,.06)}
 .kpi-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .kpi{background:var(--white);border-radius:12px;padding:12px 16px;border:1px solid var(--border);border-left:4px solid var(--purple);min-width:120px;flex-grow:1;box-shadow:0 1px 3px rgba(68,11,57,.05)}
 .kpi .lb{font-size:10px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
@@ -45,11 +45,11 @@ textarea{resize:vertical}
 .btn:hover{background:var(--purple-xd)}
 .btn-full{width:100%;display:block}
 table{width:100%;border-collapse:collapse;font-size:11px}
-th{padding:9px 12px;text-align:left;color:#fff;font-weight:700;font-size:11px;white-space:nowrap;background:var(--purple);text-transform:uppercase;letter-spacing:.4px}
-td{padding:8px 12px;border-bottom:1px solid #f3e8f1}
+th{padding:5px 7px;text-align:left;color:#fff;font-weight:700;font-size:10px;white-space:nowrap;background:var(--purple);text-transform:uppercase;letter-spacing:.3px}
+td{padding:5px 7px;border-bottom:1px solid #f3e8f1}
 tr.alt td{background:#fdf5fb}
 .bdg{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;display:inline-block;white-space:nowrap}
-.tbl-wrap{overflow-x:auto}.tbl-scroll{overflow-x:auto;overflow-y:auto;max-height:560px}.tbl-scroll thead th{position:sticky;top:0;z-index:2;background:var(--purple)}
+.tbl-wrap{overflow-x:auto}.tbl-scroll{overflow-x:auto;overflow-y:auto;max-height:620px}.tbl-scroll thead th{position:sticky;top:0;z-index:2;background:var(--purple)}
 .wk-btn{padding:5px 12px;border-radius:14px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);margin:2px;transition:all .15s;font-family:'Funnel Display',system-ui,sans-serif}
 .wk-btn.on{background:var(--purple);color:#fff;border-color:var(--purple)}
 .tfr td{background:var(--purple);color:#fff;font-weight:700;padding:8px 12px;text-align:center}
@@ -971,7 +971,7 @@ function rMember(){
       '<td style="color:#7c5c76">'+(me.faxErx||"\u2014")+'</td>'+
       '<td style="color:#2E0326">'+(me.drug||"\u2014")+'</td>'+
       '<td style="color:#2E0326">'+(me.rxNum||"\u2014")+'</td>'+
-      '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(me.notes||"\u2014")+'</td>'+
+      '<td style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(me.notes||"\u2014")+'</td>'+
       '<td style="min-width:80px">'+rphBdg+'</td>'+
       '<td style="text-align:center">'+(me.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td>'+
       '<td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">'))+'</td>'+
@@ -1661,7 +1661,7 @@ function rEntries(){
        '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+
        (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+
        '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>';
-    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="white-space:nowrap;color:#9b7294">'+(e2.dateRxEntered||"\u2014")+'</td><td style="text-align:center">'+daysBadge(e2.daysToCatch!==null&&e2.daysToCatch!==undefined?e2.daysToCatch:calcDaysToCatch(e2.date,e2.dateRxEntered))+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+sevBadge(e2.severity)+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+(isDup?' <span class="bdg" style="background:#fee2e2;color:#dc2626;font-size:9px">&#9888; DUP</span>':'')+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td style="text-align:center">'+(e2.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
+    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="white-space:nowrap;color:#9b7294">'+(e2.dateRxEntered||"\u2014")+'</td><td style="text-align:center">'+daysBadge(e2.daysToCatch!==null&&e2.daysToCatch!==undefined?e2.daysToCatch:calcDaysToCatch(e2.date,e2.dateRxEntered))+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+sevBadge(e2.severity)+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+(isDup?' <span class="bdg" style="background:#fee2e2;color:#dc2626;font-size:9px">&#9888; DUP</span>':'')+'</td><td style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td style="text-align:center">'+(e2.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
   }
 
   // Review queue banner
