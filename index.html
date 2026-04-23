@@ -163,14 +163,17 @@ tr.alt td{background:#fdf5fb}
     <div class="modal-box">
       <h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Error Entry</h3>
       <div class="fgrid">
-        <div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="eDt"></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="eDt"></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="eDtRx"></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="eTy"></select></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Severity <span style="font-weight:400;font-size:10px;color:#7c5c76">(auto)</span></label><div id="eSevDisplay" style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;background:#f3f4f6;font-size:13px;color:#7c5c76">—</div></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="eSr" onchange="upEF()"></select></div>
         <div class="fhalf" id="eTmW"><label class="flb" style="margin-top:0">Team</label><select id="eTm" onchange="upEW()"></select></div>
         <div class="fhalf" id="eWhW"><label class="flb" style="margin-top:0">Who</label><select id="eWh"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="eFx"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Drug</label><select id="eDrug"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="eRx"></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="eCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>
       </div>
       <label class="flb">Notes</label><textarea id="eNt" rows="2"></textarea>
       <!-- Photo section -->
@@ -281,7 +284,7 @@ function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(d
 var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
 var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
-var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="";
+var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="",eCallF="All",eSevF="All";
 var charts={},editId=null;
 var today=new Date(),todayStr=fmtD(today),thisWk=getWk(todayStr);
 var saveTimer=null;
@@ -436,13 +439,31 @@ function rDash(){
   var delta=sub.length-prev.length;
   var dStr=delta===0?"Same as last "+dLabel:delta>0?"+"+delta+" vs last "+dLabel:delta+" vs last "+dLabel;
   var dCol=delta>0?"#ef4444":delta<0?"#10b981":"#7c5c76";
-  var alerts="";
-  if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
-  if(topTM!=="None"&&topTV>=4)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">TEAM ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topTM+'</strong> leading with <strong>'+topTV+'</strong> errors</div></div>';
-  if(rphErrors>=3)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">RPH ERRORS</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+rphErrors+'</strong> errors logged from the RPH team — review needed</div></div>';
-  if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#2E0326;margin-top:2px">No critical thresholds exceeded.</div></div>';
+  // ── New KPIs: Call Required, High Severity Rate, Avg Days to Catch ──
+  var callRequired=D.filter(function(e){return e.callRequired==="Yes";}).length;
+  var callRequiredSubset=sub.filter(function(e){return e.callRequired==="Yes";}).length;
+  var highSev=sub.filter(function(e){return e.severity==="High";}).length;
+  var medSev=sub.filter(function(e){return e.severity==="Medium";}).length;
+  var lowSev=sub.filter(function(e){return e.severity==="Low";}).length;
+  var highSevPct=sub.length?Math.round(highSev/sub.length*100):0;
+  var dtcVals=sub.filter(function(e){return e.daysToCatch!==null&&e.daysToCatch!==undefined&&e.daysToCatch>=0;}).map(function(e){return e.daysToCatch;});
+  var avgDtc=dtcVals.length?Math.round(dtcVals.reduce(function(a,b){return a+b;},0)/dtcVals.length):null;
+  var prevDtcVals=prev.filter(function(e){return e.daysToCatch!==null&&e.daysToCatch!==undefined&&e.daysToCatch>=0;}).map(function(e){return e.daysToCatch;});
+  var prevAvgDtc=prevDtcVals.length?Math.round(prevDtcVals.reduce(function(a,b){return a+b;},0)/prevDtcVals.length):null;
+  var dtcDelta=avgDtc!==null&&prevAvgDtc!==null?avgDtc-prevAvgDtc:null;
+  var dtcStr=avgDtc===null?"No data":(avgDtc<7?avgDtc+"d avg":avgDtc<30?Math.round(avgDtc/7)+"w avg":Math.round(avgDtc/30)+"mo avg");
+  var dtcSub=dtcDelta===null?"":(dtcDelta===0?"Same as last "+dLabel:dtcDelta>0?"+"+dtcDelta+"d vs last "+dLabel:dtcDelta+"d vs last "+dLabel);
+  var dtcCol=dtcDelta===null?"#7c5c76":dtcDelta>0?"#ef4444":"#10b981";
+
+  // Add call required alert
+  if(callRequired>0)alerts='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#d97706">📞 CALLS REQUIRED</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+callRequired+'</strong> entr'+(callRequired===1?'y':'ies')+' across all time need a patient call</div></div>'+alerts;
+  if(highSev>0)alerts='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">🔴 HIGH SEVERITY</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+highSev+'</strong> high severity error'+(highSev===1?'':'s')+' this '+dLabel+' ('+highSevPct+'% of total)</div></div>'+alerts;
+
   var kpis=[
     {l:"Total Errors",v:sub.length,c:"#440B39",s:dStr,sc:dCol},
+    {l:"🔴 High Severity",v:highSev,c:"#ef4444",s:highSevPct+"% of errors this "+dLabel,sc:highSev>0?"#ef4444":"#10b981"},
+    {l:"📞 Calls Required",v:callRequired,c:"#d97706",s:callRequiredSubset+" in current period",sc:callRequired>0?"#d97706":"#10b981"},
+    {l:"⏱ Avg Days to Catch",v:dtcStr,c:"#7c3aed",s:dtcSub,sc:dtcCol,sm:true},
     {l:"Human",v:human,c:"#3b82f6",s:Math.round(sub.length?human/sub.length*100:0)+"% of total",sc:"#7c5c76"},
     {l:"Bot",v:bot,c:"#8b5cf6",s:Math.round(sub.length?bot/sub.length*100:0)+"% of total",sc:"#7c5c76"},
     {l:"API",v:api,c:"#ec4899",s:Math.round(sub.length?api/sub.length*100:0)+"% of total",sc:"#7c5c76"},
@@ -522,6 +543,12 @@ function rDash(){
     '</div>';
   }
 
+  // Existing alerts
+  if(topST!=="None"&&topSV>=3)alerts+='<div class="alert-card"><div style="font-size:11px;font-weight:700;color:#ef4444">HIGH ERROR ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topST+'</strong> has <strong>'+topSV+'</strong> errors this '+(dashMode==="daily"?"day":"week")+'</div></div>';
+  if(topTM!=="None"&&topTV>=4)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">TEAM ALERT</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+topTM+'</strong> leading with <strong>'+topTV+'</strong> errors</div></div>';
+  if(rphErrors>=3)alerts+='<div class="alert-card warn"><div style="font-size:11px;font-weight:700;color:#f59e0b">RPH ERRORS</div><div style="font-size:13px;color:#2E0326;margin-top:2px"><strong>'+rphErrors+'</strong> errors logged from the RPH team — review needed</div></div>';
+  if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#2E0326;margin-top:2px">No critical thresholds exceeded.</div></div>';
+
   var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Week "+(thisWk-1):"All Time";
   var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="prevweek"?" on":"")+'" onclick="dashMode=\'prevweek\';upHdr();rDash()">Prev Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
   sec.innerHTML=
@@ -531,12 +558,14 @@ function rDash(){
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><div class="section-title">Errors by Type <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-ty"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">By Team/Source <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-tm"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">Severity Breakdown <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-sev"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">RPH Verification <span style="font-size:10px;color:#7c5c76;font-weight:400">'+period+'</span></div><div class="ch-wrap" style="height:220px"><canvas id="ch-rph"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:240px;margin-bottom:0"><div class="section-title">Daily Errors This Week</div><div class="ch-wrap" style="height:220px"><canvas id="ch-day"></canvas></div></div>'+
     '</div>'+
     '<div><div class="section-title">Alerts &amp; Insights</div>'+alerts+'</div>';
   dChart("ch-ty");charts["ch-ty"]=new Chart(document.getElementById("ch-ty"),{type:"bar",data:{labels:ET.map(function(t){return t.length>16?t.slice(0,14)+"...":t;}),datasets:[{data:tD,backgroundColor:TC,borderRadius:4}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
   dChart("ch-tm");if(pD.length>0)charts["ch-tm"]=new Chart(document.getElementById("ch-tm"),{type:"doughnut",data:{labels:pL,datasets:[{data:pD,backgroundColor:pC,borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
+  dChart("ch-sev");charts["ch-sev"]=new Chart(document.getElementById("ch-sev"),{type:"doughnut",data:{labels:["🔴 High","🟡 Medium","🟢 Low"],datasets:[{data:[highSev,medSev,lowSev],backgroundColor:["#ef4444","#f59e0b","#10b981"],borderWidth:2}]},options:{plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}},responsive:true,maintainAspectRatio:false}});
   dChart("ch-rph");
   var rphNoData=sub.filter(function(e){return e.goodCatch!=="Yes"&&e.dispensedWithError!=="Yes"&&e.rphVerified!=="dispensed_with_error"&&e.rphVerified!=="good_catch";}).length;
   var rphGoodDash=sub.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length;
@@ -576,16 +605,15 @@ function rRph(){
     for(var vi=0;vi<entries.length;vi++){
       var e=entries[vi];
       if(field==="goodCatch"){
-        // Good catch — track by the person who reported it
         var reporter=e.gcWho||e.gcTeam||"Unknown";
-        if(!rphStats[reporter])rphStats[reporter]={dispensed:0,goodCatch:0,checks:0};
+        if(!rphStats[reporter])rphStats[reporter]={dispensed:0,goodCatch:0,checks:0,highSev:0};
         rphStats[reporter][field]++;
       } else {
-        // Dispensed with error — track by RPH names
         var names=e.rphNames||[];
         for(var ni=0;ni<names.length;ni++){
-          if(!rphStats[names[ni]])rphStats[names[ni]]={dispensed:0,goodCatch:0,checks:0};
+          if(!rphStats[names[ni]])rphStats[names[ni]]={dispensed:0,goodCatch:0,checks:0,highSev:0};
           rphStats[names[ni]][field]++;
+          if(e.severity==="High") rphStats[names[ni]].highSev++;
           var cnt=parseInt(e.rphCount||"1");
           if(!isNaN(cnt))rphStats[names[ni]].checks+=cnt;
         }
@@ -612,7 +640,7 @@ function rRph(){
   var rphNames2=Object.keys(rphStats);
   rphNames2.sort(function(a,b){return rphStats[b].goodCatch-rphStats[a].goodCatch||rphStats[a].dispensed-rphStats[b].dispensed;});
   if(rphNames2.length===0){
-    rphRows='<tr><td colspan="4" style="text-align:center;color:#7c5c76;padding:20px">No RPH verification data for this week.</td></tr>';
+    rphRows='<tr><td colspan="5" style="text-align:center;color:#7c5c76;padding:20px">No RPH verification data for this week.</td></tr>';
   } else {
     for(var rni=0;rni<rphNames2.length;rni++){
       var nm=rphNames2[rni],st=rphStats[nm];
@@ -621,6 +649,7 @@ function rRph(){
         '<td style="font-weight:700">'+(isTop?'🏆 ':'')+nm+(isTop?' <span class="bdg" style="background:#f59e0b;color:#fff;font-size:9px">TOP CATCHER</span>':'')+'</td>'+
         '<td style="text-align:center;font-weight:700;color:#10b981">'+st.goodCatch+'</td>'+
         '<td style="text-align:center;font-weight:700;color:#ef4444">'+st.dispensed+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:'+(st.highSev>0?"#ef4444":"#7c5c76")+'">'+st.highSev+'</td>'+
         '<td style="text-align:center;color:#7c5c76">'+st.checks+'</td>'+
       '</tr>';
     }
@@ -667,7 +696,7 @@ function rRph(){
     '</div>'+
     '<div class="card" style="margin-bottom:12px">'+
       '<h3 style="font-size:13px;margin-bottom:4px">RPH Member Breakdown — Week '+rphSelWk+' <span style="font-size:10px;color:#7c5c76;font-weight:400">sorted by most good catches</span></h3>'+
-      '<div class="tbl-wrap"><table><thead><tr><th>RPH Name</th><th style="text-align:center;background:#10b98199">✅ Good Catches</th><th style="text-align:center;background:#ef444499">⚠ Dispensed w/ Error</th><th style="text-align:center">Total Checks</th></tr></thead><tbody>'+rphRows+'</tbody></table></div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>RPH Name</th><th style="text-align:center;background:#10b98199">✅ Good Catches</th><th style="text-align:center;background:#ef444499">⚠ Dispensed w/ Error</th><th style="text-align:center;background:#ef444466">🔴 High Sev</th><th style="text-align:center">Total Checks</th></tr></thead><tbody>'+rphRows+'</tbody></table></div>'+
     '</div>'+
     '<div class="card" style="margin-bottom:12px">'+
       '<h3 style="font-size:13px;margin-bottom:4px;color:#dc2626">⚠ Dispensed WITH Error — Week '+rphSelWk+' <span style="font-size:10px;color:#7c5c76;font-weight:400">primary risk log</span></h3>'+
@@ -717,6 +746,10 @@ function rTrend(){
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">RPH Verification Over Time</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-rphtr"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-di"></canvas></div></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">🔴 High Severity Trend — by Week</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-sevtr"></canvas></div></div>'+
+      '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">⏱ Avg Days to Catch — by Week</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-dtctr"></canvas></div></div>'+
     '</div>';
   // Source trend
   dChart("ch-tr");var lbs=[],hum=[],bot=[],api=[];
@@ -737,6 +770,28 @@ function rTrend(){
   // Error type dist
   dChart("ch-di");var dL=[],dD=[];for(var eti=0;eti<ET.length;eti++){dL.push(ET[eti].length>14?ET[eti].slice(0,13)+"...":ET[eti]);dD.push(D.filter(function(e){return e.errorType===ET[eti];}).length);}
   charts["ch-di"]=new Chart(document.getElementById("ch-di"),{type:"bar",data:{labels:dL,datasets:[{data:dD,backgroundColor:TC,borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},maxRotation:25}},y:{ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  // High severity trend by week
+  dChart("ch-sevtr");
+  var wksSev=allWks(),sevLbs=[],sevHigh=[],sevMed=[],sevLow=[];
+  for(var swi=0;swi<wksSev.length;swi++){
+    var swk=wksSev[swi];
+    var swkE=D.filter(function(e){return e.week===swk&&!e.needsReview;});
+    sevLbs.push("Wk "+swk+(swk===thisWk?" ★":""));
+    sevHigh.push(swkE.filter(function(e){return e.severity==="High";}).length);
+    sevMed.push(swkE.filter(function(e){return e.severity==="Medium";}).length);
+    sevLow.push(swkE.filter(function(e){return e.severity==="Low";}).length);
+  }
+  charts["ch-sevtr"]=new Chart(document.getElementById("ch-sevtr"),{type:"line",data:{labels:sevLbs,datasets:[{label:"High",data:sevHigh,borderColor:"#ef4444",backgroundColor:"#ef444422",tension:.3,fill:true,pointRadius:4},{label:"Medium",data:sevMed,borderColor:"#f59e0b",backgroundColor:"#f59e0b11",tension:.3,fill:false,pointRadius:3},{label:"Low",data:sevLow,borderColor:"#10b981",backgroundColor:"#10b98111",tension:.3,fill:false,pointRadius:3}]},options:{plugins:{legend:{position:"top",labels:{font:{size:10},boxWidth:12}}},scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  // Avg days to catch trend by week
+  dChart("ch-dtctr");
+  var wksDtc=allWks(),dtcLbs=[],dtcAvgs=[];
+  for(var dwi=0;dwi<wksDtc.length;dwi++){
+    var dwk=wksDtc[dwi];
+    var dwkE=D.filter(function(e){return e.week===dwk&&!e.needsReview&&e.daysToCatch!==null&&e.daysToCatch!==undefined&&e.daysToCatch>=0;});
+    dtcLbs.push("Wk "+dwk+(dwk===thisWk?" ★":""));
+    dtcAvgs.push(dwkE.length?Math.round(dwkE.reduce(function(a,e){return a+e.daysToCatch;},0)/dwkE.length):null);
+  }
+  charts["ch-dtctr"]=new Chart(document.getElementById("ch-dtctr"),{type:"line",data:{labels:dtcLbs,datasets:[{label:"Avg Days to Catch",data:dtcAvgs,borderColor:"#7c3aed",backgroundColor:"#7c3aed22",tension:.3,fill:true,pointRadius:4,spanGaps:true}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10},callback:function(v){return v<7?v+"d":v<30?Math.round(v/7)+"w":Math.round(v/30)+"mo";}}}},responsive:true,maintainAspectRatio:false}});
 }
 
 // ── Staff ──────────────────────────────────────────────────────────────────
@@ -874,7 +929,12 @@ function rMember(){
   var tyOpt='<option'+(mvTy==="All"?" selected":"")+'>All</option>';for(var tyi=0;tyi<ET.length;tyi++)tyOpt+='<option'+(mvTy===ET[tyi]?" selected":"")+'>'+ET[tyi]+'</option>';
   var wkOpt='<option value="All"'+(mvWk==="All"?" selected":"")+'>All Weeks</option>';for(var wki=0;wki<wks.length;wki++)wkOpt+='<option value="'+wks[wki]+'"'+(mvWk==wks[wki]?" selected":"")+'>Week '+wks[wki]+'</option>';
   var kHtml='<div class="kpi" style="border-left-color:#440B39;padding:10px 14px"><div class="lb">Total</div><div style="font-size:20px;font-weight:800;color:#2E0326">'+mv.length+'</div></div><div class="kpi" style="border-left-color:#ef4444;padding:10px 14px"><div class="lb">Top Error</div><div style="font-size:11px;font-weight:800;color:#2E0326;line-height:1.2">'+topE+'</div></div>';
-  var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#fdf8fc":"#fff");tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#7c5c76">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#440B39"):"")+'</td><td style="color:#7c5c76">'+(me.faxErx||"—")+'</td><td style="color:#2E0326">'+(me.drug||"—")+'</td><td style="color:#2E0326">'+(me.rxNum||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#7c5c76">'+(hi?hi.date:"—")+'</td></tr>';}
+  var tRows="";for(var tri=0;tri<mv.length;tri++){var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#fdf8fc":"#fff");
+    var rphMvBdg="";
+    if(me.goodCatch==="Yes") rphMvBdg='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ '+(me.gcWho||me.gcTeam||"Good Catch")+'</span>';
+    if(me.dispensedWithError==="Yes"||me.rphVerified==="dispensed_with_error"){rphMvBdg='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed</span>';if(me.rphNames&&me.rphNames.length)rphMvBdg+='<br><span style="font-size:10px;color:#7c5c76">'+me.rphNames.join(", ")+'</span>';}
+    if(!rphMvBdg) rphMvBdg='<span style="color:#cbd5e1;font-size:11px">—</span>';
+    tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="color:#7c5c76">'+me.week+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#440B39"):"")+'</td><td style="color:#7c5c76">'+(me.faxErx||"—")+'</td><td style="color:#2E0326">'+(me.drug||"—")+'</td><td style="color:#2E0326">'+(me.rxNum||"—")+'</td><td>'+rphMvBdg+'</td><td>'+sevBadge(me.severity)+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#7c5c76">'+(hi?hi.date:"—")+'</td></tr>';}
   var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div><label class="flb" style="margin-top:0">RX #</label><input value="'+mvRxSearch+'" placeholder="Search RX..." oninput="mvRxSearch=this.value;rMember()" style="width:120px;padding:7px 10px;font-size:12px;border-radius:20px;border:1.5px solid '+(mvRxSearch?'var(--purple)':'var(--border)')+'"></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div></div></div>';
   inner+=(mv.length>0?'<div class="kpi-row">'+kHtml+'</div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Date</th><th>Wk</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>':'<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No entries found.</div>');
   sec.innerHTML=inner;
@@ -951,12 +1011,57 @@ function getLogRphs(){
 }
 
 function rLog(){
-  // RPH sees quick-log; others see full log
   if(currentUser && currentUser.role === 'RPH'){
     rQuickLog();
   } else {
     rFullLog();
   }
+}
+
+
+// ── Severity / Days to Catch helpers ─────────────────────────────────────
+// Severity is auto-calculated — not manually entered
+// High: high-risk error types dispensed to patient
+// Medium: same error types caught before dispensing
+// Low: everything else
+var HIGH_ERROR_TYPES=['Invalid Rx','Drug Mismatch','Entered Under Wrong PT'];
+var SEVERITY_COLORS={Low:'#10b981',Medium:'#f59e0b',High:'#ef4444'};
+var SEVERITY_BG={Low:'#f0fdf4',Medium:'#fffbeb',High:'#fef2f2'};
+
+function autoSeverity(errorType, dispensedWithError, goodCatch){
+  var isHighType=HIGH_ERROR_TYPES.indexOf(errorType)>=0;
+  if(isHighType && (dispensedWithError==='Yes')) return 'High';
+  if(isHighType && (goodCatch==='Yes' || dispensedWithError!=='Yes')) return 'Medium';
+  return 'Low';
+}
+
+function sevOpts(sel){
+  // Keep for edit modal display only — read-only indicator
+  return ['Low','Medium','High'].map(function(s){
+    return '<option value="'+s+'"'+(s===sel?' selected':'')+'>'+s+'</option>';
+  }).join('');
+}
+
+function calcDaysToCatch(dateFound, dateEntered){
+  if(!dateFound||!dateEntered) return null;
+  var d1=new Date(dateEntered),d2=new Date(dateFound);
+  var diff=Math.round((d2-d1)/(1000*60*60*24));
+  return isNaN(diff)?null:diff;
+}
+
+function sevBadge(sev){
+  if(!sev) return '<span style="color:#cbd5e1;font-size:11px">—</span>';
+  var col=SEVERITY_COLORS[sev]||'#7c5c76';
+  var bg=SEVERITY_BG[sev]||'#f3f4f6';
+  return '<span class="bdg" style="background:'+bg+';color:'+col+';border:1px solid '+col+'40">'+sev+'</span>';
+}
+
+function daysBadge(days){
+  if(days===null||days===undefined) return '<span style="color:#cbd5e1;font-size:11px">—</span>';
+  var label=days<7?days+'d':days<30?Math.round(days/7)+'w':Math.round(days/30)+'mo';
+  var col=days<=7?'#10b981':days<=30?'#f59e0b':days<=90?'#ef4444':'#7c3aed';
+  var desc=days<=7?'same week':days<=30?'within month':days<=90?'1–3 months':'3+ months';
+  return '<span class="bdg" style="background:'+col+'15;color:'+col+'" title="'+days+' days — '+desc+'">'+label+'</span>';
 }
 
 function rQuickLog(){
@@ -970,9 +1075,12 @@ function rQuickLog(){
       '</div>'+
     '</div>'+
     '<div class="fgrid">'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="lDtRx" value="'+fmtD(new Date())+'"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
+      
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="lCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Your Name (RPH)</label>'+
     '<input id="lRphName" list="rphNameList" placeholder="Type to search your name..." autocomplete="off" style="width:100%">'+
     '<datalist id="rphNameList">'+rphNameOpts().replace(/<option/g,'<option').replace(/value=""/,'')+'</datalist>'+
@@ -1027,7 +1135,8 @@ function dupWarning(existing){
 
 function subQuickLog(){
   var date=document.getElementById("lDt").value;
-  if(!date){alert("Please select a date.");return;}
+  var dateRxEntered=document.getElementById("lDtRx")?document.getElementById("lDtRx").value:"";
+  if(!date){alert("Please select a date error was found.");return;}
   var errorType=document.getElementById("lTy").value;
   if(!errorType){alert("Please select an error type.");return;}
   var rx=document.getElementById("lRx").value.trim();
@@ -1041,9 +1150,12 @@ function subQuickLog(){
   var row={};
   row.id=mkId();
   row.date=date;
+  row.dateRxEntered=dateRxEntered;
+  row.daysToCatch=calcDaysToCatch(date,dateRxEntered);
   row.week=getWk(date);
   row.errorType=errorType;
-  row.rxNum=rx;
+  row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"");
+  row.callRequired=document.getElementById("lCall")?document.getElementById("lCall").value:"No";
   row.notes=notes;
   row.photo=driveId?"":photo;
   row.driveId=driveId;
@@ -1083,8 +1195,10 @@ function rFullLog(){
     '<div class="card" style="max-width:580px">'+
     '<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">Log New Intake Error</h3>'+
     '<div class="fgrid">'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="lDtRx" value="'+fmtD(new Date())+'"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
+      
       '<div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="lSr" onchange="upLF()">'+srOpts("Human")+'</select></div>'+
       '<div class="fhalf" id="lTmW"><label class="flb" style="margin-top:0">Team</label><select id="lTm" onchange="upLW()">'+tmOpts("Intake")+'</select></div>'+
       '<div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label><select id="lWh">'+whoOpts("Intake","")+'</select></div>'+
@@ -1092,6 +1206,7 @@ function rFullLog(){
       '<div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><select id="lDrugSel" onchange="upDF()">'+drugOpts("")+'</select></div>'+
       '<div class="fhalf" id="lDrugCW" style="display:none"><label class="flb" style="margin-top:0">Custom Drug</label><input type="text" id="lDrug" placeholder="Type drug name"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="lCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
     '</div>'+
     '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
     '<label class="flb" style="margin-top:12px">📷 Photo Evidence <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
@@ -1143,7 +1258,8 @@ function rFullLog(){
 
 function subLog(){
   var src=document.getElementById("lSr").value,date=document.getElementById("lDt").value;
-  if(!date){alert("Please select a date.");return;}
+  var dateRxEntered=document.getElementById("lDtRx")?document.getElementById("lDtRx").value:"";
+  if(!date){alert("Please select the date the error was found.");return;}
   var ds=document.getElementById("lDrugSel").value;
   var drug=ds==="__other__"?document.getElementById("lDrug").value.trim():ds;
   var gcVal=document.getElementById("lGC").value||"";
@@ -1153,7 +1269,9 @@ function subLog(){
   var rphCount="",rphNames=[];
   if(dweVal==="Yes"){rphCount=document.getElementById("lRphCount").value.trim();rphNames=getLogRphs();}
   var row={};
-  row.id=mkId();row.date=date;row.week=getWk(date);
+  row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
+  row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"");
+  row.callRequired=document.getElementById("lCall")?document.getElementById("lCall").value:"No";
   row.errorType=document.getElementById("lTy").value;
   row.source=src;
   row.team=src==="Human"?document.getElementById("lTm").value:"";
@@ -1240,13 +1358,22 @@ function openEdit(id){
   var e=null;for(var i=0;i<D.length;i++)if(D[i].id===id){e=D[i];break;}
   if(!e)return;editId=id;
   document.getElementById("eDt").value=e.date||"";
+  document.getElementById("eDtRx").value=e.dateRxEntered||"";
   document.getElementById("eTy").innerHTML=etOpts(e.errorType||"");
+  // Severity display — auto-calculated, shown read-only
+  var sev=e.severity||autoSeverity(e.errorType||"",e.dispensedWithError||"",e.goodCatch||"");
+  var sevCol=SEVERITY_COLORS[sev]||'#7c5c76';
+  var sevBg=SEVERITY_BG[sev]||'#f3f4f6';
+  var sevDisp=document.getElementById("eSevDisplay");
+  if(sevDisp){sevDisp.textContent=sev;sevDisp.style.background=sevBg;sevDisp.style.color=sevCol;sevDisp.style.borderColor=sevCol+'60';sevDisp.style.fontWeight='700';}
+  document.getElementById("eSev") && (document.getElementById("eSev").innerHTML=sevOpts(sev));
   document.getElementById("eSr").innerHTML=srOpts(e.source||"Human");
   document.getElementById("eTm").innerHTML=tmOpts(e.team||"Intake");
   document.getElementById("eWh").innerHTML=whoOpts(e.team||"Intake",e.who||"");
   document.getElementById("eFx").innerHTML=fxOpts(e.faxErx||"");
   document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
   document.getElementById("eRx").value=e.rxNum||"";
+  document.getElementById("eCall").value=e.callRequired||"No";
   document.getElementById("eNt").value=e.notes||"";
   // Photo — show existing if present
   var ePhotoInput=document.getElementById("ePhoto");
@@ -1362,7 +1489,11 @@ function saveEdit(){
   for(var i=0;i<D.length;i++){
     if(D[i].id===editId){
       D[i].date=date;D[i].week=getWk(date);
+      D[i].dateRxEntered=document.getElementById("eDtRx").value||"";
       D[i].errorType=document.getElementById("eTy").value;
+      D[i].severity=autoSeverity(D[i].errorType||"",D[i].dispensedWithError||"",D[i].goodCatch||"");
+      D[i].callRequired=document.getElementById("eCall").value||"No";
+      D[i].daysToCatch=calcDaysToCatch(D[i].date,D[i].dateRxEntered);
       D[i].source=src;
       D[i].team=src==="Human"?document.getElementById("eTm").value:"";
       D[i].who=src==="Human"?document.getElementById("eWh").value:"";
@@ -1404,7 +1535,9 @@ function rEntries(){
       &&(eFS==="All"||e.source===eFS)
       &&(eFSt==="All"||(eFSt==="Initials Given"&&!!FBI[e.id])||(eFSt==="Pending"&&!FBI[e.id]))
       &&(eReview==="All"||(eReview==="Needs Review"&&e.needsReview)||(eReview==="Complete"&&!e.needsReview))
-      &&(!eRxSearch||(e.rxNum||"").toLowerCase().indexOf(eRxSearch.toLowerCase())>=0))
+      &&(!eRxSearch||(e.rxNum||"").toLowerCase().indexOf(eRxSearch.toLowerCase())>=0)
+      &&(eCallF==="All"||(e.callRequired||"No")===eCallF)
+      &&(eSevF==="All"||(e.severity||"")===eSevF))
       fil.push(e);
   }
   // Needs Review pinned to top, then newest date first within each group
@@ -1461,7 +1594,7 @@ function rEntries(){
        '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+
        (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+
        '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>';
-    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+(isDup?' <span class="bdg" style="background:#fee2e2;color:#dc2626;font-size:9px">&#9888; DUP</span>':'')+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
+    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="white-space:nowrap;color:#9b7294">'+(e2.dateRxEntered||"\u2014")+'</td><td style="text-align:center">'+daysBadge(e2.daysToCatch!==null&&e2.daysToCatch!==undefined?e2.daysToCatch:calcDaysToCatch(e2.date,e2.dateRxEntered))+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+sevBadge(e2.severity)+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+(isDup?' <span class="bdg" style="background:#fee2e2;color:#dc2626;font-size:9px">&#9888; DUP</span>':'')+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td style="text-align:center">'+(e2.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
   }
 
   // Review queue banner
@@ -1482,10 +1615,12 @@ function rEntries(){
       '<label style="font-size:11px;color:#7c5c76">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select>'+
       '<label style="font-size:11px;color:#7c5c76">Review:</label><select onchange="eReview=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px;border-color:'+(eReview==="Needs Review"?"#f59e0b":"")+'"><option'+(eReview==="All"?" selected":"")+'>All</option><option'+(eReview==="Needs Review"?" selected":"")+'>Needs Review</option><option'+(eReview==="Complete"?" selected":"")+'>Complete</option></select>'+
       '<input placeholder="🔍 RX #" value="'+eRxSearch+'" oninput="eRxSearch=this.value;rEntries()" style="width:110px;padding:5px 8px;font-size:11px;border-radius:20px;border:1.5px solid '+(eRxSearch?'var(--purple)':'var(--border)')+'">'+
+      '<label style="font-size:11px;color:#7c5c76">Severity:</label><select onchange="eSevF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eSevF==="All"?" selected":"")+' value="All">All</option><option'+(eSevF==="Low"?" selected":"")+' value="Low">Low</option><option'+(eSevF==="Medium"?" selected":"")+' value="Medium">Medium</option><option'+(eSevF==="High"?" selected":"")+' value="High">High</option><option'+(eSevF==="Critical"?" selected":"")+' value="Critical">Critical</option></select>'+
+      '<label style="font-size:11px;color:#7c5c76">Call Required:</label><select onchange="eCallF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eCallF==="All"?" selected":"")+' value="All">All</option><option'+(eCallF==="Yes"?" selected":"")+' value="Yes">Yes</option><option'+(eCallF==="No"?" selected":"")+' value="No">No</option></select>'+
       '<span style="font-size:11px;color:#7c5c76;margin-left:auto">'+fil.length+' entries</span>'+
-      ((eReview!=="All"||eRxSearch)?'<button onclick="eReview=\'All\';eRxSearch=\'\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear all ✕</button>':'')+
+      ((eReview!=="All"||eRxSearch||eCallF!=="All"||eSevF!=="All")?'<button onclick="eReview=\'All\';eRxSearch=\'\';eCallF=\'All\';eSevF=\'All\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear all ✕</button>':'')+
     '</div>'+
-    '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Intake Lead</th><th>FB Date</th><th>RPH Lead(s)</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Error Found</th><th>RX Entered</th><th>Days</th><th>Week</th><th>Severity</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Follow-up</th><th>Intake Lead</th><th>FB Date</th><th>RPH Lead(s)</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
 
 function completeEntry(id){
@@ -1565,6 +1700,91 @@ function _rAdminInner(){
 function rAdmin(){
   _rAdminInner();
   if(currentUser&&currentUser.role==="Admin") rUserDirectory();
+  _rAdminKey();
+}
+
+function _rAdminKey(){
+  var sec=document.getElementById('sec-admin');
+  var key=document.createElement('div');
+  key.className='card';
+  key.style.marginTop='12px';
+  key.innerHTML=
+    '<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">🗝️ System Key &amp; Reference</h3>'+
+
+    // Role access table
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">👥 Roles &amp; Access</div>'+
+      '<div class="tbl-wrap"><table><thead><tr>'+
+        '<th>Role</th><th>Board</th><th>Dashboard</th><th>Summary</th><th>Trends</th><th>RPH Report</th><th>Staff</th><th>Member View</th><th>Log Error</th><th>Import</th><th>All Entries</th><th>Directory</th><th>Admin</th>'+
+      '</tr></thead><tbody>'+
+        _roleRow('RPH',      ['board','log'])+
+        _roleRow('Trainer',  ['board','summary','staff','member','log'])+
+        _roleRow('Lead',     ['board','dashboard','summary','trends','rph','staff','member','log'])+
+        _roleRow('Manager',  ['board','dashboard','summary','trends','rph','staff','member','log'])+
+        _roleRow('Admin',    ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin'])+
+      '</tbody></table></div>'+
+    '</div>'+
+
+    // Severity key
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">🔴 Severity Levels (auto-assigned)</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<div style="padding:8px 14px;border-radius:8px;border:1px solid #fecaca;background:#fef2f2"><span style="font-weight:800;color:#ef4444">High</span> <span style="font-size:11px;color:#7c5c76">— Invalid Rx, Drug Mismatch, or Wrong PT dispensed to patient</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;border:1px solid #fde68a;background:#fffbeb"><span style="font-weight:800;color:#f59e0b">Medium</span> <span style="font-size:11px;color:#7c5c76">— Same error types caught before dispensing (good catch)</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4"><span style="font-weight:800;color:#10b981">Low</span> <span style="font-size:11px;color:#7c5c76">— All other error types regardless of outcome</span></div>'+
+      '</div>'+
+    '</div>'+
+
+    // Days to catch key
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">⏱ Days to Catch</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0"><span style="font-weight:800;color:#10b981">0–7d</span> <span style="font-size:11px;color:#7c5c76">Same week</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a"><span style="font-weight:800;color:#f59e0b">8–30d / 1–4w</span> <span style="font-size:11px;color:#7c5c76">Within the month</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca"><span style="font-weight:800;color:#ef4444">31–90d / 1–3mo</span> <span style="font-size:11px;color:#7c5c76">1–3 months</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#f5f3ff;border:1px solid #ddd6fe"><span style="font-weight:800;color:#7c3aed">90d+ / 3mo+</span> <span style="font-size:11px;color:#7c5c76">Over 3 months — review needed</span></div>'+
+      '</div>'+
+    '</div>'+
+
+    // Badge key
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">🏷️ Badges &amp; Indicators</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+
+        _badgeRow('⏳ Needs Review','#fef3c7','#92400e','RPH quick log — not yet counted in metrics')+
+        _badgeRow('⚠ DUP','#fee2e2','#dc2626','Same RX + same error type already exists')+
+        _badgeRow('📌 PINNED','#fef3c7','#d97706','Board post pinned to top')+
+        _badgeRow('✅ Good Catch','#dcfce7','#16a34a','Error caught before dispensing')+
+        _badgeRow('⚠ Dispensed','#fee2e2','#dc2626','Error dispensed to patient')+
+        _badgeRow('📞 Call Required','#fffbeb','#d97706','Patient call needed')+
+        _badgeRow('TOP THIS WEEK','#f97316','#fff','Highest error count this week')+
+        _badgeRow('TOP CATCHER','#f59e0b','#fff','Most good catches this week')+
+      '</div>'+
+    '</div>'+
+
+    // Review queue note
+    '<div style="padding:12px 16px;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe">'+
+      '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px">ℹ️ Review Queue</div>'+
+      '<div style="font-size:11px;color:#1e40af;line-height:1.6">RPH quick logs are held in a review queue and excluded from all dashboards, KPIs, and reports until a Manager or Admin opens the entry and clicks <strong>✏ Complete</strong> to fill in the missing details. Once completed the entry enters the metrics automatically.</div>'+
+    '</div>';
+
+  sec.appendChild(key);
+}
+
+function _roleRow(role, pages){
+  var all=['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin'];
+  var roleColors={Admin:'#440B39',Manager:'#0369a1',Lead:'#7c3aed',Trainer:'#059669',RPH:'#10b981'};
+  var col=roleColors[role]||'#7c5c76';
+  var cells=all.map(function(p){
+    return '<td style="text-align:center">'+(pages.indexOf(p)>=0?'<span style="color:#10b981;font-weight:700">✓</span>':'<span style="color:#e2e8f0">—</span>')+'</td>';
+  }).join('');
+  return '<tr><td><span class="bdg" style="background:'+col+'22;color:'+col+'">'+role+'</span></td>'+cells+'</tr>';
+}
+
+function _badgeRow(label, bg, col, desc){
+  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fdf8fc;border-radius:8px;border:1px solid #f3e8f1">'+
+    '<span class="bdg" style="background:'+bg+';color:'+col+';white-space:nowrap">'+label+'</span>'+
+    '<span style="font-size:11px;color:#7c5c76">'+desc+'</span>'+
+  '</div>';
 }
 function addET(){var v=document.getElementById("newET").value.trim();if(!v)return;ET.push(v);save();document.getElementById("newET").value="";rAdmin();}
 function removeET(i){if(!confirm("Remove?"))return;ET.splice(i,1);save();rAdmin();}
@@ -1720,7 +1940,9 @@ var currentUser = null; // { name, email, picture, role }
 // Role permissions
 var ROLE_PAGES = {
   'RPH':     ['board','log'],
-  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory'],
+  'Trainer': ['board','summary','staff','member','log'],
+  'Lead':    ['board','dashboard','summary','trends','rph','staff','member','log'],
+  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log'],
   'Admin':   ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
 };
 
@@ -2009,8 +2231,10 @@ function rDirectory(){
         '<div><label class="flb" style="margin-top:0">Work Email</label><input id="dirEmail" type="email" placeholder="sarah@gifthealth.com"></div>'+
         '<div><label class="flb" style="margin-top:0">Role / Access Level</label>'+
           '<select id="dirRole">'+
-            '<option value="RPH">RPH — Log Error only</option>'+
-            '<option value="Manager">Manager — All except Admin</option>'+
+            '<option value="RPH">RPH — Board &amp; Log only</option>'+
+            '<option value="Trainer">Trainer — Board, Staff, Summary, Member View, Log</option>'+
+            '<option value="Lead">Lead — All except Entries, Directory &amp; Admin</option>'+
+            '<option value="Manager">Manager — Same as Lead</option>'+
             '<option value="Admin">Admin — Full access</option>'+
           '</select></div>'+
         '<div><label class="flb" style="margin-top:0">Team (auto-adds to Staff tab)</label>'+
@@ -2034,8 +2258,10 @@ function rDirectory(){
         '<input id="dirEditEmail" type="email" placeholder="email@gifthealth.com">'+
         '<label class="flb">Role / Access Level</label>'+
         '<select id="dirEditRole">'+
-          '<option value="RPH">RPH — Log Error only</option>'+
-          '<option value="Manager">Manager — All except Admin</option>'+
+          '<option value="RPH">RPH — Board &amp; Log only</option>'+
+          '<option value="Trainer">Trainer — Board, Staff, Summary, Member View, Log</option>'+
+          '<option value="Lead">Lead — All except Entries, Directory &amp; Admin</option>'+
+          '<option value="Manager">Manager — Same as Lead</option>'+
           '<option value="Admin">Admin — Full access</option>'+
         '</select>'+
         '<label class="flb">Team</label>'+
