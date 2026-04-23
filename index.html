@@ -922,7 +922,15 @@ function rMember(){
   var sec=document.getElementById("sec-member"),wks=allWks(),members={};
   for(var i=0;i<D.length;i++){var e=D[i];if(e.source==="Human"&&(mvTm==="All"||e.team===mvTm)&&e.who)members[e.who]=1;}
   var mList=Object.keys(members).sort(),mv=[];
-  for(var di=0;di<D.length;di++){var e2=D[di];if(e2.source==="Human"&&(mvTm==="All"||e2.team===mvTm)&&(!mvWho||e2.who===mvWho)&&(mvTy==="All"||e2.errorType===mvTy)&&(mvWk==="All"||e2.week==mvWk)&&(!mvRxSearch||(e2.rxNum||"").toLowerCase().indexOf(mvRxSearch.toLowerCase())>=0))mv.push(e2);}
+  for(var di=0;di<D.length;di++){var e2=D[di];
+    if(e2.source==="Human"
+      &&(mvTm==="All"||e2.team===mvTm)
+      &&(!mvWho||e2.who===mvWho)
+      &&(mvTy==="All"||e2.errorType===mvTy)
+      &&(mvWk==="All"||e2.week==mvWk)
+      &&(!mvRxSearch||(e2.rxNum||"").toLowerCase().indexOf(mvRxSearch.toLowerCase())>=0))
+      mv.push(e2);
+  }
   mv.sort(function(a,b){return b.date>a.date?1:b.date<a.date?-1:0;});
   var tC={};for(var mi=0;mi<mv.length;mi++)tC[mv[mi].errorType]=(tC[mv[mi].errorType]||0)+1;
   var topE="None",topN=0;for(var te in tC){if(tC[te]>topN){topN=tC[te];topE=te;}}
@@ -931,16 +939,64 @@ function rMember(){
   var tyOpt='<option'+(mvTy==="All"?" selected":"")+'>All</option>';for(var tyi=0;tyi<ET.length;tyi++)tyOpt+='<option'+(mvTy===ET[tyi]?" selected":"")+'>'+ET[tyi]+'</option>';
   var wkOpt='<option value="All"'+(mvWk==="All"?" selected":"")+'>All Weeks</option>';for(var wki=0;wki<wks.length;wki++)wkOpt+='<option value="'+wks[wki]+'"'+(mvWk==wks[wki]?" selected":"")+'>Week '+wks[wki]+'</option>';
   var kHtml='<div class="kpi" style="border-left-color:#440B39;padding:10px 14px"><div class="lb">Total</div><div style="font-size:20px;font-weight:800;color:#2E0326">'+mv.length+'</div></div><div class="kpi" style="border-left-color:#ef4444;padding:10px 14px"><div class="lb">Top Error</div><div style="font-size:11px;font-weight:800;color:#2E0326;line-height:1.2">'+topE+'</div></div>';
-  var tRows="";for(var tri=0;tri<mv.length;tri++){
-    var me=mv[tri],tc=tyC(me.errorType),hi=FBI[me.id],bg=hi?"#f0fdf4":(tri%2===0?"#fdf8fc":"#fff");
-    var rphMvBdg="";
-    if(me.goodCatch==="Yes") rphMvBdg='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ '+(me.gcWho||me.gcTeam||"Good Catch")+'</span>';
-    if(me.dispensedWithError==="Yes"||me.rphVerified==="dispensed_with_error"){rphMvBdg='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed</span>';if(me.rphNames&&me.rphNames.length)rphMvBdg+='<br><span style="font-size:10px;color:#7c5c76">'+me.rphNames.join(", ")+'</span>';}
-    if(!rphMvBdg) rphMvBdg='<span style="color:#cbd5e1;font-size:11px">—</span>';
-    tRows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+me.date+'</td><td style="white-space:nowrap;color:#9b7294">'+(me.dateRxEntered||"—")+'</td><td style="text-align:center">'+daysBadge(me.daysToCatch!==null&&me.daysToCatch!==undefined?me.daysToCatch:calcDaysToCatch(me.date,me.dateRxEntered))+'</td><td style="color:#7c5c76">'+me.week+'</td><td>'+sevBadge(me.severity)+'</td><td>'+bdg(me.errorType,tc)+'</td><td style="font-weight:600">'+(me.who||"—")+'</td><td>'+(me.team?bdg(me.team,TLC[me.team]||"#440B39"):"")+'</td><td style="color:#7c5c76">'+(me.faxErx||"—")+'</td><td style="color:#2E0326">'+(me.drug||"—")+'</td><td style="color:#2E0326">'+(me.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(me.notes||"—")+'</td><td style="min-width:80px">'+rphMvBdg+'</td><td style="text-align:center">'+(me.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">')+'</td><td style="font-size:11px;color:#7c5c76">'+(hi?hi.date:"—")+'</td></tr>';
+
+  var rows="",shown=mv.length>300?mv.slice(0,300):mv;
+  for(var ri=0;ri<shown.length;ri++){
+    var me=shown[ri],tc=tyC(me.errorType),hi=FBI[me.id];
+    var isReview=!!me.needsReview;
+    var isDup=false; // duplicates checked in All Entries; skip here for performance
+    var bg=isReview?"#fffbeb":(hi?"#f0fdf4":(ri%2===0?"#fdf8fc":"#fff"));
+    var rowClass=isReview?"review-row":"";
+    var rphBdg="";
+    if(isReview){rphBdg='<span class="bdg" style="background:#fef3c7;color:#92400e">\u23f3 Needs Review</span>';}
+    else{
+      if(me.goodCatch==="Yes") rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">\u2705 '+(me.gcWho||me.gcTeam||"Good Catch")+'</span> ';
+      if(me.dispensedWithError==="Yes"||me.rphVerified==="dispensed_with_error"){
+        rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">\u26a0 Dispensed</span>';
+        if(me.rphNames&&me.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">'+me.rphNames.join(", ")+'</span>';
+      }
+      if(!rphBdg)rphBdg='<span style="color:#cbd5e1;font-size:11px">\u2014</span>';
+    }
+    var actionBtns=(me.driveUrl?'<button onclick="showPhotoModal('+me.id+')" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer;border:1px solid #e8d5e4;background:#eef2ff;font-size:11px;padding:0" title="View in Drive">\ud83d\udcf7</button>':(me.photo?'<img src="'+me.photo+'" onclick="showPhotoModal('+me.id+')" class="photo-thumb" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer" title="View photo">':''));
+    rows+='<tr class="'+rowClass+'">'+
+      '<td style="white-space:nowrap">'+me.date+'</td>'+
+      '<td style="white-space:nowrap;color:#9b7294">'+(me.dateRxEntered||"\u2014")+'</td>'+
+      '<td style="text-align:center">'+daysBadge(me.daysToCatch!==null&&me.daysToCatch!==undefined?me.daysToCatch:calcDaysToCatch(me.date,me.dateRxEntered))+'</td>'+
+      '<td style="color:#7c5c76">'+me.week+'</td>'+
+      '<td>'+sevBadge(me.severity)+'</td>'+
+      '<td>'+bdg(me.errorType,tc)+'</td>'+
+      '<td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(me.source,TLC[me.source]||"#440B39"))+'</td>'+
+      '<td style="font-weight:600">'+(me.who||"\u2014")+'</td>'+
+      '<td>'+(me.team?bdg(me.team,TLC[me.team]||"#440B39"):"")+'</td>'+
+      '<td style="color:#7c5c76">'+(me.faxErx||"\u2014")+'</td>'+
+      '<td style="color:#2E0326">'+(me.drug||"\u2014")+'</td>'+
+      '<td style="color:#2E0326">'+(me.rxNum||"\u2014")+'</td>'+
+      '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(me.notes||"\u2014")+'</td>'+
+      '<td style="min-width:80px">'+rphBdg+'</td>'+
+      '<td style="text-align:center">'+(me.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td>'+
+      '<td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setI('+me.id+',this.value)">'))+'</td>'+
+      '<td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+
+      rphLeadCell(me)+
+      '<td style="white-space:nowrap">'+actionBtns+'</td>'+
+    '</tr>';
   }
-  var inner='<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div><div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div><div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div><div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\':parseInt(this.value);rMember()">'+wkOpt+'</select></div><div><label class="flb" style="margin-top:0">RX #</label><input value="'+mvRxSearch+'" placeholder="Search RX..." oninput="mvRxSearch=this.value;rMember()" style="width:120px;padding:7px 10px;font-size:12px;border-radius:20px;border:1.5px solid '+(mvRxSearch?'var(--purple)':'var(--border)')+'"></div><div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div></div></div>';
-  inner+=(mv.length>0?'<div class="kpi-row">'+kHtml+'</div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Error Found</th><th>RX Entered</th><th>Days</th><th>Week</th><th>Severity</th><th>Error Type</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Call Required</th><th>Lead Initials</th><th>FB Date</th></tr></thead><tbody>'+tRows+'</tbody></table></div></div>':'<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No entries found.</div>');
+
+  var inner=
+    '<div class="card"><h3 style="font-size:14px;margin-bottom:12px">Filter by Team Member</h3>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
+      '<div><label class="flb" style="margin-top:0">Team</label><select style="width:130px" onchange="mvTm=this.value;mvWho=\'\';rMember()">'+tmOpt+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\":parseInt(this.value);rMember()">'+wkOpt+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">RX #</label><input value="'+mvRxSearch+'" placeholder="Search RX..." oninput="mvRxSearch=this.value;rMember()" style="width:120px;padding:7px 10px;font-size:12px;border-radius:20px;border:1.5px solid '+(mvRxSearch?'var(--purple)':'var(--border)')+'"></div>'+
+      '<div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div>'+
+    '</div></div>';
+  inner+=(mv.length>0?
+    '<div class="kpi-row">'+kHtml+'</div>'+
+    '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr>'+
+      '<th>Error Found</th><th>RX Entered</th><th>Days</th><th>Week</th><th>Severity</th><th>Error Type</th><th>Source</th><th>Who</th><th>Team</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Call Required</th><th>Intake Lead</th><th>FB Date</th><th>RPH Lead(s)</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div></div>'
+  :'<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No entries found.</div>');
   sec.innerHTML=inner;
 }
 function setI(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rMember();}}
