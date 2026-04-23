@@ -105,6 +105,9 @@ tr.alt td{background:#fdf5fb}
 .photo-preview{width:100%;max-height:360px;object-fit:contain;border-radius:8px;margin-top:8px;border:1px solid var(--border);display:none}
 .photo-thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)}
 
+.name-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--purple);border-radius:8px;box-shadow:0 4px 16px rgba(68,11,57,.15);z-index:500;display:none;max-height:200px;overflow-y:auto}
+.name-wrap{position:relative}
+.smart-date-hint{font-size:10px;color:#7c5c76;margin-top:2px}
 .rph-box{min-height:36px;border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;background:#fdf8fc;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 
 /* RPH Quick-Log & Review Queue */
@@ -163,13 +166,13 @@ tr.alt td{background:#fdf5fb}
     <div class="modal-box">
       <h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Error Entry</h3>
       <div class="fgrid">
-        <div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="eDt"></div>
-        <div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="eDtRx"></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="eDt" onblur="smartDateInput(this)"></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="eDtRx" onblur="smartDateInput(this)"></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="eTy"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Severity <span style="font-weight:400;font-size:10px;color:#7c5c76">(auto)</span></label><div id="eSevDisplay" style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;background:#f3f4f6;font-size:13px;color:#7c5c76">—</div></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="eSr" onchange="upEF()"></select></div>
         <div class="fhalf" id="eTmW"><label class="flb" style="margin-top:0">Team</label><select id="eTm" onchange="upEW()"></select></div>
-        <div class="fhalf" id="eWhW"><label class="flb" style="margin-top:0">Who</label><select id="eWh"></select></div>
+        <div class="fhalf" id="eWhW"><label class="flb" style="margin-top:0">Who</label><div class="name-wrap"><input type="text" id="eWh" placeholder="Type name..." autocomplete="off" oninput="smartNameSuggest(this,'eWhDrop')" onblur="setTimeout(function(){var d=document.getElementById('eWhDrop');if(d)d.style.display='none'},200)"><div id="eWhDrop" class="name-dropdown"></div></div></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="eFx"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Drug</label><select id="eDrug"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="eRx"></div>
@@ -970,7 +973,7 @@ function getLogRphs(){
 // ── Log Error helpers ──────────────────────────────────────────────────────
 function upDF(){var v=document.getElementById("lDrugSel").value;document.getElementById("lDrugCW").style.display=v==="__other__"?"block":"none";}
 function upLF(){var s=document.getElementById("lSr").value,show=s==="Human";document.getElementById("lTmW").style.display=show?"block":"none";document.getElementById("lWhW").style.display=show?"block":"none";}
-function upLW(){var t=document.getElementById("lTm").value;document.getElementById("lWh").innerHTML=whoOpts(t,"");}
+function upLW(){var inp=document.getElementById("lWh");if(inp&&inp.tagName==="INPUT")inp.value="";}
 
 // Good Catch section
 function upGCFields(){
@@ -1076,15 +1079,15 @@ function rQuickLog(){
       '</div>'+
     '</div>'+
     '<div class="fgrid">'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="lDtRx" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="text" id="lDt" placeholder="e.g. 041726 or Apr 17" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="text" id="lDtRx" placeholder="e.g. 041726 or Apr 17" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
       
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="lCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Your Name (RPH)</label>'+
-    '<input id="lRphName" list="rphNameList" placeholder="Type to search your name..." autocomplete="off" style="width:100%">'+
-    '<datalist id="rphNameList">'+rphNameOpts().replace(/<option/g,'<option').replace(/value=""/,'')+'</datalist>'+
+    '<div class="name-wrap"><input id="lRphName" placeholder="Type to search your name..." autocomplete="off" style="width:100%" oninput="smartNameSuggest(this,\'lRphDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphDrop\');if(d)d.style.display=\'none\'},200)">'+
+    '<div id="lRphDrop" class="name-dropdown"></div></div>'+
     '</div>'+
     '</div>'+
     '<label class="flb">Notes / What happened?</label><textarea id="lNt" rows="3" placeholder="Brief description of the error..."></textarea>'+
@@ -1196,13 +1199,16 @@ function rFullLog(){
     '<div class="card" style="max-width:580px">'+
     '<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">Log New Intake Error</h3>'+
     '<div class="fgrid">'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="date" id="lDt" value="'+fmtD(new Date())+'"></div>'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="date" id="lDtRx" value="'+fmtD(new Date())+'"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="text" id="lDt" placeholder="e.g. 041726 or Apr 17" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="text" id="lDtRx" placeholder="e.g. 041726 or Apr 17" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
       
       '<div class="fhalf"><label class="flb" style="margin-top:0">Source</label><select id="lSr" onchange="upLF()">'+srOpts("Human")+'</select></div>'+
       '<div class="fhalf" id="lTmW"><label class="flb" style="margin-top:0">Team</label><select id="lTm" onchange="upLW()">'+tmOpts("Intake")+'</select></div>'+
-      '<div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label><select id="lWh">'+whoOpts("Intake","")+'</select></div>'+
+      '<div class="fhalf" id="lWhW"><label class="flb" style="margin-top:0">Who</label>'+
+      '<div class="name-wrap"><input id="lWh" placeholder="Type name..." autocomplete="off" oninput="smartNameSuggest(this,\'lWhDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lWhDrop\');if(d)d.style.display=\'none\'},200)">'+
+      '<div id="lWhDrop" class="name-dropdown"></div></div>'+
+    '</div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Fax/eRx</label><select id="lFx">'+fxOpts("")+'</select></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Drug Name</label><select id="lDrugSel" onchange="upDF()">'+drugOpts("")+'</select></div>'+
       '<div class="fhalf" id="lDrugCW" style="display:none"><label class="flb" style="margin-top:0">Custom Drug</label><input type="text" id="lDrug" placeholder="Type drug name"></div>'+
@@ -1370,7 +1376,8 @@ function openEdit(id){
   document.getElementById("eSev") && (document.getElementById("eSev").innerHTML=sevOpts(sev));
   document.getElementById("eSr").innerHTML=srOpts(e.source||"Human");
   document.getElementById("eTm").innerHTML=tmOpts(e.team||"Intake");
-  document.getElementById("eWh").innerHTML=whoOpts(e.team||"Intake",e.who||"");
+  var eWhEl=document.getElementById("eWh");
+  if(eWhEl) eWhEl.value=e.who||"";
   document.getElementById("eFx").innerHTML=fxOpts(e.faxErx||"");
   document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
   document.getElementById("eRx").value=e.rxNum||"";
@@ -1474,7 +1481,7 @@ function removeEditPhoto(){
   document.getElementById("ePhotoPreview").style.display="none";
 }
 function upEF(){var s=document.getElementById("eSr").value,show=s==="Human";document.getElementById("eTmW").style.display=show?"block":"none";document.getElementById("eWhW").style.display=show?"block":"none";}
-function upEW(){var t=document.getElementById("eTm").value;document.getElementById("eWh").innerHTML=whoOpts(t,"");}
+function upEW(){var inp=document.getElementById("eWh");if(inp&&inp.tagName==="INPUT")inp.value="";}
 function saveEdit(){
   if(!editId)return;
   var src=document.getElementById("eSr").value,date=document.getElementById("eDt").value;
@@ -2525,6 +2532,111 @@ function devLogin(role) {
   var pages = ROLE_PAGES[role] || ['log'];
   goTo(pages[0]);
 }
+
+
+// ── Smart Date Parser ─────────────────────────────────────────────────────
+// Accepts: 041726, 4/17/26, 4-17-26, apr 17, april 17 2026, 04172026, etc.
+function parseSmartDate(str){
+  if(!str) return null;
+  str = str.trim();
+
+  // Already a valid YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(str)){
+    var d=new Date(str+'T00:00:00');
+    return isNaN(d)?null:str;
+  }
+
+  var months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+    january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+
+  // Month name formats: "Apr 17", "April 17 2026", "apr17"
+  var mMatch=str.toLowerCase().match(/([a-z]+)\s*(\d{1,2})[,\s]*(\d{2,4})?/);
+  if(mMatch && months[mMatch[1]]){
+    var mo=months[mMatch[1]],dy=parseInt(mMatch[2]),yr=mMatch[3]?parseInt(mMatch[3]):new Date().getFullYear();
+    if(yr<100) yr=yr<50?2000+yr:1900+yr;
+    return fmtD(new Date(yr,mo-1,dy));
+  }
+
+  // Pure digits: 041726, 04172026, 4172026, 41726
+  var digits=str.replace(/[\s\-\/]/g,'');
+  if(/^\d{6,8}$/.test(digits)){
+    var m,d2,y;
+    if(digits.length===8){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));}
+    else if(digits.length===6){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));if(y<100)y=y<50?2000+y:1900+y;}
+    else if(digits.length===7){m=parseInt(digits.slice(0,1));d2=parseInt(digits.slice(1,3));y=parseInt(digits.slice(3));if(y<100)y=y<50?2000+y:1900+y;}
+    if(m&&d2&&y&&m>=1&&m<=12&&d2>=1&&d2<=31){return fmtD(new Date(y,m-1,d2));}
+  }
+
+  // Slash/dash separated: 4/17/26, 04-17-2026
+  var parts=str.split(/[\/\-\.]/);
+  if(parts.length===3){
+    var pm=parseInt(parts[0]),pd=parseInt(parts[1]),py=parseInt(parts[2]);
+    if(py<100) py=py<50?2000+py:1900+py;
+    if(pm>=1&&pm<=12&&pd>=1&&pd<=31) return fmtD(new Date(py,pm-1,pd));
+  }
+
+  return null;
+}
+
+function smartDateInput(inputEl){
+  var raw=inputEl.value.trim();
+  // Only try to parse if it doesn't look like a native date picker value
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)) return; // already formatted
+  var parsed=parseSmartDate(raw);
+  if(parsed){
+    inputEl.value=parsed;
+    inputEl.style.borderColor='#10b981';
+    inputEl.title='Parsed: '+parsed;
+    setTimeout(function(){inputEl.style.borderColor='';},1500);
+  } else if(raw) {
+    inputEl.style.borderColor='#ef4444';
+    inputEl.title='Could not parse date — try MM/DD/YY or Apr 17';
+    setTimeout(function(){inputEl.style.borderColor='';inputEl.title='';},2000);
+  }
+}
+
+// ── Smart Name Autocomplete ──────────────────────────────────────────────
+function getAllStaffNames(){
+  var names={};
+  // From SM (staff map)
+  for(var tm in SM){ var arr=SM[tm]||[]; for(var i=0;i<arr.length;i++) names[arr[i].toLowerCase()]={display:arr[i],team:tm}; }
+  // From USER_DIRECTORY
+  Object.values(USER_DIRECTORY).forEach(function(u){
+    if(u&&u.name) names[u.name.toLowerCase()]={display:u.name,team:u.team||''};
+  });
+  return names;
+}
+
+function smartNameSuggest(inputEl, dropdownId){
+  var val=(inputEl.value||'').toLowerCase().trim();
+  var dd=document.getElementById(dropdownId);
+  if(!dd) return;
+  if(!val){dd.style.display='none';return;}
+  var names=getAllStaffNames();
+  var matches=Object.values(names).filter(function(n){
+    return n.display.toLowerCase().indexOf(val)>=0;
+  }).slice(0,6);
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(function(m){
+    var hl=m.display.replace(new RegExp('('+val.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');
+    return '<div onclick="pickName(this,\''+dropdownId+'\',\''+inputEl.id+'\',\''+m.display.replace(/'/g,"\\'")+'\')" style="padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f3e8f1" onmouseover="this.style.background=\'#f3e8f1\'" onmouseout="this.style.background=\'\'">'
+      +hl+'<span style="font-size:10px;color:#7c5c76;margin-left:6px">'+m.team+'</span></div>';
+  }).join('');
+  dd.style.display='block';
+}
+
+function pickName(el, dropdownId, inputId, name){
+  var inp=document.getElementById(inputId);
+  if(inp) inp.value=name;
+  var dd=document.getElementById(dropdownId);
+  if(dd) dd.style.display='none';
+}
+
+// Close dropdowns on click outside
+document.addEventListener('click',function(e){
+  var dds=document.querySelectorAll('.name-dropdown');
+  dds.forEach(function(dd){if(!dd.contains(e.target))dd.style.display='none';});
+});
 
 // ── Paste image support ────────────────────────────────────────────────────
 // Listens for Ctrl+V / Cmd+V anywhere on the page and routes the image
