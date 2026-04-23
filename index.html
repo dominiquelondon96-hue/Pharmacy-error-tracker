@@ -210,7 +210,7 @@ tr.alt td{background:#fdf5fb}
             </div>
             <div class="fhalf">
               <label class="flb" style="margin-top:0">Who specifically?</label>
-              <select id="eGCWho"><option value="">-- Select team first --</option></select>
+              <div class="name-wrap"><input type="text" id="eGCWho" placeholder="Type name..." autocomplete="off" oninput="smartNameSuggest(this,'eGCWhoDrop')" onblur="setTimeout(function(){var d=document.getElementById('eGCWhoDrop');if(d)d.style.display='none'},200)"><div id="eGCWhoDrop" class="name-dropdown"></div></div>
             </div>
           </div>
         </div>
@@ -986,7 +986,8 @@ function upGCTeam(){
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
-  document.getElementById("lGCWho").innerHTML=opts;
+  // lGCWho is now a smart text input — clear it when team changes
+  var gcWhoInp=document.getElementById("lGCWho");if(gcWhoInp)gcWhoInp.value="";
 }
 
 // Dispensed with Error section
@@ -1234,7 +1235,11 @@ function rFullLog(){
       '<div id="lGCDetails" style="display:none">'+
         '<div class="fgrid" style="margin-top:8px">'+
           '<div class="fhalf"><label class="flb" style="margin-top:0">Which team?</label><select id="lGCTeam" onchange="upGCTeam()">'+gcTeamOpts+'</select></div>'+
-          '<div class="fhalf"><label class="flb" style="margin-top:0">Who?</label><select id="lGCWho"><option value="">-- Select team first --</option></select></div>'+
+          '<div class="fhalf"><label class="flb" style="margin-top:0">Who?</label>'+
+          '<div class="name-wrap"><input id="lGCWho" placeholder="Type name..." autocomplete="off"'+
+          ' oninput="smartNameSuggest(this,\'lGCWhoDrop\')"'+
+          ' onblur="setTimeout(function(){var d=document.getElementById(\'lGCWhoDrop\');if(d)d.style.display=\'none\'},200)">'+
+          '<div id="lGCWhoDrop" class="name-dropdown"></div></div></div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -1339,7 +1344,7 @@ function upEditGCTeam(){
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
-  document.getElementById("eGCWho").innerHTML=opts;
+  var gcWhoInpX=document.getElementById("eGCWho");if(gcWhoInpX)gcWhoInpX.value="";
 }
 function upEditGCFields(){
   var v=document.getElementById("eGC").value;
@@ -1427,10 +1432,8 @@ function openEdit(id){
   var gcTeamOpts='<option value="">-- Select team --</option>';
   for(var gti=0;gti<TM.length;gti++)gcTeamOpts+='<option'+(TM[gti]===(e.gcTeam||"")?" selected":"")+'>'+TM[gti]+'</option>';
   gcTeamSel.innerHTML=gcTeamOpts;
-  var gcWhoOpts='<option value="">-- Select person --</option>';
-  var gcMembers=SM[e.gcTeam||""]||[];
-  for(var gwi=0;gwi<gcMembers.length;gwi++)gcWhoOpts+='<option'+(gcMembers[gwi]===(e.gcWho||"")?" selected":"")+'>'+gcMembers[gwi]+'</option>';
-  document.getElementById("eGCWho").innerHTML=gcWhoOpts;
+  // eGCWho is now a smart text input — clear it when team changes
+  var eGCWhoFin=document.getElementById("eGCWho");if(eGCWhoFin)eGCWhoFin.value=e.gcWho||"";
   document.getElementById("eGCDetails").style.display=(e.goodCatch==="Yes")?"block":"none";
   // Dispensed with Error fields
   document.getElementById("eRphVerified").value=e.dispensedWithError||"";
