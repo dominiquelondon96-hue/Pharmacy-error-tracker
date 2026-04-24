@@ -238,8 +238,20 @@ tr.alt td{background:#fdf5fb}
           <div id="eRphCaughtTags" class="rph-box" style="margin-top:6px"></div>
         </div>
         <div id="eRphCountW" style="display:none;margin-top:8px">
-          <label class="flb" style="margin-top:0">How many times dispensed?</label>
-          <input type="number" id="eRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label class="flb" style="margin-top:0">How many times dispensed?</label>
+              <input type="number" id="eRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">
+            </div>
+            <div>
+              <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who checked at VBD</label>
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <div class="name-wrap" style="flex:1"><input id="eRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphVBDDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphVBDDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphVBDDrop" class="name-dropdown"></div></div>
+                <button type="button" onclick="addEditRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+              </div>
+              <div id="eRphVBDTags" class="rph-box" style="margin-top:6px"></div>
+            </div>
+          </div>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">
@@ -1090,6 +1102,38 @@ function upDWEFields(){
   }
 }
 
+function addLogRphVBD(){
+  var sel=document.getElementById("lRphVBDSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  var existing=document.querySelectorAll(".lrph-vbd-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag lrph-vbd-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  document.getElementById("lRphVBDTags").appendChild(tag);
+  if(sel) sel.value="";
+}
+function getLogRphsVBD(){
+  var tags=document.querySelectorAll(".lrph-vbd-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+function addEditRphVBD(){
+  var sel=document.getElementById("eRphVBDSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  var existing=document.querySelectorAll(".erph-vbd-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-vbd-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+  document.getElementById("eRphVBDTags").appendChild(tag);
+  if(sel) sel.value="";
+}
+function getEditRphsVBD(){
+  var tags=document.querySelectorAll(".erph-vbd-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
 function addLogRphPV1Caught(){
   var sel=document.getElementById("lRphPV1CaughtSel");
   var val=(sel?sel.value:"").trim();if(!val)return;
@@ -1424,8 +1468,20 @@ function rFullLog(){
         '<div id="lRphCaughtTags" class="rph-box" style="margin-top:6px"></div>'+
       '</div>'+
       '<div id="lDWECount" style="display:none;margin-top:10px">'+
-        '<label class="flb" style="margin-top:0">How many times dispensed with error?</label>'+
-        '<input type="number" id="lRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+          '<div>'+
+            '<label class="flb" style="margin-top:0">How many times dispensed?</label>'+
+            '<input type="number" id="lRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">'+
+          '</div>'+
+          '<div>'+
+            '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who checked at VBD</label>'+
+            '<div style="display:flex;gap:6px;margin-top:4px">'+
+              '<div class="name-wrap" style="flex:1"><input id="lRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphVBDDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphVBDDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphVBDDrop" class="name-dropdown"></div></div>'+
+              '<button type="button" onclick="addLogRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+            '</div>'+
+            '<div id="lRphVBDTags" class="rph-box" style="margin-top:6px"></div>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
       '<div id="lVerifSummary" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:600"></div>'+
     '</div>'+
@@ -1445,13 +1501,14 @@ function subLog(){
   var pv1Val=document.getElementById("lPV1")?document.getElementById("lPV1").value:"";
   var vbdVal=document.getElementById("lVBD")?document.getElementById("lVBD").value:"";
   var dweVal=(pv1Val==="Missed"&&vbdVal==="Missed")?"Yes":"No";
-  var rphCount="",rphNames=[],rphCaughtNames=[],rphPV1CaughtNames=[];
+  var rphCount="",rphNames=[],rphCaughtNames=[],rphPV1CaughtNames=[],rphVBDNames=[];
   if(pv1Val==="Missed"){
     rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";
     rphNames=getLogRphs();
     rphCaughtNames=getLogRphsCaught();
   }
   if(pv1Val==="Caught") rphPV1CaughtNames=getLogRphsPV1Caught();
+  if(vbdVal==="Missed") rphVBDNames=getLogRphsVBD();
   var row={};
   row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
   row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
@@ -1470,7 +1527,7 @@ function subLog(){
   row.driveUrl=ph&&ph._driveUrl?ph._driveUrl:"";
   row.goodCatch=gcVal;row.gcTeam=gcTeam;row.gcWho=gcWho;
   row.pv1=pv1Val;row.vbd=vbdVal;
-  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;row.rphCaughtNames=rphCaughtNames;row.rphPV1CaughtNames=rphPV1CaughtNames;
+  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;row.rphCaughtNames=rphCaughtNames;row.rphPV1CaughtNames=rphPV1CaughtNames;row.rphVBDNames=rphVBDNames;
   row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(pv1Val==="Missed"&&vbdVal==="Caught")?"caught_at_vbd":(gcVal==="Yes"?"good_catch":"");
   row.needsReview=false;
   // Check for duplicate
@@ -1690,7 +1747,21 @@ function openEdit(id){
       }
     }
   }
-  var show=(e.source||"Human")==="Human";
+  // Populate VBD RPH tags
+  var vbdSelEl=document.getElementById("eRphVBDSel");
+  if(vbdSelEl) vbdSelEl.value="";
+  var vbdBox=document.getElementById("eRphVBDTags");
+  if(vbdBox){
+    vbdBox.innerHTML="";
+    if(e.rphVBDNames&&e.rphVBDNames.length){
+      for(var vbi=0;vbi<e.rphVBDNames.length;vbi++){
+        var vtag=document.createElement("span");
+        vtag.className="rph-tag erph-vbd-tag";vtag.dataset.name=e.rphVBDNames[vbi];
+        vtag.innerHTML=e.rphVBDNames[vbi]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+        vbdBox.appendChild(vtag);
+      }
+    }
+  }
   document.getElementById("eTmW").style.display=show?"block":"none";
   document.getElementById("eWhW").style.display=show?"block":"none";
   document.getElementById("editModal").style.display="block";
@@ -1737,6 +1808,7 @@ function saveEdit(){
       var rphNames=(pv1Val2==="Missed")?getEditRphs():[];
       var rphCaughtNames=(pv1Val2==="Missed"&&vbdVal2==="Caught")||vbdVal2==="Caught"?getEditRphsCaught():[];
       var rphPV1CaughtNames=pv1Val2==="Caught"?getEditRphsPV1Caught():[];
+      var rphVBDNames=vbdVal2==="Missed"?getEditRphsVBD():[];
   // Derive good catch from PV1/VBD
   var gcVal=(pv1Val2==="Caught"||(pv1Val2==="Missed"&&vbdVal2==="Caught"))?"Yes":"No";
   var gcTeam="",gcWho="";  for(var i=0;i<D.length;i++){
@@ -1767,7 +1839,7 @@ function saveEdit(){
       D[i].vbd=vbdVal2;
       D[i].dispensedWithError=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"Yes":"No";
       D[i].rphCount=rphCount;
-      D[i].rphNames=rphNames;D[i].rphCaughtNames=rphCaughtNames;D[i].rphPV1CaughtNames=rphPV1CaughtNames;
+      D[i].rphNames=rphNames;D[i].rphCaughtNames=rphCaughtNames;D[i].rphPV1CaughtNames=rphPV1CaughtNames;D[i].rphVBDNames=rphVBDNames;
       D[i].rphVerified=rphVerified;
       // Clear review flag — entry now enters metrics
       D[i].needsReview=false;
