@@ -1547,14 +1547,14 @@ function getEditRphsCaught(){
   return names;
 }
 function upEditGCTeam(){
-  var t=document.getElementById("eGCTeam").value;
+  // eGCTeam removed — good catch section replaced by PV1/VBD
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
   var gcWhoInpX=document.getElementById("eGCWho");if(gcWhoInpX)gcWhoInpX.value="";
 }
 function upEditGCFields(){
-  var v=document.getElementById("eGC").value;
+  // eGC removed — good catch section replaced by PV1/VBD
   document.getElementById("eGCDetails").style.display=v==="Yes"?"block":"none";
 }
 function addEditRph(){
@@ -1635,12 +1635,12 @@ function openEdit(id){
   }
   // Good Catch fields
   // PV1/VBD populated above — good catch derived automatically
-  var gcTeamSel=document.getElementById("eGCTeam");
+  // eGCTeam removed
   var gcTeamOpts='<option value="">-- Select team --</option>';
   for(var gti=0;gti<TM.length;gti++)gcTeamOpts+='<option'+(TM[gti]===(e.gcTeam||"")?" selected":"")+'>'+TM[gti]+'</option>';
   gcTeamSel.innerHTML=gcTeamOpts;
   // eGCWho is now a smart text input — clear it when team changes
-  var eGCWhoFin=document.getElementById("eGCWho");if(eGCWhoFin)eGCWhoFin.value=e.gcWho||"";
+  // eGCWho removed — gcWho derived from PV1/VBD
   document.getElementById("eGCDetails").style.display=(e.goodCatch==="Yes")?"block":"none";
   // Dispensed with Error fields
   var ePV1=document.getElementById("ePV1");
