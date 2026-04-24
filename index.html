@@ -1208,23 +1208,7 @@ function getLogRphsCaught(){
   for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
   return names;
 }
-function addLogRph(){
-  var sel=document.getElementById("lRphSel");
-  var val=(sel?sel.value:"").trim();if(!val)return;
-  if(sel&&sel.tagName==="INPUT") sel.value="";
-  var existing=document.querySelectorAll(".lrph-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag lrph-tag";tag.dataset.name=val;
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
-  document.getElementById("lRphTags").appendChild(tag);
-  sel.value="";
-}
-function getLogRphs(){
-  var tags=document.querySelectorAll(".lrph-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
+
 
 function rLog(){
   if(currentUser && currentUser.role === 'RPH'){
