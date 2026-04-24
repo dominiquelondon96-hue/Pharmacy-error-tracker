@@ -1049,17 +1049,17 @@ function upLW(){var inp=document.getElementById("lWh");if(inp&&inp.tagName==="IN
 
 // Good Catch section
 function upGCFields(){
-  var v=document.getElementById("lGC");
+  // lGC/lGCDetails/lGCTeam removed — good catch section removed
   if(!v)return;
-  document.getElementById("lGCDetails").style.display=v.value==="Yes"?"block":"none";
+  // lGC/lGCDetails/lGCTeam removed — good catch section removed
 }
 function upGCTeam(){
-  var t=document.getElementById("lGCTeam").value;
+  // lGC/lGCDetails/lGCTeam removed — good catch section removed
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
   // lGCWho is now a smart text input — clear it when team changes
-  var gcWhoInp=document.getElementById("lGCWho");if(gcWhoInp)gcWhoInp.value="";
+  // lGCWho removed
 }
 
 function upDWEFields(){
@@ -1613,7 +1613,7 @@ function upEditGCTeam(){
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
-  var gcWhoInpX=document.getElementById("eGCWho");if(gcWhoInpX)gcWhoInpX.value="";
+  // eGCWho removed
 }
 function upEditGCFields(){
   // eGC removed — good catch section replaced by PV1/VBD
