@@ -1648,7 +1648,6 @@ function openEdit(id){
   var sevBg=SEVERITY_BG[sev]||'#f3f4f6';
   var sevDisp=document.getElementById("eSevDisplay");
   if(sevDisp){sevDisp.textContent=sev;sevDisp.style.background=sevBg;sevDisp.style.color=sevCol;sevDisp.style.borderColor=sevCol+'60';sevDisp.style.fontWeight='700';}
-  document.getElementById("eSev") && (document.getElementById("eSev").innerHTML=sevOpts(sev));
   document.getElementById("eSr").innerHTML=srOpts(e.source||"Human");
   document.getElementById("eTm").innerHTML=tmOpts(e.team||"Intake");
   var eWhEl=document.getElementById("eWh");
