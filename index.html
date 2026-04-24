@@ -281,6 +281,7 @@ tr.alt td{background:#fdf5fb}
 var BIN_ID="69de7f0d856a682189337141";
 var API_KEY="$2a$10$CYBsfBEtDArtHF/.GLAFG.ijVKYwl0jed/Eqelj4gIBsPjfIwf8Qq";
 var BIN_URL="https://api.jsonbin.io/v3/b/"+BIN_ID;
+var GOOGLE_CLIENT_ID="203752171136-mqi4h82emc96c6sgbdag7k3aa2sd91g9.apps.googleusercontent.com";
 
 // ── App Data ───────────────────────────────────────────────────────────────
 var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Prescriber","Wrong Quantity","Wrong Quick Sig","Entered Under Wrong PT","Self Prescribed","Wrong Written Date","Wrong Patient"];
@@ -1647,12 +1648,14 @@ function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rA
 
 
 async function init(){
-  await jbLoad();
+  // Load data — but don't block login if it fails
+  try{ await jbLoad(); } catch(e){ console.warn('Cloud load failed:',e); }
+  // Check for saved session
   try {
     var saved=localStorage.getItem('pet_auth');
     if(saved){var u=JSON.parse(saved);if(u&&u.email){currentUser=u;buildNav();goTo('board');upHdr();return;}}
   } catch(e){}
-  var sec=document.getElementById('sec-log');
+  // Show login
   if(!GOOGLE_CLIENT_ID){
     document.getElementById('googleSignInBtn').innerHTML=
       '<div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:10px;font-size:11px;color:#92400e">'+
@@ -1664,6 +1667,22 @@ async function init(){
     google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleSignIn});
     google.accounts.id.renderButton(document.getElementById('googleSignInBtn'),{theme:'outline',size:'large',width:280});
     google.accounts.id.prompt();
+  }
+}
+
+function onGoogleSignIn(response){
+  // Decode the JWT credential Google returns
+  try {
+    var parts = response.credential.split('.');
+    var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    onGoogleSignInWithInfo({
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture
+    });
+  } catch(e) {
+    console.error('Sign-in decode error:', e);
+    alert('Sign-in failed. Please try again.');
   }
 }
 
