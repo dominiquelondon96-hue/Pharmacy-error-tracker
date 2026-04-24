@@ -177,6 +177,7 @@ tr.alt td{background:#fdf5fb}
         <div class="fhalf"><label class="flb" style="margin-top:0">Drug</label><select id="eDrug"></select></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="eRx"></div>
         <div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="eCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+        <div class="fhalf"><label class="flb" style="margin-top:0">Location</label><select id="eLoc"></select></div>
       </div>
       <label class="flb">Notes</label><textarea id="eNt" rows="2"></textarea>
       <!-- Photo section -->
@@ -285,6 +286,7 @@ var BIN_URL="https://api.jsonbin.io/v3/b/"+BIN_ID;
 // ── App Data ───────────────────────────────────────────────────────────────
 var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Prescriber","Wrong Quantity","Wrong Quick Sig","Entered Under Wrong PT","Self Prescribed","Wrong Written Date","Wrong Patient"];
 var TM=["Intake","PCR 3","TLAC","Ups","RPH"];
+var LOCATIONS=["LDZ-OH","LDZ-AZ","NDP","IDP"];
 var SR=["Human","Bot","API"];
 var TC=["#440B39","#FF764D","#DC5AEE","#A9F5FF","#FFC5B9","#F6AFFF","#10b981","#2E0326","#ef4444","#7c5c76","#f59e0b"];
 var TLC={Intake:"#440B39","PCR 3":"#FF764D",TLAC:"#10b981",Ups:"#DC5AEE",RPH:"#A9F5FF",Bot:"#F6AFFF",API:"#FFC5B9"};
@@ -304,13 +306,15 @@ function srOpts(sel){var h="";for(var i=0;i<SR.length;i++)h+='<option'+(SR[i]===
 function fxOpts(sel){var h="";for(var i=0;i<FX.length;i++)h+='<option'+(FX[i]===sel?" selected":"")+'>'+FX[i]+'</option>';return h;}
 function whoOpts(team,sel){var h='<option value="">Select</option>';var n=SM[team]||[];for(var i=0;i<n.length;i++)h+='<option'+(n[i]===sel?" selected":"")+'>'+n[i]+'</option>';return h;}
 function drugOpts(sel){var h='<option value="">-- Select Drug --</option>';for(var i=0;i<DRUGS.length;i++)h+='<option'+(DRUGS[i]===sel?" selected":"")+'>'+DRUGS[i]+'</option>';h+='<option value="__other__">Other (type below)</option>';return h;}
+function locOpts(sel,req){var h=req?'':'<option value="">-- Select Location --</option>';for(var i=0;i<LOCATIONS.length;i++)h+='<option'+(LOCATIONS[i]===(sel||"LDZ-OH")?" selected":"")+'>'+LOCATIONS[i]+'</option>';return h;}
 function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
-function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(dashMode==="daily")return base.filter(function(e){return e.date===todayStr;});if(dashMode==="weekly")return base.filter(function(e){return e.week===thisWk;});if(dashMode==="prevweek")return base.filter(function(e){return e.week===thisWk-1;});return base;}
+function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(dashLoc!=="All")base=base.filter(function(e){return (e.location||"LDZ-OH")===dashLoc;});if(dashMode==="daily")return base.filter(function(e){return e.date===todayStr;});if(dashMode==="weekly")return base.filter(function(e){return e.week===thisWk;});if(dashMode==="prevweek")return base.filter(function(e){return e.week===thisWk-1;});return base;}
 
 var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
 var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
-var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="",eCallF="All",eSevF="All";
+var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="",eCallF="All",eSevF="All",eLocF="All";
+var dashLoc="All",rphLoc="All",sumLoc="All",trendLoc="All",mvLoc="All";
 var charts={},editId=null;
 var today=new Date(),todayStr=fmtD(today),thisWk=getWk(todayStr);
 var saveTimer=null;
@@ -334,7 +338,7 @@ function getPayload(){
     // driveId and driveUrl stay in cloud payload — they're just short strings
     return copy;
   });
-  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,POSTS:POSTS,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
+  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,POSTS:POSTS,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,LOCATIONS:LOCATIONS,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
 }
 
 function savePhotosLocally(){
@@ -363,6 +367,7 @@ function applyPayload(p){
   if(p.TM&&p.TM.length)TM=p.TM;
   if(p.RFBI)RFBI=p.RFBI;
   if(p.POSTS)POSTS=p.POSTS;
+  if(p.LOCATIONS&&p.LOCATIONS.length)LOCATIONS=p.LOCATIONS;
   if(p.USER_DIRECTORY)USER_DIRECTORY=p.USER_DIRECTORY;
   restorePhotosFromLocal();
 }
@@ -575,7 +580,8 @@ function rDash(){
   if(!alerts)alerts='<div class="alert-card good"><div style="font-size:11px;font-weight:700;color:#10b981">ALL CLEAR</div><div style="font-size:13px;color:#2E0326;margin-top:2px">No critical thresholds exceeded.</div></div>';
 
   var period=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Week "+(thisWk-1):"All Time";
-  var tog='<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="prevweek"?" on":"")+'" onclick="dashMode=\'prevweek\';upHdr();rDash()">Prev Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div>';
+  var locTog='<select onchange="dashLoc=this.value;upHdr();rDash()" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer"><option value="All"'+(dashLoc==="All"?" selected":"")+'>All Locations</option>'+LOCATIONS.map(function(l2){return'<option value="'+l2+'"'+(dashLoc===l2?" selected":"")+'>'+l2+'</option>';}).join('')+'</select>';
+  var tog='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+locTog+'<div class="toggle-group"><button class="tgl'+(dashMode==="daily"?" on":"")+'" onclick="dashMode=\'daily\';upHdr();rDash()">Today</button><button class="tgl'+(dashMode==="weekly"?" on":"")+'" onclick="dashMode=\'weekly\';upHdr();rDash()">This Week</button><button class="tgl'+(dashMode==="prevweek"?" on":"")+'" onclick="dashMode=\'prevweek\';upHdr();rDash()">Prev Week</button><button class="tgl'+(dashMode==="cumulative"?" on":"")+'" onclick="dashMode=\'cumulative\';upHdr();rDash()">All Time</button></div></div>';
   sec.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h2 style="font-size:15px;font-weight:700;color:#2E0326">Overview</h2>'+tog+'</div>'+
     '<div class="kpi-row">'+kh+'</div>'+
@@ -606,13 +612,13 @@ function rRph(){
   var sec=document.getElementById("sec-rph");
   var wks=allWks();
   if(!rphSelWk||wks.indexOf(rphSelWk)<0) rphSelWk=wks.length>0?wks[wks.length-1]:thisWk;
-
-  var wkBtns='<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="font-size:11px;font-weight:700;color:#7c5c76;margin-right:6px">Week:</span>';
+  var locSel='<select onchange="rphLoc=this.value;rRph()" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer"><option value="All"'+(rphLoc==="All"?" selected":"")+'>All Locations</option>'+LOCATIONS.map(function(l){return'<option value="'+l+'"'+(rphLoc===l?" selected":"")+'>'+l+'</option>';}).join('')+'</select>';
+  var wkBtns='<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;align-items:center">'+locSel+'<span style="font-size:11px;font-weight:700;color:#7c5c76;margin:0 6px">Week:</span>';
   for(var wbi2=0;wbi2<wks.length;wbi2++){wkBtns+='<button class="wk-btn'+(wks[wbi2]===rphSelWk?" on":"")+'" onclick="rphSelWk='+wks[wbi2]+';rRph()">Wk '+wks[wbi2]+(wks[wbi2]===thisWk?' ★':'')+'</button>';}
   if(wks.length===0)wkBtns+='<span style="font-size:11px;color:#7c5c76">No data yet</span>';
   wkBtns+='</div>';
-
-  var wkD=D.filter(function(e){return Number(e.week)===Number(rphSelWk);});
+  var Dr=rphLoc==="All"?D:D.filter(function(e){return (e.location||"LDZ-OH")===rphLoc;});
+  var wkD=Dr.filter(function(e){return Number(e.week)===Number(rphSelWk);});
   var total=wkD.length;
   var dispensed=wkD.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";});
   var goodCatch=wkD.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";});
@@ -737,7 +743,7 @@ function rRph(){
 
   dChart("ch-rphwk");
   var wks4=allWks(),wlbs=[],wBad=[],wGood=[];
-  for(var wwi=0;wwi<wks4.length;wwi++){var wk4=wks4[wwi];var wkE2=D.filter(function(e){return e.week===wk4;});wlbs.push("Wk "+wk4+(wk4===thisWk?" ★":""));wBad.push(wkE2.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";}).length);wGood.push(wkE2.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length);}
+  for(var wwi=0;wwi<wks4.length;wwi++){var wk4=wks4[wwi];var wkE2=Dr.filter(function(e){return e.week===wk4;});wlbs.push("Wk "+wk4+(wk4===thisWk?" ★":""));wBad.push(wkE2.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";}).length);wGood.push(wkE2.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length);}
   charts["ch-rphwk"]=new Chart(document.getElementById("ch-rphwk"),{type:"bar",data:{labels:wlbs,datasets:[{label:"⚠ Dispensed w/ Error",data:wBad,backgroundColor:"#ef4444",stack:"s",borderRadius:3},{label:"✅ Good Catch",data:wGood,backgroundColor:"#10b981",stack:"s",borderRadius:3}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
 
   if(rphEtData.length>0){
@@ -750,9 +756,11 @@ function rRph(){
 function rSum(){
   var sec=document.getElementById("sec-summary");var wks=allWks();if(!selWk||wks.indexOf(selWk)<0)selWk=wks[wks.length-1];
   if(!selWk){sec.innerHTML='<div class="card" style="text-align:center;color:#7c5c76;padding:40px">No data yet. Start logging errors!</div>';return;}
+  var locSel='<select onchange="sumLoc=this.value;rSum()" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer"><option value="All"'+(sumLoc==="All"?" selected":"")+'>All Locations</option>'+LOCATIONS.map(function(l){return'<option value="'+l+'"'+(sumLoc===l?" selected":"")+'>'+l+'</option>';}).join('')+'</select>';
+  var Dfiltered=sumLoc==="All"?D:D.filter(function(e){return (e.location||"LDZ-OH")===sumLoc;});
   var sM={},tM={};
   for(var wi=0;wi<wks.length;wi++){var w=wks[wi];sM[w]={};tM[w]={};for(var ei=0;ei<ET.length;ei++){sM[w][ET[ei]]={Human:0,Bot:0,API:0,Total:0};tM[w][ET[ei]]={Total:0};for(var ti=0;ti<TM.length;ti++)tM[w][ET[ei]][TM[ti]]=0;}}
-  for(var di=0;di<D.length;di++){var e=D[di];if(sM[e.week]&&sM[e.week][e.errorType]){sM[e.week][e.errorType][e.source]++;sM[e.week][e.errorType].Total++;}if(e.source==="Human"&&tM[e.week]&&tM[e.week][e.errorType]&&TM.indexOf(e.team)>=0){tM[e.week][e.errorType][e.team]++;tM[e.week][e.errorType].Total++;}}
+  for(var di=0;di<Dfiltered.length;di++){var e=Dfiltered[di];if(sM[e.week]&&sM[e.week][e.errorType]){sM[e.week][e.errorType][e.source]++;sM[e.week][e.errorType].Total++;}if(e.source==="Human"&&tM[e.week]&&tM[e.week][e.errorType]&&TM.indexOf(e.team)>=0){tM[e.week][e.errorType][e.team]++;tM[e.week][e.errorType].Total++;}}
   var sR=sM[selWk]||{},tR=tM[selWk]||{},sT={Human:0,Bot:0,API:0,Total:0},tT={Total:0};
   for(var tmi=0;tmi<TM.length;tmi++)tT[TM[tmi]]=0;
   for(var eti=0;eti<ET.length;eti++){var t=ET[eti];if(sR[t]){sT.Human+=sR[t].Human;sT.Bot+=sR[t].Bot;sT.API+=sR[t].API;sT.Total+=sR[t].Total;}if(tR[t]){for(var tmi2=0;tmi2<TM.length;tmi2++)tT[TM[tmi2]]+=tR[t][TM[tmi2]]||0;tT.Total+=tR[t].Total||0;}}
@@ -760,14 +768,16 @@ function rSum(){
   var sBody="";for(var si2=0;si2<ET.length;si2++){var sr=sR[ET[si2]]||{Human:0,Bot:0,API:0,Total:0};sBody+='<tr'+(si2%2===0?' class="alt"':'')+'><td>'+ET[si2]+'</td><td style="text-align:center">'+sr.Human+'</td><td style="text-align:center">'+sr.Bot+'</td><td style="text-align:center">'+sr.API+'</td><td style="text-align:center;font-weight:700;background:#440B3922">'+sr.Total+'</td></tr>';}
   var tmH="",tmF="",tBody="";for(var thi=0;thi<TM.length;thi++){tmH+='<th>'+TM[thi]+'</th>';tmF+='<td>'+tT[TM[thi]]+'</td>';}
   for(var tbi=0;tbi<ET.length;tbi++){var tr2=tR[ET[tbi]]||{};tBody+='<tr'+(tbi%2===0?' class="alt"':'')+'><td>'+ET[tbi]+'</td>';for(var tmi3=0;tmi3<TM.length;tmi3++)tBody+='<td style="text-align:center">'+(tr2[TM[tmi3]]||0)+'</td>';tBody+='<td style="text-align:center;font-weight:700;background:#440B3922">'+(tr2.Total||0)+'</td></tr>';}
-  sec.innerHTML='<div class="card"><span style="font-size:13px;font-weight:700;color:#2E0326;margin-right:10px">Select Week:</span>'+wB+'</div><div class="card"><h3 style="font-size:14px;color:#2E0326;margin-bottom:12px">Week '+selWk+' — By Source</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th><th>Human</th><th>Bot</th><th>API</th><th>Total</th></tr></thead><tbody>'+sBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td><td>'+sT.Human+'</td><td>'+sT.Bot+'</td><td>'+sT.API+'</td><td>'+sT.Total+'</td></tr></tfoot></table></div></div><div class="card"><h3 style="font-size:14px;color:#2E0326;margin-bottom:12px">Week '+selWk+' — By Team</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th>'+tmH+'<th>Total</th></tr></thead><tbody>'+tBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td>'+tmF+'<td>'+tT.Total+'</td></tr></tfoot></table></div></div>';
+  sec.innerHTML='<div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:13px;font-weight:700;color:#2E0326">Select Week:</span><div style="flex:1;display:flex;flex-wrap:wrap;gap:4px">'+wB+'</div>'+locSel+'</div><div class="card"><h3 style="font-size:14px;color:#2E0326;margin-bottom:12px">Week '+selWk+' — By Source'+(sumLoc!=="All"?' <span style="font-size:11px;font-weight:400;color:#7c5c76">· '+sumLoc+'</span>':'')+'</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th><th>Human</th><th>Bot</th><th>API</th><th>Total</th></tr></thead><tbody>'+sBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td><td>'+sT.Human+'</td><td>'+sT.Bot+'</td><td>'+sT.API+'</td><td>'+sT.Total+'</td></tr></tfoot></table></div></div><div class="card"><h3 style="font-size:14px;color:#2E0326;margin-bottom:12px">Week '+selWk+' — By Team</h3><div class="tbl-wrap"><table><thead><tr><th style="text-align:left">Error Type</th>'+tmH+'<th>Total</th></tr></thead><tbody>'+tBody+'</tbody><tfoot><tr class="tfr"><td>TOTAL</td>'+tmF+'<td>'+tT.Total+'</td></tr></tfoot></table></div></div>';
 }
 
 // ── Trends ─────────────────────────────────────────────────────────────────
 function rTrend(){
   var sec=document.getElementById("sec-trends");
+  var Dt=trendLoc==="All"?D:D.filter(function(e){return (e.location||"LDZ-OH")===trendLoc;});
+  var locSel='<select onchange="trendLoc=this.value;rTrend()" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer"><option value="All"'+(trendLoc==="All"?" selected":"")+'>All Locations</option>'+LOCATIONS.map(function(l){return'<option value="'+l+'"'+(trendLoc===l?" selected":"")+'>'+l+'</option>';}).join('')+'</select>';
   sec.innerHTML=
-    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:13px;color:#2E0326">Error Trend by Source</h3><div style="display:flex;gap:6px"><button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div>'+
+    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><h3 style="font-size:13px;color:#2E0326">Error Trend by Source</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+locSel+'<button class="wk-btn'+(trendM==="daily"?" on":"")+'" onclick="trendM=\'daily\';rTrend()">Daily</button><button class="wk-btn'+(trendM==="weekly"?" on":"")+'" onclick="trendM=\'weekly\';rTrend()">Weekly</button></div></div><div class="ch-wrap" style="height:250px"><canvas id="ch-tr"></canvas></div></div>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div class="card" style="flex:1;min-width:300px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">RPH Verification Over Time</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-rphtr"></canvas></div></div>'+
       '<div class="card" style="flex:1;min-width:260px;margin-bottom:0"><h3 style="font-size:13px;color:#2E0326;margin-bottom:10px">Error Type Distribution (All Time)</h3><div class="ch-wrap" style="height:220px"><canvas id="ch-di"></canvas></div></div>'+
@@ -778,15 +788,15 @@ function rTrend(){
     '</div>';
   // Source trend
   dChart("ch-tr");var lbs=[],hum=[],bot=[],api=[];
-  if(trendM==="daily"){var dm={};for(var i=13;i>=0;i--){var dd=new Date(today);dd.setDate(today.getDate()-i);var kk=fmtD(dd);dm[kk]={Human:0,Bot:0,API:0};}for(var di=0;di<D.length;di++){if(dm[D[di].date])dm[D[di].date][D[di].source]++;}var dk=Object.keys(dm);for(var dki=0;dki<dk.length;dki++){lbs.push(dk[dki].slice(5));hum.push(dm[dk[dki]].Human);bot.push(dm[dk[dki]].Bot);api.push(dm[dk[dki]].API);}}
-  else{var wks2=allWks(),wm={};for(var wi=0;wi<wks2.length;wi++)wm[wks2[wi]]={Human:0,Bot:0,API:0};for(var di2=0;di2<D.length;di2++){if(wm[D[di2].week])wm[D[di2].week][D[di2].source]++;}for(var wk2=0;wk2<wks2.length;wk2++){lbs.push("Wk "+wks2[wk2]);hum.push(wm[wks2[wk2]].Human);bot.push(wm[wks2[wk2]].Bot);api.push(wm[wks2[wk2]].API);}}
+  if(trendM==="daily"){var dm={};for(var i=13;i>=0;i--){var dd=new Date(today);dd.setDate(today.getDate()-i);var kk=fmtD(dd);dm[kk]={Human:0,Bot:0,API:0};}for(var di=0;di<Dt.length;di++){if(dm[Dt[di].date])dm[Dt[di].date][Dt[di].source]++;}var dk=Object.keys(dm);for(var dki=0;dki<dk.length;dki++){lbs.push(dk[dki].slice(5));hum.push(dm[dk[dki]].Human);bot.push(dm[dk[dki]].Bot);api.push(dm[dk[dki]].API);}}
+  else{var wks2=allWks(),wm={};for(var wi=0;wi<wks2.length;wi++)wm[wks2[wi]]={Human:0,Bot:0,API:0};for(var di2=0;di2<Dt.length;di2++){if(wm[Dt[di2].week])wm[Dt[di2].week][Dt[di2].source]++;}for(var wk2=0;wk2<wks2.length;wk2++){lbs.push("Wk "+wks2[wk2]);hum.push(wm[wks2[wk2]].Human);bot.push(wm[wks2[wk2]].Bot);api.push(wm[wks2[wk2]].API);}}
   charts["ch-tr"]=new Chart(document.getElementById("ch-tr"),{type:"bar",data:{labels:lbs,datasets:[{label:"Human",data:hum,backgroundColor:"#3b82f6",stack:"a"},{label:"Bot",data:bot,backgroundColor:"#8b5cf6",stack:"a"},{label:"API",data:api,backgroundColor:"#ec4899",stack:"a"}]},options:{plugins:{legend:{position:"top"}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
   // RPH verification trend (weekly always)
   dChart("ch-rphtr");
   var wks3=allWks(),rlbs=[],rVer=[],rNot=[];
   for(var rwi=0;rwi<wks3.length;rwi++){
     var wk=wks3[rwi];
-    var wkE=D.filter(function(e){return e.week===wk;});
+    var wkE=Dt.filter(function(e){return e.week===wk;});
     rlbs.push("Wk "+wk);
     rVer.push(wkE.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";}).length);
     rNot.push(wkE.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length);
@@ -800,7 +810,7 @@ function rTrend(){
   var wksSev=allWks(),sevLbs=[],sevHigh=[],sevMed=[],sevLow=[];
   for(var swi=0;swi<wksSev.length;swi++){
     var swk=wksSev[swi];
-    var swkE=D.filter(function(e){return e.week===swk&&!e.needsReview;});
+    var swkE=Dt.filter(function(e){return e.week===swk&&!e.needsReview;});
     sevLbs.push("Wk "+swk+(swk===thisWk?" ★":""));
     sevHigh.push(swkE.filter(function(e){return e.severity==="High";}).length);
     sevMed.push(swkE.filter(function(e){return e.severity==="Medium";}).length);
@@ -812,7 +822,7 @@ function rTrend(){
   var wksDtc=allWks(),dtcLbs=[],dtcAvgs=[];
   for(var dwi=0;dwi<wksDtc.length;dwi++){
     var dwk=wksDtc[dwi];
-    var dwkE=D.filter(function(e){return e.week===dwk&&!e.needsReview&&e.daysToCatch!==null&&e.daysToCatch!==undefined&&e.daysToCatch>=0;});
+    var dwkE=Dt.filter(function(e){return e.week===dwk&&!e.needsReview&&e.daysToCatch!==null&&e.daysToCatch!==undefined&&e.daysToCatch>=0;});
     dtcLbs.push("Wk "+dwk+(dwk===thisWk?" ★":""));
     dtcAvgs.push(dwkE.length?Math.round(dwkE.reduce(function(a,e){return a+e.daysToCatch;},0)/dwkE.length):null);
   }
@@ -951,6 +961,7 @@ function rMember(){
       &&(!mvWho||e2.who===mvWho)
       &&(mvTy==="All"||e2.errorType===mvTy)
       &&(mvWk==="All"||e2.week==mvWk)
+      &&(mvLoc==="All"||(e2.location||"LDZ-OH")===mvLoc)
       &&(!mvRxSearch||(e2.rxNum||"").toLowerCase().indexOf(mvRxSearch.toLowerCase())>=0))
       mv.push(e2);
   }
@@ -1012,6 +1023,7 @@ function rMember(){
       '<div><label class="flb" style="margin-top:0">Staff Member</label><select style="width:160px" onchange="mvWho=this.value;rMember()">'+whOpt+'</select></div>'+
       '<div><label class="flb" style="margin-top:0">Error Type</label><select style="width:170px" onchange="mvTy=this.value;rMember()">'+tyOpt+'</select></div>'+
       '<div><label class="flb" style="margin-top:0">Week</label><select style="width:110px" onchange="mvWk=this.value===\'All\'?\'All\":parseInt(this.value);rMember()">'+wkOpt+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">Location</label><select onchange="mvLoc=this.value;rMember()" style="width:110px"><option value="All"'+(mvLoc==="All"?" selected":"")+'>All</option>'+LOCATIONS.map(function(l){return'<option value="'+l+'"'+(mvLoc===l?" selected":"")+'>'+l+'</option>';}).join('')+'</select></div>'+
       '<div><label class="flb" style="margin-top:0">RX #</label><input value="'+mvRxSearch+'" placeholder="Search RX..." oninput="mvRxSearch=this.value;rMember()" style="width:120px;padding:7px 10px;font-size:12px;border-radius:20px;border:1.5px solid '+(mvRxSearch?'var(--purple)':'var(--border)')+'"></div>'+
       '<div style="margin-left:auto;text-align:right"><div style="font-size:22px;font-weight:800;color:#2E0326">'+mv.length+'</div><div style="font-size:12px;color:#7c5c76">total errors</div></div>'+
     '</div></div>';
@@ -1184,6 +1196,7 @@ function rQuickLog(){
       
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="lCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Location</label><select id="lLoc">'+locOpts("LDZ-OH",true)+'</select></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Your Name (RPH)</label>'+
     '<div class="name-wrap"><input id="lRphName" placeholder="Type to search your name..." autocomplete="off" style="width:100%" oninput="smartNameSuggest(this,\'lRphDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphDrop\');if(d)d.style.display=\'none\'},200)">'+
     '<div id="lRphDrop" class="name-dropdown"></div></div>'+
@@ -1259,6 +1272,7 @@ function subQuickLog(){
   row.errorType=errorType;
   row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
   row.callRequired=document.getElementById("lCall")?document.getElementById("lCall").value:"No";
+  row.location=document.getElementById("lLoc")?document.getElementById("lLoc").value:"LDZ-OH";
   row.notes=notes;
   row.photo=driveId?"":photo;
   row.driveId=driveId;
@@ -1313,6 +1327,7 @@ function rFullLog(){
       '<div class="fhalf" id="lDrugCW" style="display:none"><label class="flb" style="margin-top:0">Custom Drug</label><input type="text" id="lDrug" placeholder="Type drug name"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="lCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Location</label><select id="lLoc">'+locOpts("LDZ-OH",true)+'</select></div>'+
     '</div>'+
     '<label class="flb">Notes</label><textarea id="lNt" rows="2" placeholder="Optional notes..."></textarea>'+
     '<label class="flb" style="margin-top:12px">📷 Photo Evidence <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
@@ -1412,6 +1427,7 @@ function subLog(){
   row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
   row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
   row.callRequired=document.getElementById("lCall")?document.getElementById("lCall").value:"No";
+  row.location=document.getElementById("lLoc")?document.getElementById("lLoc").value:"LDZ-OH";
   row.errorType=document.getElementById("lTy").value;
   row.source=src;
   row.team=src==="Human"?document.getElementById("lTm").value:"";
@@ -1547,6 +1563,7 @@ function openEdit(id){
   document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
   document.getElementById("eRx").value=e.rxNum||"";
   document.getElementById("eCall").value=e.callRequired||"No";
+  document.getElementById("eLoc").innerHTML=locOpts(e.location||"LDZ-OH",true);
   document.getElementById("eNt").value=e.notes||"";
   // Photo — show existing if present
   var ePhotoInput=document.getElementById("ePhoto");
@@ -1688,6 +1705,7 @@ function saveEdit(){
       D[i].errorType=document.getElementById("eTy").value;
       D[i].severity=autoSeverity(D[i].errorType||"",D[i].dispensedWithError||"",D[i].goodCatch||"",D[i].pv1||"",D[i].vbd||"");
       D[i].callRequired=document.getElementById("eCall").value||"No";
+      D[i].location=document.getElementById("eLoc")?document.getElementById("eLoc").value:"LDZ-OH";
       D[i].daysToCatch=calcDaysToCatch(D[i].date,D[i].dateRxEntered);
       D[i].source=src;
       D[i].team=src==="Human"?document.getElementById("eTm").value:"";
@@ -1735,7 +1753,8 @@ function rEntries(){
       &&(eReview==="All"||(eReview==="Needs Review"&&e.needsReview)||(eReview==="Complete"&&!e.needsReview))
       &&(!eRxSearch||(e.rxNum||"").toLowerCase().indexOf(eRxSearch.toLowerCase())>=0)
       &&(eCallF==="All"||(e.callRequired||"No")===eCallF)
-      &&(eSevF==="All"||(e.severity||"")===eSevF))
+      &&(eSevF==="All"||(e.severity||"")===eSevF)
+      &&(eLocF==="All"||(e.location||"LDZ-OH")===eLocF))
       fil.push(e);
   }
   // Needs Review pinned to top, then newest date first within each group
@@ -1816,8 +1835,9 @@ function rEntries(){
       '<input placeholder="🔍 RX #" value="'+eRxSearch+'" oninput="eRxSearch=this.value;rEntries()" style="width:110px;padding:5px 8px;font-size:11px;border-radius:20px;border:1.5px solid '+(eRxSearch?'var(--purple)':'var(--border)')+'">'+
       '<label style="font-size:11px;color:#7c5c76">Severity:</label><select onchange="eSevF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eSevF==="All"?" selected":"")+' value="All">All</option><option'+(eSevF==="Low"?" selected":"")+' value="Low">Low</option><option'+(eSevF==="Medium"?" selected":"")+' value="Medium">Medium</option><option'+(eSevF==="High"?" selected":"")+' value="High">High</option><option'+(eSevF==="Critical"?" selected":"")+' value="Critical">Critical</option></select>'+
       '<label style="font-size:11px;color:#7c5c76">Call Required:</label><select onchange="eCallF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eCallF==="All"?" selected":"")+' value="All">All</option><option'+(eCallF==="Yes"?" selected":"")+' value="Yes">Yes</option><option'+(eCallF==="No"?" selected":"")+' value="No">No</option></select>'+
+      '<label style="font-size:11px;color:#7c5c76">Location:</label><select onchange="eLocF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option value="All"'+(eLocF==="All"?" selected":"")+'>All</option>'+LOCATIONS.map(function(l){return'<option value="'+l+'"'+(eLocF===l?" selected":"")+'>'+l+'</option>';}).join('')+'</select>'+
       '<span style="font-size:11px;color:#7c5c76;margin-left:auto">'+fil.length+' entries</span>'+
-      ((eReview!=="All"||eRxSearch||eCallF!=="All"||eSevF!=="All")?'<button onclick="eReview=\'All\';eRxSearch=\'\';eCallF=\'All\';eSevF=\'All\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear all ✕</button>':'')+
+      ((eReview!=="All"||eRxSearch||eCallF!=="All"||eSevF!=="All"||eLocF!=="All")?'<button onclick="eReview=\'All\';eRxSearch=\'\';eCallF=\'All\';eSevF=\'All\';eLocF=\'All\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear all ✕</button>':'')+
     '</div>'+
     '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Error Found</th><th>RX Entered</th><th>Days</th><th>Week</th><th>Severity</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Follow-up</th><th>Intake Lead</th><th>FB Date</th><th>RPH Lead(s)</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
@@ -1898,7 +1918,8 @@ function _rAdminInner(){
   var etList=ET.map(function(t,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+t+'</span><button onclick="removeET('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
   var tmList=TM.map(function(t,i){return'<div class="admin-item"><span style="flex:1">'+bdg(t,TLC[t]||"#440B39")+'</span><button onclick="removeTM('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
   var drugList=DRUGS.map(function(d,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+d+'</span><button onclick="removeDrug('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-  sec.innerHTML='<p style="font-size:12px;color:#7c5c76;margin-bottom:14px">Changes here update dropdowns and save to cloud automatically.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Error Types</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Teams</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Drug List</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
+  var locList=LOCATIONS.map(function(l,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+l+(l==="LDZ-OH"?' <span style="font-size:9px;color:#7c5c76;font-weight:700">DEFAULT</span>':'')+'</span>'+(LOCATIONS.length>1?'<button onclick="removeLoc('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button>':'')+'</div>';}).join("");
+  sec.innerHTML='<p style="font-size:12px;color:#7c5c76;margin-bottom:14px">Changes here update dropdowns and save to cloud automatically.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Error Types</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Teams</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Drug List</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">📍 Locations</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newLoc" placeholder="e.g. LDZ-TX" style="flex:1"><button onclick="addLoc()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+locList+'</div></div></div>';
 }
 function rAdmin(){
   _rAdminInner();
@@ -1995,6 +2016,8 @@ function addTM(){var v=document.getElementById("newTM").value.trim();if(!v)retur
 function removeTM(i){if(!confirm("Remove?"))return;TM.splice(i,1);save();rAdmin();}
 function addDrug(){var v=document.getElementById("newDrug").value.trim();if(!v)return;DRUGS.push(v);save();document.getElementById("newDrug").value="";rAdmin();}
 function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rAdmin();}
+function addLoc(){var v=document.getElementById("newLoc").value.trim().toUpperCase();if(!v)return;if(LOCATIONS.indexOf(v)>=0){alert("Location already exists.");return;}LOCATIONS.push(v);save();document.getElementById("newLoc").value="";rAdmin();}
+function removeLoc(i){if(LOCATIONS.length<=1){alert("Must have at least one location.");return;}if(!confirm("Remove "+LOCATIONS[i]+"?"))return;LOCATIONS.splice(i,1);save();rAdmin();}
 
 
 // ═══════════════════════════════════════════════
