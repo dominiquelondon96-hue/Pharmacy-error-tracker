@@ -240,12 +240,24 @@ tr.alt td{background:#fdf5fb}
         </div>
         <div id="eVerifSummary" style="display:none;margin-top:8px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:600"></div>
         <div id="eRphNamesW" style="display:none;margin-top:8px">
-          <label class="flb">Which RPH(s) at PV1?</label>
-          <div style="display:flex;gap:6px;margin-top:4px">
-            <select id="eRphSel" style="flex:1"></select>
-            <button type="button" onclick="addEditRph()" style="padding:6px 14px;background:#c2410c;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <div class="name-wrap" style="flex:1"><input id="eRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphSelDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphSelDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphSelDrop" class="name-dropdown"></div></div>
+                <button type="button" onclick="addEditRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+              </div>
+              <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
+            </div>
+            <div>
+              <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at VBD</label>
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <div class="name-wrap" style="flex:1"><input id="eRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphVBDDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphVBDDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphVBDDrop" class="name-dropdown"></div></div>
+                <button type="button" onclick="addEditRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+              </div>
+              <div id="eRphVBDTags" class="rph-box" style="margin-top:6px"></div>
+            </div>
           </div>
-          <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
         </div>
         <div id="eRphCountW" style="display:none;margin-top:8px">
           <label class="flb" style="margin-top:0">How many times dispensed?</label>
@@ -423,7 +435,7 @@ function exportData(){
 
 // ── Nav ────────────────────────────────────────────────────────────────────
 var NAVS=[{k:"board",l:"📋 Board"},{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"directory",l:"Directory"},{k:"admin",l:"Admin"}];
-function buildNav(){var h="";for(var i=0;i<NAVS.length;i++)h+='<button class="'+(NAVS[i].k===curV?"on":"")+'" onclick="goTo(\''+NAVS[i].k+'\')">'+NAVS[i].l+'</button>';document.getElementById("navBar").innerHTML=h;}
+
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
 function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
 function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;var rv=D.filter(function(e){return e.needsReview;}).length;document.getElementById("hPnd").textContent=(D.filter(function(e){return !e.needsReview;}).length-Object.keys(FBI).length)+" Pending"+(rv>0?" · "+rv+" Needs Review":"");document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Prev Week":"All Time";}
@@ -1016,27 +1028,9 @@ function setI(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,d
 // ── Log Error ──────────────────────────────────────────────────────────────
 function rphOpts(){var h='<option value="">-- Select RPH --</option>';var rphList=SM["RPH"]||[];for(var i=0;i<rphList.length;i++)h+='<option value="'+rphList[i]+'">'+rphList[i]+'</option>';return h;}
 
-function addLogRph(){
-  var sel=document.getElementById("lRphSel");
-  var val=sel.value.trim();
-  if(!val)return;
-  // Prevent duplicates
-  var existing=document.querySelectorAll(".lrph-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag lrph-tag";
-  tag.dataset.name=val;
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
-  document.getElementById("lRphTags").appendChild(tag);
-  sel.value="";
-}
 
-function getLogRphs(){
-  var tags=document.querySelectorAll(".lrph-tag");
-  var names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
+
+
 
 // ── Log Error helpers ──────────────────────────────────────────────────────
 function upDF(){var v=document.getElementById("lDrugSel").value;document.getElementById("lDrugCW").style.display=v==="__other__"?"block":"none";}
@@ -1083,20 +1077,37 @@ function upDWEFields(){
 }
 function addLogRph(){
   var sel=document.getElementById("lRphSel");
-  var val=sel.value.trim();if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
   var existing=document.querySelectorAll(".lrph-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
   tag.className="rph-tag lrph-tag";tag.dataset.name=val;
   tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
   document.getElementById("lRphTags").appendChild(tag);
-  sel.value="";
+  if(sel) sel.value="";
 }
 function getLogRphs(){
   var tags=document.querySelectorAll(".lrph-tag"),names=[];
   for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
   return names;
 }
+function addLogRphVBD(){
+  var sel=document.getElementById("lRphVBDSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  var existing=document.querySelectorAll(".lrph-vbd-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag lrph-vbd-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  document.getElementById("lRphVBDTags").appendChild(tag);
+  if(sel) sel.value="";
+}
+function getLogRphsVBD(){
+  var tags=document.querySelectorAll(".lrph-vbd-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+
 
 function rLog(){
   if(currentUser && currentUser.role === 'RPH'){
@@ -1354,12 +1365,24 @@ function rFullLog(){
         '</div>'+
       '</div>'+
       '<div id="lDWEDetails" style="display:none;margin-top:10px">'+
-        '<label class="flb">Which RPH(s) verified? <span style="font-weight:400;color:#7c5c76;font-size:10px">(RPH who signed off at PV1)</span></label>'+rphNote+
-        '<div style="display:flex;gap:6px;margin-top:4px">'+
-          '<select id="lRphSel" style="flex:1">'+rphOpts()+'</select>'+
-          '<button type="button" onclick="addLogRph()" style="padding:6px 14px;background:#c2410c;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+          '<div>'+
+            '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>'+
+            '<div style="display:flex;gap:6px;margin-top:4px">'+
+              '<div class="name-wrap" style="flex:1"><input id="lRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphSelDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphSelDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphSelDrop" class="name-dropdown"></div></div>'+
+              '<button type="button" onclick="addLogRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+            '</div>'+
+            '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
+          '</div>'+
+          '<div>'+
+            '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at VBD</label>'+
+            '<div style="display:flex;gap:6px;margin-top:4px">'+
+              '<div class="name-wrap" style="flex:1"><input id="lRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphVBDDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphVBDDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphVBDDrop" class="name-dropdown"></div></div>'+
+              '<button type="button" onclick="addLogRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+            '</div>'+
+            '<div id="lRphVBDTags" class="rph-box" style="margin-top:6px"></div>'+
+          '</div>'+
         '</div>'+
-        '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
       '</div>'+
       '<div id="lDWECount" style="display:none;margin-top:10px">'+
         '<label class="flb" style="margin-top:0">How many times dispensed with error?</label>'+
@@ -1383,8 +1406,8 @@ function subLog(){
   var pv1Val=document.getElementById("lPV1")?document.getElementById("lPV1").value:"";
   var vbdVal=document.getElementById("lVBD")?document.getElementById("lVBD").value:"";
   var dweVal=(pv1Val==="Missed"&&vbdVal==="Missed")?"Yes":"No";
-  var rphCount="",rphNames=[];
-  if(pv1Val==="Missed"){rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";rphNames=getLogRphs();}
+  var rphCount="",rphNames=[],rphVBDNames=[];
+  if(pv1Val==="Missed"){rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";rphNames=getLogRphs();rphVBDNames=getLogRphsVBD();}
   var row={};
   row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
   row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
@@ -1403,7 +1426,7 @@ function subLog(){
   row.driveUrl=ph&&ph._driveUrl?ph._driveUrl:"";
   row.goodCatch=gcVal;row.gcTeam=gcTeam;row.gcWho=gcWho;
   row.pv1=pv1Val;row.vbd=vbdVal;
-  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;
+  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;row.rphVBDNames=rphVBDNames;
   row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(pv1Val==="Missed"&&vbdVal==="Caught")?"caught_at_vbd":(gcVal==="Yes"?"good_catch":"");
   row.needsReview=false;
   // Check for duplicate
@@ -1473,17 +1496,33 @@ function upEditGCFields(){
 }
 function addEditRph(){
   var sel=document.getElementById("eRphSel");
-  var val=sel.value.trim();if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
   var existing=document.querySelectorAll(".erph-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
   tag.className="rph-tag erph-tag";tag.dataset.name=val;
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
   document.getElementById("eRphTags").appendChild(tag);
-  sel.value="";
+  if(sel) sel.value="";
 }
 function getEditRphs(){
   var tags=document.querySelectorAll(".erph-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+function addEditRphVBD(){
+  var sel=document.getElementById("eRphVBDSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  var existing=document.querySelectorAll(".erph-vbd-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-vbd-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+  document.getElementById("eRphVBDTags").appendChild(tag);
+  if(sel) sel.value="";
+}
+function getEditRphsVBD(){
+  var tags=document.querySelectorAll(".erph-vbd-tag"),names=[];
   for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
   return names;
 }
@@ -1499,7 +1538,7 @@ function openEdit(id){
   var sevBg=SEVERITY_BG[sev]||'#f3f4f6';
   var sevDisp=document.getElementById("eSevDisplay");
   if(sevDisp){sevDisp.textContent=sev;sevDisp.style.background=sevBg;sevDisp.style.color=sevCol;sevDisp.style.borderColor=sevCol+'60';sevDisp.style.fontWeight='700';}
-  document.getElementById("eSev") && (document.getElementById("eSev").innerHTML=sevOpts(sev));
+  document.getElementById("eSevDisplay") && (document.getElementById("eSevDisplay").innerHTML=sevOpts(sev));
   document.getElementById("eSr").innerHTML=srOpts(e.source||"Human");
   document.getElementById("eTm").innerHTML=tmOpts(e.team||"Intake");
   var eWhEl=document.getElementById("eWh");
@@ -1563,14 +1602,31 @@ function openEdit(id){
   if(eVBD) eVBD.value=e.vbd||"";
   upEditRphFields();
   document.getElementById("eRphCount").value=e.rphCount||"";
-  document.getElementById("eRphSel").innerHTML=rphOpts();
+  // Populate PV1 missed RPH tags
+  var eRphSelEl=document.getElementById("eRphSel");
+  if(eRphSelEl) eRphSelEl.value="";
   var tagsBox=document.getElementById("eRphTags");tagsBox.innerHTML="";
   if(e.rphNames&&e.rphNames.length){
     for(var rpi=0;rpi<e.rphNames.length;rpi++){
       var rtag=document.createElement("span");
       rtag.className="rph-tag erph-tag";rtag.dataset.name=e.rphNames[rpi];
-      rtag.innerHTML=e.rphNames[rpi]+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+      rtag.innerHTML=e.rphNames[rpi]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
       tagsBox.appendChild(rtag);
+    }
+  }
+  // Populate VBD missed RPH tags
+  var eRphVBDSelEl=document.getElementById("eRphVBDSel");
+  if(eRphVBDSelEl) eRphVBDSelEl.value="";
+  var vbdTagsBox=document.getElementById("eRphVBDTags");
+  if(vbdTagsBox){
+    vbdTagsBox.innerHTML="";
+    if(e.rphVBDNames&&e.rphVBDNames.length){
+      for(var vbi=0;vbi<e.rphVBDNames.length;vbi++){
+        var vtag=document.createElement("span");
+        vtag.className="rph-tag erph-vbd-tag";vtag.dataset.name=e.rphVBDNames[vbi];
+        vtag.innerHTML=e.rphVBDNames[vbi]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+        vbdTagsBox.appendChild(vtag);
+      }
     }
   }
   var showDWE=(e.dispensedWithError==="Yes");
@@ -1618,9 +1674,10 @@ function saveEdit(){
   var pv1Val2=document.getElementById("ePV1")?document.getElementById("ePV1").value:"";
   var vbdVal2=document.getElementById("eVBD")?document.getElementById("eVBD").value:"";
   var rphVerified=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"dispensed_with_error":(pv1Val2==="Missed"&&vbdVal2==="Caught")?"caught_at_vbd":"";
-  var showDWE2=(rphVerified==="Yes");
+  var showDWE2=pv1Val2==="Missed";
   var rphCount=showDWE2?(document.getElementById("eRphCount").value||""):"";
   var rphNames=showDWE2?getEditRphs():[];
+  var rphVBDNames=showDWE2?getEditRphsVBD():[];
   var gcVal=document.getElementById("eGC").value||"";
   var gcTeam=gcVal==="Yes"?(document.getElementById("eGCTeam").value||""):"";
   var gcWho=gcVal==="Yes"?(document.getElementById("eGCWho").value||""):"";
@@ -1653,6 +1710,7 @@ function saveEdit(){
       D[i].dispensedWithError=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"Yes":"No";
       D[i].rphCount=rphCount;
       D[i].rphNames=rphNames;
+      D[i].rphVBDNames=rphVBDNames;
       D[i].rphVerified=rphVerified;
       // Clear review flag — entry now enters metrics
       D[i].needsReview=false;
@@ -1785,21 +1843,25 @@ function clrI(id){delete FBI[id];save();upHdr();rEntries();}
 // ── RPH Lead Initials ────────────────────────────────────────────────────────
 // RFBI[entryId][rphName] = {initials, date}
 function rphLeadCell(e){
-  if(e.needsReview||!e.rphNames||!e.rphNames.length) return '<td style="min-width:120px;padding:8px 12px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
-  var cell='<td style="min-width:130px;padding:6px 12px;vertical-align:middle">';
-  for(var i=0;i<e.rphNames.length;i++){
-    var rn=e.rphNames[i];
-    var rfb=(RFBI[e.id]||{})[rn];
+  var allRphs=[];
+  if(e.rphNames&&e.rphNames.length) e.rphNames.forEach(function(n){allRphs.push({name:n,label:'PV1',bg:'#fef3c7',col:'#d97706'});});
+  if(e.rphVBDNames&&e.rphVBDNames.length) e.rphVBDNames.forEach(function(n){allRphs.push({name:n,label:'VBD',bg:'#fee2e2',col:'#dc2626'});});
+  if(e.needsReview||!allRphs.length) return '<td style="min-width:120px;padding:8px 12px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
+  var cell='<td style="min-width:140px;padding:6px 12px;vertical-align:middle">';
+  for(var i=0;i<allRphs.length;i++){
+    var rn=allRphs[i].name,lbl=allRphs[i].label,bg=allRphs[i].bg,col=allRphs[i].col;
+    var safeKey=encodeURIComponent(rn+'_'+lbl);
+    var rfb=(RFBI[e.id]||{})[rn+'_'+lbl]||(RFBI[e.id]||{})[rn];
     var firstName=rn.split(' ')[0];
-    var safeRn=encodeURIComponent(rn);
-    cell+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:'+(i<e.rphNames.length-1?'5px':'0')+'">';
-    cell+='<span style="font-size:10px;color:#7c5c76;min-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+rn+'">'+firstName+':</span>';
+    cell+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:'+(i<allRphs.length-1?'4px':'0')+'">';
+    cell+='<span style="font-size:9px;font-weight:700;background:'+bg+';color:'+col+';border-radius:4px;padding:1px 5px;white-space:nowrap">'+lbl+'</span>';
+    cell+='<span style="font-size:10px;color:#7c5c76;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52px" title="'+rn+'">'+firstName+'</span>';
     if(rfb){
-      cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:10px;padding:2px 6px">'+rfb.initials+'</span>';
+      cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:10px;padding:2px 5px">'+rfb.initials+'</span>';
       cell+='<span style="font-size:10px;color:#7c5c76">'+rfb.date+'</span>';
-      cell+='<button onclick="clrRphI('+e.id+',decodeURIComponent(\''+safeRn+'\'))" style="font-size:10px;padding:1px 5px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">✕</button>';
+      cell+='<button onclick="clrRphI('+e.id+',decodeURIComponent(\''+safeKey+'\'))" style="font-size:10px;padding:1px 4px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">✕</button>';
     } else {
-      cell+='<input class="ii" maxlength="4" placeholder="Init." style="width:40px;font-size:11px;padding:3px 5px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" data-id="'+e.id+'" data-rph="'+safeRn+'" onblur="setRphIE(this)">';
+      cell+='<input class="ii" maxlength="4" placeholder="Init." style="width:36px;font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" data-id="'+e.id+'" data-rph="'+safeKey+'" onblur="setRphIE(this)">';
     }
     cell+='</div>';
   }
