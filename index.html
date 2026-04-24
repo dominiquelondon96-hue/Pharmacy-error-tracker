@@ -311,6 +311,25 @@ function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(d
 var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
 var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
+var POST_TYPES=["Announcement","Workflow Update","Reminder","SOP/Policy","Urgent"];
+var POSTS=[];
+var FBI={},RFBI={};
+var USER_DIRECTORY={};
+var currentUser=null;
+var ROLE_PAGES={
+  'RPH':     ['board','log'],
+  'Trainer': ['board','summary','staff','member','log'],
+  'Lead':    ['board','dashboard','summary','trends','rph','staff','member','log'],
+  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log'],
+  'Admin':   ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
+};
+var dashMode="weekly",trendM="weekly";
+var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
+var curV="board";
+var GOOGLE_DRIVE_FOLDER_ID="1Xv2XGxWiFv6EYx5GULmVdvM73euRd9xN";
+var RFBI={},FBI=FBI||{};
+var trendM="weekly";
+var mvWho="",mvTy="All",mvWk="All";
 var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="",eCallF="All",eSevF="All";
 var charts={},editId=null;
 var today=new Date(),todayStr=fmtD(today),thisWk=getWk(todayStr);
