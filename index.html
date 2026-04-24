@@ -1637,6 +1637,7 @@ function getEditRphs(){
   return names;
 }
 function openEdit(id){
+  try{
   var e=null;for(var i=0;i<D.length;i++)if(D[i].id===id){e=D[i];break;}
   if(!e)return;editId=id;
   document.getElementById("eDt").value=e.date||"";
@@ -1764,6 +1765,7 @@ function openEdit(id){
   document.getElementById("eTmW").style.display=show?"block":"none";
   document.getElementById("eWhW").style.display=show?"block":"none";
   document.getElementById("editModal").style.display="block";
+  }catch(err){alert("Edit error: "+err.message+"\n\nLine: "+err.stack);console.error(err);}
 }
 function closeEdit(){document.getElementById("editModal").style.display="none";editId=null;}
 
