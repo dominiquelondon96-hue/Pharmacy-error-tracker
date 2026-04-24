@@ -1057,7 +1057,7 @@ function upDWEFields(){
   var vbd=document.getElementById("lVBD");
   if(!pv1||!vbd) return;
   var pv1Val=pv1.value, vbdVal=vbd.value;
-  var showRph=pv1Val==="Missed";
+  var showRph=pv1Val==="Missed"||vbdVal==="Missed";
   var el=document.getElementById("lDWEDetails");
   if(el) el.style.display=showRph?"block":"none";
   var showCount=vbdVal==="Missed";
@@ -1407,7 +1407,7 @@ function subLog(){
   var vbdVal=document.getElementById("lVBD")?document.getElementById("lVBD").value:"";
   var dweVal=(pv1Val==="Missed"&&vbdVal==="Missed")?"Yes":"No";
   var rphCount="",rphNames=[],rphVBDNames=[];
-  if(pv1Val==="Missed"){rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";rphNames=getLogRphs();rphVBDNames=getLogRphsVBD();}
+  if(pv1Val==="Missed"||vbdVal==="Missed"){rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";rphNames=getLogRphs();rphVBDNames=getLogRphsVBD();}
   var row={};
   row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
   row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
@@ -1467,7 +1467,7 @@ function upEditRphFields(){
   var vbd=document.getElementById("eVBD");
   if(!pv1||!vbd) return;
   var pv1Val=pv1.value, vbdVal=vbd.value;
-  var showRph=pv1Val==="Missed";
+  var showRph=pv1Val==="Missed"||vbdVal==="Missed";
   var showCount=vbdVal==="Missed";
   document.getElementById("eRphNamesW").style.display=showRph?"block":"none";
   document.getElementById("eRphCountW").style.display=showCount?"block":"none";
@@ -1629,7 +1629,7 @@ function openEdit(id){
       }
     }
   }
-  var showDWE=(e.dispensedWithError==="Yes");
+  var showDWE=(e.pv1==="Missed"||e.vbd==="Missed"||e.dispensedWithError==="Yes");
   document.getElementById("eRphCountW").style.display=showDWE?"block":"none";
   document.getElementById("eRphNamesW").style.display=showDWE?"block":"none";
   var show=(e.source||"Human")==="Human";
@@ -1674,7 +1674,7 @@ function saveEdit(){
   var pv1Val2=document.getElementById("ePV1")?document.getElementById("ePV1").value:"";
   var vbdVal2=document.getElementById("eVBD")?document.getElementById("eVBD").value:"";
   var rphVerified=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"dispensed_with_error":(pv1Val2==="Missed"&&vbdVal2==="Caught")?"caught_at_vbd":"";
-  var showDWE2=pv1Val2==="Missed";
+  var showDWE2=pv1Val2==="Missed"||vbdVal2==="Missed";
   var rphCount=showDWE2?(document.getElementById("eRphCount").value||""):"";
   var rphNames=showDWE2?getEditRphs():[];
   var rphVBDNames=showDWE2?getEditRphsVBD():[];
