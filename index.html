@@ -339,9 +339,10 @@ var saveTimer=null;
 function setSyncUI(status,msg){
   var bar=document.getElementById("syncBar");
   var dot=document.getElementById("syncDot");
-  bar.className="sync-bar "+status;
-  document.getElementById("syncMsg").textContent=msg;
-  dot.className="sync-dot "+(status==="synced"?"green":status==="error"?"red":"yellow");
+  var msgEl=document.getElementById("syncMsg");
+  if(bar) bar.className="sync-bar "+status;
+  if(msgEl) msgEl.textContent=msg||"";
+  if(dot) dot.className="sync-dot "+status;
 }
 
 // ── JSONBin API ────────────────────────────────────────────────────────────
@@ -1672,7 +1673,14 @@ async function init(){
   // Check for saved session
   try {
     var saved=localStorage.getItem('pet_auth');
-    if(saved){var u=JSON.parse(saved);if(u&&u.email){currentUser=u;buildNav();goTo('board');upHdr();return;}}
+    if(saved){var u=JSON.parse(saved);if(u&&u.email){
+      currentUser=u;
+      var auth=document.getElementById('authScreen');
+      var app=document.getElementById('mainApp');
+      if(auth) auth.style.display='none';
+      if(app) app.style.display='block';
+      buildNav();goTo('board');upHdr();return;
+    }}
   } catch(e){}
   // Show login
   if(!GOOGLE_CLIENT_ID){
@@ -1713,7 +1721,6 @@ function onGoogleSignInWithInfo(info){
   var email=info.email,name=info.name,picture=info.picture;
   console.log('Signing in:', email);
   var dirUser=USER_DIRECTORY[email];
-  // Hard-coded admin backdoor
   if(email==='dominique.l@gifthealth.com'){
     currentUser={name:name||'Dominique',email:email,role:'Admin',picture:picture};
   } else if(dirUser){
@@ -1721,10 +1728,15 @@ function onGoogleSignInWithInfo(info){
   } else if(email&&email.endsWith('@gifthealth.com')){
     currentUser={name:name,email:email,role:'RPH',picture:picture};
   } else {
-    alert('Access denied.\n\nEmail received: '+email+'\n\nPlease use your gifthealth Google account.');
+    alert('Access denied.\n\nEmail: '+email+'\n\nPlease use your gifthealth Google account.');
     return;
   }
   localStorage.setItem('pet_auth',JSON.stringify(currentUser));
+  // Show app, hide auth screen
+  var auth=document.getElementById('authScreen');
+  var app=document.getElementById('mainApp');
+  if(auth) auth.style.display='none';
+  if(app) app.style.display='block';
   buildNav();goTo('board');upHdr();
 }
 function signOut() {
@@ -1865,6 +1877,10 @@ function devLogin(role){
   var roleMap={'Admin':'dominique.l@gifthealth.com','Manager':'manager@gifthealth.com','Lead':'lead@gifthealth.com','Trainer':'trainer@gifthealth.com','RPH':'rph@gifthealth.com'};
   currentUser={name:role+' User',email:roleMap[role]||'dev@gifthealth.com',role:role,picture:''};
   localStorage.setItem('pet_auth',JSON.stringify(currentUser));
+  var auth=document.getElementById('authScreen');
+  var app=document.getElementById('mainApp');
+  if(auth) auth.style.display='none';
+  if(app) app.style.display='block';
   buildNav();goTo('board');upHdr();
 }
 
@@ -2002,6 +2018,184 @@ function rDirectory(){
         '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Team</th><th></th></tr></thead>'+
         '<tbody>'+tableRows+'</tbody></table></div></div>'
     :'<div class="card" style="text-align:center;color:#7c5c76;padding:32px;margin-top:12px">No team members yet \u2014 add someone above.</div>');
+}
+
+
+function removeLogPhoto(){
+  document.getElementById("lPhoto").value="";
+  var p=document.getElementById("lPhotoPreview");if(p){p.src="";p.style.display="none";}
+}
+
+function addEditRph(){
+  var sel=document.getElementById("eRphSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  var existing=document.querySelectorAll(".erph-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+  document.getElementById("eRphTags").appendChild(tag);
+  if(sel&&sel.tagName==="INPUT")sel.value="";
+}
+
+function addEditRphCaught(){
+  var sel=document.getElementById("eRphCaughtSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  var existing=document.querySelectorAll(".erph-caught-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-caught-tag";tag.dataset.name=val;
+  tag.style.background="#dcfce7";tag.style.color="#15803d";
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+  document.getElementById("eRphCaughtTags").appendChild(tag);
+  if(sel&&sel.tagName==="INPUT")sel.value="";
+}
+
+function getEditRphs(){
+  var tags=document.querySelectorAll(".erph-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+
+function getEditRphsCaught(){
+  var tags=document.querySelectorAll(".erph-caught-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+
+function addDir(){
+  var n=document.getElementById("newDirName"),e=document.getElementById("newDirEmail"),r=document.getElementById("newDirRole"),tm=document.getElementById("newDirTeam");
+  if(!n||!e||!r)return;
+  var name=n.value.trim(),email=e.value.trim().toLowerCase(),role=r.value,team=tm?tm.value:"";
+  if(!name||!email||!role){alert("Please fill in name, email and role.");return;}
+  USER_DIRECTORY[email]={name:name,email:email,role:role,team:team};
+  if(team&&SM[team]&&SM[team].indexOf(name)<0)SM[team].push(name);
+  save();n.value="";e.value="";rDirectory();
+}
+
+function saveDir(email){
+  var nameEl=document.getElementById("editDirName_"+email);
+  var roleEl=document.getElementById("editDirRole_"+email);
+  var teamEl=document.getElementById("editDirTeam_"+email);
+  if(!nameEl||!roleEl)return;
+  var oldEntry=USER_DIRECTORY[email]||{};
+  var oldName=oldEntry.name;
+  var newName=nameEl.value.trim();
+  var newRole=roleEl.value;
+  var newTeam=teamEl?teamEl.value:oldEntry.team||"";
+  USER_DIRECTORY[email]={name:newName,email:email,role:newRole,team:newTeam};
+  // Update SM
+  for(var tm in SM){var idx=SM[tm].indexOf(oldName);if(idx>=0)SM[tm].splice(idx,1);}
+  if(newTeam&&SM[newTeam]&&SM[newTeam].indexOf(newName)<0)SM[newTeam].push(newName);
+  save();rDirectory();showDirToast("\u2705 Updated "+newName);
+}
+
+function closeDir(){rDirectory();}
+
+function removeDir(email){
+  if(!confirm("Remove "+email+" from directory?"))return;
+  var entry=USER_DIRECTORY[email];
+  if(entry&&entry.name){for(var tm in SM){var idx=SM[tm].indexOf(entry.name);if(idx>=0)SM[tm].splice(idx,1);}}
+  delete USER_DIRECTORY[email];
+  save();rDirectory();
+}
+
+function _rAdminKey(){
+  var sec=document.getElementById("sec-admin");
+  if(!sec)return;
+  var key=document.createElement("div");
+  key.className="card";key.style.marginTop="12px";
+  key.innerHTML='<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">\ud83d\udddd\ufe0f System Key &amp; Reference</h3>'
+  +'<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">\ud83d\udc65 Roles &amp; Access</div><div class="tbl-wrap"><table><thead><tr><th>Role</th><th>Board</th><th>Dashboard</th><th>Summary</th><th>Trends</th><th>RPH Report</th><th>Staff</th><th>Member View</th><th>Log Error</th><th>Import</th><th>All Entries</th><th>Directory</th><th>Admin</th></tr></thead><tbody>'
+  +_roleRow("RPH",["board","log"])+_roleRow("Trainer",["board","summary","staff","member","log"])+_roleRow("Lead",["board","dashboard","summary","trends","rph","staff","member","log"])+_roleRow("Manager",["board","dashboard","summary","trends","rph","staff","member","log"])+_roleRow("Admin",["board","dashboard","summary","trends","rph","staff","member","log","import","entries","directory","admin"])
+  +'</tbody></table></div></div>';
+  sec.appendChild(key);
+}
+
+function _roleRow(role,pages){
+  var all=["board","dashboard","summary","trends","rph","staff","member","log","import","entries","directory","admin"];
+  var col={Admin:"#440B39",Manager:"#0369a1",Lead:"#7c3aed",Trainer:"#059669",RPH:"#10b981"}[role]||"#7c5c76";
+  var cells=all.map(function(p){return '<td style="text-align:center">'+(pages.indexOf(p)>=0?'<span style="color:#10b981;font-weight:700">\u2713</span>':'<span style="color:#e2e8f0">\u2014</span>')+'</td>';}).join("");
+  return '<tr><td><span class="bdg" style="background:'+col+'22;color:'+col+'">'+role+'</span></td>'+cells+'</tr>';
+}
+
+function _badgeRow(label,bg,col,desc){
+  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fdf8fc;border-radius:8px;border:1px solid #f3e8f1"><span class="bdg" style="background:'+bg+';color:'+col+';white-space:nowrap">'+label+'</span><span style="font-size:11px;color:#7c5c76">'+desc+'</span></div>';
+}
+
+function parseSmartDate(str){
+  if(!str)return null;
+  str=str.trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(str)){var d=new Date(str+"T00:00:00");return isNaN(d)?null:str;}
+  var months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+  var mMatch=str.toLowerCase().match(/([a-z]+)\s*(\d{1,2})[,\s]*(\d{2,4})?/);
+  if(mMatch&&months[mMatch[1]]){var mo=months[mMatch[1]],dy=parseInt(mMatch[2]),yr=mMatch[3]?parseInt(mMatch[3]):new Date().getFullYear();if(yr<100)yr=yr<50?2000+yr:1900+yr;return fmtD(new Date(yr,mo-1,dy));}
+  var digits=str.replace(/[\s\-\/]/g,"");
+  if(/^\d{6,8}$/.test(digits)){var m,d2,y;if(digits.length===8){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));}else if(digits.length===6){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));if(y<100)y=y<50?2000+y:1900+y;}else if(digits.length===7){m=parseInt(digits.slice(0,1));d2=parseInt(digits.slice(1,3));y=parseInt(digits.slice(3));if(y<100)y=y<50?2000+y:1900+y;}if(m&&d2&&y&&m>=1&&m<=12&&d2>=1&&d2<=31)return fmtD(new Date(y,m-1,d2));}
+  var parts=str.split(/[\/\-\.]/);
+  if(parts.length===3){var pm=parseInt(parts[0]),pd=parseInt(parts[1]),py=parseInt(parts[2]);if(py<100)py=py<50?2000+py:1900+py;if(pm>=1&&pm<=12&&pd>=1&&pd<=31)return fmtD(new Date(py,pm-1,pd));}
+  return null;
+}
+
+function smartDateInput(el){
+  var raw=el.value.trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return;
+  var parsed=parseSmartDate(raw);
+  if(parsed){el.value=parsed;el.style.borderColor="#10b981";setTimeout(function(){el.style.borderColor="";},1500);}
+  else if(raw){el.style.borderColor="#ef4444";setTimeout(function(){el.style.borderColor="";},2000);}
+}
+
+function getAllStaffNames(){
+  var names={};
+  for(var tm in SM){var arr=SM[tm]||[];for(var i=0;i<arr.length;i++)names[arr[i].toLowerCase()]={display:arr[i],team:tm};}
+  Object.keys(USER_DIRECTORY).forEach(function(k){var u=USER_DIRECTORY[k];if(u&&u.name)names[u.name.toLowerCase()]={display:u.name,team:u.team||""};});
+  return names;
+}
+
+function smartNameSuggest(inputEl,dropdownId){
+  var val=(inputEl.value||"").toLowerCase().trim();
+  var dd=document.getElementById(dropdownId);
+  if(!dd)return;
+  if(!val){dd.style.display="none";return;}
+  var names=getAllStaffNames();
+  var matches=Object.values(names).filter(function(n){
+    return n.display.toLowerCase().indexOf(val)>=0;
+  }).slice(0,6);
+  if(!matches.length){dd.style.display="none";return;}
+  var html="";
+  for(var mi=0;mi<matches.length;mi++){
+    var m=matches[mi];
+    var re2=new RegExp("("+val.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi");
+    var hl=m.display.replace(re2,"<strong>$1</strong>");
+    var safeDisp=m.display.replace(/'/g,"&#39;");
+    var row=document.createElement("div");
+    row.style.cssText="padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f3e8f1";
+    row.innerHTML=hl+'<span style="font-size:10px;color:#7c5c76;margin-left:6px">'+m.team+"</span>";
+    row.onmouseover=function(){this.style.background="#f3e8f1";};
+    row.onmouseout=function(){this.style.background="";};
+    (function(name){
+      row.onclick=function(){pickName(null,dropdownId,inputEl.id,name);};
+    })(m.display);
+    html+=row.outerHTML;
+  }
+  dd.innerHTML=html;
+  // Re-attach onclick since outerHTML loses event handlers
+  var divs=dd.querySelectorAll("div");
+  for(var di=0;di<divs.length&&di<matches.length;di++){
+    (function(name){
+      divs[di].onclick=function(){pickName(null,dropdownId,inputEl.id,name);};
+      divs[di].onmouseover=function(){this.style.background="#f3e8f1";};
+      divs[di].onmouseout=function(){this.style.background="";};
+    })(matches[di].display);
+  }
+  dd.style.display="block";
+}
+
+function pickName(el,dropdownId,inputId,name){
+  var inp=document.getElementById(inputId);
+  if(inp)inp.value=name;
+  var dd=document.getElementById(dropdownId);
+  if(dd)dd.style.display="none";
 }
 </script>
 </body>
