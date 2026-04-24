@@ -192,73 +192,64 @@ tr.alt td{background:#fdf5fb}
       <!-- Verification Stages section -->
       <div style="margin-top:8px;padding:12px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa">
         <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:8px">⚠ Verification Stages</div>
-        <!-- PV1 Stage -->
-        <div style="padding:10px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:8px">Stage 1 — PV1 (RPH First Verification)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label class="flb" style="margin-top:0;color:#dc2626;font-size:11px">⚠ RPH who missed at PV1</label>
-              <div style="display:flex;gap:6px;margin-top:4px">
-                <div class="name-wrap" style="flex:1"><input id="eRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphSelDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphSelDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphSelDrop" class="name-dropdown"></div></div>
-                <button type="button" onclick="addEditRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button>
-              </div>
-              <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
-            </div>
-            <div>
-              <label class="flb" style="margin-top:0;color:#15803d;font-size:11px">✅ RPH who caught at PV1</label>
-              <div style="display:flex;gap:6px;margin-top:4px">
-                <div class="name-wrap" style="flex:1"><input id="eRphPV1CaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphPV1CaughtDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphPV1CaughtDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphPV1CaughtDrop" class="name-dropdown"></div></div>
-                <button type="button" onclick="addEditRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button>
-              </div>
-              <div id="eRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>
-            </div>
+        <div class="fgrid">
+          <div class="fhalf">
+            <label class="flb" style="margin-top:0">PV1 — RPH First Verification</label>
+            <select id="ePV1" onchange="upEditRphFields()">
+              <option value="">-- Select --</option>
+              <option value="Caught">✅ Caught at PV1</option>
+              <option value="Missed">⚠ Missed at PV1</option>
+              <option value="NA">N/A — no PV1</option>
+            </select>
           </div>
-          <div style="font-size:10px;color:#7c5c76;margin-top:6px">Leave both blank if PV1 did not apply</div>
+          <div class="fhalf">
+            <label class="flb" style="margin-top:0">VBD — Verified Before Dispensing</label>
+            <select id="eVBD" onchange="upEditRphFields()">
+              <option value="">-- Select --</option>
+              <option value="Caught">✅ Caught at VBD</option>
+              <option value="Missed">🚨 Missed at VBD — dispensed with error</option>
+              <option value="NA">N/A — did not reach VBD</option>
+            </select>
+          </div>
         </div>
-        <!-- VBD Stage -->
-        <div style="padding:10px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:8px">Stage 2 — VBD (Verified Before Dispensing)</div>
-          <select id="eVBD" onchange="upEditRphFields()" style="width:100%;margin-bottom:8px">
-            <option value="">-- Select outcome --</option>
-            <option value="Caught">✅ Caught at VBD — error stopped before dispensing</option>
-            <option value="Missed">🚨 Missed at VBD — dispensed this fill</option>
-            <option value="NA">N/A — did not reach VBD</option>
-          </select>
+        <div id="eVerifSummary" style="display:none;margin-top:8px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:600"></div>
+        <div id="eRphPV1CaughtW" style="display:none;margin-top:8px">
+          <label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at PV1?</label>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <div class="name-wrap" style="flex:1"><input id="eRphPV1CaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphPV1CaughtDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphPV1CaughtDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphPV1CaughtDrop" class="name-dropdown"></div></div>
+            <button type="button" onclick="addEditRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+          </div>
+          <div id="eRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>
+        </div>
+        <div id="eRphNamesW" style="display:none;margin-top:8px">
+          <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <div class="name-wrap" style="flex:1"><input id="eRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphSelDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphSelDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphSelDrop" class="name-dropdown"></div></div>
+            <button type="button" onclick="addEditRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+          </div>
+          <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
+        </div>
+        <div id="eRphCaughtW" style="display:none;margin-top:8px">
+          <label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at VBD?</label>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <div class="name-wrap" style="flex:1"><input id="eRphCaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphCaughtDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphCaughtDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphCaughtDrop" class="name-dropdown"></div></div>
+            <button type="button" onclick="addEditRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+          </div>
+          <div id="eRphCaughtTags" class="rph-box" style="margin-top:6px"></div>
+        </div>
+        <div id="eRphCountW" style="display:none;margin-top:8px">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div>
-              <label class="flb" style="margin-top:0;color:#dc2626;font-size:11px">⚠ RPH who missed at VBD</label>
+              <label class="flb" style="margin-top:0">How many times dispensed?</label>
+              <input type="number" id="eRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">
+            </div>
+            <div>
+              <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who checked at VBD</label>
               <div style="display:flex;gap:6px;margin-top:4px">
                 <div class="name-wrap" style="flex:1"><input id="eRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphVBDDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphVBDDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphVBDDrop" class="name-dropdown"></div></div>
-                <button type="button" onclick="addEditRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button>
+                <button type="button" onclick="addEditRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
               </div>
               <div id="eRphVBDTags" class="rph-box" style="margin-top:6px"></div>
-            </div>
-            <div>
-              <label class="flb" style="margin-top:0;color:#15803d;font-size:11px">✅ RPH who caught at VBD</label>
-              <div style="display:flex;gap:6px;margin-top:4px">
-                <div class="name-wrap" style="flex:1"><input id="eRphCaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphCaughtDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphCaughtDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphCaughtDrop" class="name-dropdown"></div></div>
-                <button type="button" onclick="addEditRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button>
-              </div>
-              <div id="eRphCaughtTags" class="rph-box" style="margin-top:6px"></div>
-            </div>
-          </div>
-          <div id="eVerifSummary" style="display:none;margin-top:8px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:600"></div>
-        </div>
-        <!-- Previously Dispensed -->
-        <div style="padding:10px;background:#faf5ff;border-radius:8px;border:1px solid #e9d5ff;margin-top:8px">
-          <div style="font-size:11px;font-weight:700;color:#6d28d9;margin-bottom:8px">⏮ Previously Dispensed in Error?</div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start">
-            <div>
-              <label class="flb" style="margin-top:0;font-size:11px">Times previously dispensed</label>
-              <input type="number" id="eRphCount" min="0" max="20" value="0" style="width:80px">
-            </div>
-            <div>
-              <label class="flb" style="margin-top:0;color:#7c3aed;font-size:11px">🔍 RPH who verified previous fill(s)</label>
-              <div style="display:flex;gap:6px;margin-top:4px">
-                <div class="name-wrap" style="flex:1"><input id="eRphPrevSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphPrevDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphPrevDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphPrevDrop" class="name-dropdown"></div></div>
-                <button type="button" onclick="addEditRphPrev()" style="padding:6px 10px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button>
-              </div>
-              <div id="eRphPrevTags" class="rph-box" style="margin-top:6px"></div>
             </div>
           </div>
         </div>
@@ -276,12 +267,10 @@ tr.alt td{background:#fdf5fb}
 </div>
 <script>
 
-
 // ── JSONBin Config ─────────────────────────────────────────────────────────
 var BIN_ID="69de7f0d856a682189337141";
 var API_KEY="$2a$10$CYBsfBEtDArtHF/.GLAFG.ijVKYwl0jed/Eqelj4gIBsPjfIwf8Qq";
 var BIN_URL="https://api.jsonbin.io/v3/b/"+BIN_ID;
-var GOOGLE_CLIENT_ID="203752171136-mqi4h82emc96c6sgbdag7k3aa2sd91g9.apps.googleusercontent.com";
 
 // ── App Data ───────────────────────────────────────────────────────────────
 var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Prescriber","Wrong Quantity","Wrong Quick Sig","Entered Under Wrong PT","Self Prescribed","Wrong Written Date","Wrong Patient"];
@@ -311,25 +300,6 @@ function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(d
 var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
 var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
-var POST_TYPES=["Announcement","Workflow Update","Reminder","SOP/Policy","Urgent"];
-var POSTS=[];
-var FBI={},RFBI={};
-var USER_DIRECTORY={};
-var currentUser=null;
-var ROLE_PAGES={
-  'RPH':     ['board','log'],
-  'Trainer': ['board','summary','staff','member','log'],
-  'Lead':    ['board','dashboard','summary','trends','rph','staff','member','log'],
-  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log'],
-  'Admin':   ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
-};
-var dashMode="weekly",trendM="weekly";
-var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
-var curV="board";
-var GOOGLE_DRIVE_FOLDER_ID="1Xv2XGxWiFv6EYx5GULmVdvM73euRd9xN";
-var RFBI={},FBI=FBI||{};
-var trendM="weekly";
-var mvWho="",mvTy="All",mvWk="All";
 var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="",eCallF="All",eSevF="All";
 var charts={},editId=null;
 var today=new Date(),todayStr=fmtD(today),thisWk=getWk(todayStr);
@@ -339,10 +309,9 @@ var saveTimer=null;
 function setSyncUI(status,msg){
   var bar=document.getElementById("syncBar");
   var dot=document.getElementById("syncDot");
-  var msgEl=document.getElementById("syncMsg");
-  if(bar) bar.className="sync-bar "+status;
-  if(msgEl) msgEl.textContent=msg||"";
-  if(dot) dot.className="sync-dot "+status;
+  bar.className="sync-bar "+status;
+  document.getElementById("syncMsg").textContent=msg;
+  dot.className="sync-dot "+(status==="synced"?"green":status==="error"?"red":"yellow");
 }
 
 // ── JSONBin API ────────────────────────────────────────────────────────────
@@ -1080,67 +1049,59 @@ function upLW(){var inp=document.getElementById("lWh");if(inp&&inp.tagName==="IN
 
 // Good Catch section
 function upGCFields(){
-  // lGC/lGCDetails/lGCTeam removed — good catch section removed
+  var v=document.getElementById("lGC");
   if(!v)return;
-  // lGC/lGCDetails/lGCTeam removed — good catch section removed
+  document.getElementById("lGCDetails").style.display=v.value==="Yes"?"block":"none";
 }
 function upGCTeam(){
-  // lGC/lGCDetails/lGCTeam removed — good catch section removed
+  var t=document.getElementById("lGCTeam").value;
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
   // lGCWho is now a smart text input — clear it when team changes
-  // lGCWho removed
+  var gcWhoInp=document.getElementById("lGCWho");if(gcWhoInp)gcWhoInp.value="";
 }
 
 function upDWEFields(){
+  var pv1=document.getElementById("lPV1");
   var vbd=document.getElementById("lVBD");
-  if(!vbd) return;
-  var vbdVal=vbd.value;
+  if(!pv1||!vbd) return;
+  var pv1Val=pv1.value, vbdVal=vbd.value;
+
+  // Show PV1 caught RPH when PV1 = Caught
+  var showPV1Caught=pv1Val==="Caught";
+  var ep1c=document.getElementById("lRphPV1CaughtW");
+  if(ep1c) ep1c.style.display=showPV1Caught?"block":"none";
+
+  // Show missed RPH section when PV1 was missed
+  var showMissed=pv1Val==="Missed";
+  var el=document.getElementById("lDWEDetails");
+  if(el) el.style.display=showMissed?"block":"none";
+
+  // Show caught RPH section whenever VBD=Caught (regardless of PV1)
+  var showCaught=vbdVal==="Caught";
+  var ec=document.getElementById("lRphCaughtW");
+  if(ec) ec.style.display=showCaught?"block":"none";
+
+  // Show count when dispensed
+  var showCount=vbdVal==="Missed";
+  var ed=document.getElementById("lDWECount");
+  if(ed) ed.style.display=showCount?"block":"none";
+
+  // Summary pill
   var sum=document.getElementById("lVerifSummary");
   if(sum){
     var msg="",bg="",col="";
-    if(vbdVal==="Caught"){msg="\u2705 Caught at VBD \u2014 error stopped before dispensing this fill";bg="#f0fdf4";col="#15803d";}
-    else if(vbdVal==="Missed"){msg="\ud83d\udea8 Missed at VBD \u2014 error dispensed this fill";bg="#fef2f2";col="#dc2626";}
+    if(pv1Val==="NA"||pv1Val===""){msg="";}
+    else if(pv1Val==="Caught"){msg="\u2705 Caught at PV1 \u2014 error found by RPH during first verification";bg="#f0fdf4";col="#15803d";}
+    else if(pv1Val==="Missed"&&vbdVal==="Caught"){msg="\u26a0 Missed at PV1, caught at VBD \u2014 error reached second check but not dispensed";bg="#fffbeb";col="#d97706";}
+    else if(pv1Val==="Missed"&&vbdVal==="Missed"){msg="\ud83d\udea8 Missed at PV1 and VBD \u2014 error was dispensed to patient";bg="#fef2f2";col="#dc2626";}
+    else if(pv1Val==="Missed"&&vbdVal==="NA"){msg="\u26a0 Missed at PV1, did not reach VBD";bg="#fffbeb";col="#d97706";}
     if(msg){sum.style.display="block";sum.style.background=bg;sum.style.color=col;sum.textContent=msg;}
     else sum.style.display="none";
   }
 }
 
-function addLogRphPrev(){
-  var sel=document.getElementById("lRphPrevSel");
-  var val=(sel?sel.value:"").trim();if(!val)return;
-  var existing=document.querySelectorAll(".lrph-prev-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag lrph-prev-tag";tag.dataset.name=val;
-  tag.style.background="#f5f3ff";tag.style.color="#7c3aed";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
-  document.getElementById("lRphPrevTags").appendChild(tag);
-  if(sel) sel.value="";
-}
-function getLogRphsPrev(){
-  var tags=document.querySelectorAll(".lrph-prev-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
-function addEditRphPrev(){
-  var sel=document.getElementById("eRphPrevSel");
-  var val=(sel?sel.value:"").trim();if(!val)return;
-  var existing=document.querySelectorAll(".erph-prev-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag erph-prev-tag";tag.dataset.name=val;
-  tag.style.background="#f5f3ff";tag.style.color="#7c3aed";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-  document.getElementById("eRphPrevTags").appendChild(tag);
-  if(sel) sel.value="";
-}
-function getEditRphsPrev(){
-  var tags=document.querySelectorAll(".erph-prev-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
 function addLogRphVBD(){
   var sel=document.getElementById("lRphVBDSel");
   var val=(sel?sel.value:"").trim();if(!val)return;
@@ -1229,7 +1190,23 @@ function getLogRphsCaught(){
   for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
   return names;
 }
-
+function addLogRph(){
+  var sel=document.getElementById("lRphSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
+  var existing=document.querySelectorAll(".lrph-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag lrph-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  document.getElementById("lRphTags").appendChild(tag);
+  sel.value="";
+}
+function getLogRphs(){
+  var tags=document.querySelectorAll(".lrph-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
 
 function rLog(){
   if(currentUser && currentUser.role === 'RPH'){
@@ -1441,58 +1418,72 @@ function rFullLog(){
     '<input type="file" id="lPhoto" accept="image/*" onchange="previewLogPhoto()" style="font-size:12px;padding:6px;margin-bottom:4px">'+
     '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
     '<div style="margin-top:10px;padding:14px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa">'+
-    '<div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:12px">\u26a0 Verification Stages</div>'+
-    '<div style="padding:10px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;margin-bottom:10px">'+
-    '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:8px">Stage 1 \u2014 PV1 (RPH First Verification)</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
-    '<div><label class="flb" style="margin-top:0;color:#dc2626;font-size:11px">\u26a0 RPH who missed at PV1</label>'+
-    '<div style="display:flex;gap:6px;margin-top:4px">'+
-    '<div class="name-wrap" style="flex:1"><input id="lRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphSelDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphSelDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphSelDrop" class="name-dropdown"></div></div>'+
-    '<button type="button" onclick="addLogRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button></div>'+
-    '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div></div>'+
-    '<div><label class="flb" style="margin-top:0;color:#15803d;font-size:11px">\u2705 RPH who caught at PV1</label>'+
-    '<div style="display:flex;gap:6px;margin-top:4px">'+
-    '<div class="name-wrap" style="flex:1"><input id="lRphPV1CaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphPV1CaughtDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphPV1CaughtDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphPV1CaughtDrop" class="name-dropdown"></div></div>'+
-    '<button type="button" onclick="addLogRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button></div>'+
-    '<div id="lRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div></div>'+
-    '</div>'+
-    '<div style="font-size:10px;color:#7c5c76;margin-top:6px">Leave both blank if PV1 did not apply</div>'+
-    '</div>'+
-    '<div style="padding:10px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;margin-bottom:10px">'+
-    '<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:8px">Stage 2 \u2014 VBD (Verified Before Dispensing)</div>'+
-    '<select id="lVBD" onchange="upDWEFields()" style="width:100%;margin-bottom:8px">'+
-    '<option value="">-- Select outcome --</option>'+
-    '<option value="Caught">\u2705 Caught at VBD \u2014 error stopped before dispensing</option>'+
-    '<option value="Missed">\ud83d\udea8 Missed at VBD \u2014 dispensed this fill</option>'+
-    '<option value="NA">N/A \u2014 did not reach VBD</option>'+
-    '</select>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
-    '<div><label class="flb" style="margin-top:0;color:#dc2626;font-size:11px">\u26a0 RPH who missed at VBD</label>'+
-    '<div style="display:flex;gap:6px;margin-top:4px">'+
-    '<div class="name-wrap" style="flex:1"><input id="lRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphVBDDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphVBDDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphVBDDrop" class="name-dropdown"></div></div>'+
-    '<button type="button" onclick="addLogRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button></div>'+
-    '<div id="lRphVBDTags" class="rph-box" style="margin-top:6px"></div></div>'+
-    '<div><label class="flb" style="margin-top:0;color:#15803d;font-size:11px">\u2705 RPH who caught at VBD</label>'+
-    '<div style="display:flex;gap:6px;margin-top:4px">'+
-    '<div class="name-wrap" style="flex:1"><input id="lRphCaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphCaughtDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphCaughtDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphCaughtDrop" class="name-dropdown"></div></div>'+
-    '<button type="button" onclick="addLogRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button></div>'+
-    '<div id="lRphCaughtTags" class="rph-box" style="margin-top:6px"></div></div>'+
-    '</div>'+
-    '</div>'+
-    '<div style="padding:10px;background:#faf5ff;border-radius:8px;border:1px solid #e9d5ff">'+
-    '<div style="font-size:11px;font-weight:700;color:#6d28d9;margin-bottom:8px">\u23ee Previously Dispensed in Error?</div>'+
-    '<div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start">'+
-    '<div><label class="flb" style="margin-top:0;font-size:11px">Times previously dispensed</label>'+
-    '<input type="number" id="lRphCount" min="0" max="20" value="0" style="width:80px"></div>'+
-    '<div><label class="flb" style="margin-top:0;color:#7c3aed;font-size:11px">\ud83d\udd0d RPH who verified previous fill(s)</label>'+
-    '<div style="display:flex;gap:6px;margin-top:4px">'+
-    '<div class="name-wrap" style="flex:1"><input id="lRphPrevSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphPrevDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphPrevDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphPrevDrop" class="name-dropdown"></div></div>'+
-    '<button type="button" onclick="addLogRphPrev()" style="padding:6px 10px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add</button></div>'+
-    '<div id="lRphPrevTags" class="rph-box" style="margin-top:6px"></div></div>'+
-    '</div>'+
-    '<div style="font-size:10px;color:#7c5c76;margin-top:6px">Enter 0 if this is the first fill \u2014 leave RPH blank if unknown</div>'+
-    '</div>'+
-    '<div id="lVerifSummary" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:600"></div>'+
+      '<div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:10px">⚠ Verification Stages</div>'+
+      '<div class="fgrid">'+
+        '<div class="fhalf">'+
+          '<label class="flb" style="margin-top:0">PV1 — RPH First Verification</label>'+
+          '<select id="lPV1" onchange="upDWEFields()">'+
+            '<option value="">-- Select --</option>'+
+            '<option value="Caught">✅ Caught at PV1 — error caught by RPH</option>'+
+            '<option value="Missed">⚠ Missed at PV1 — RPH did not catch it</option>'+
+            '<option value="NA">N/A — no PV1 for this error</option>'+
+          '</select>'+
+          '<div style="font-size:10px;color:#7c5c76;margin-top:3px">Optional — leave blank if unknown</div>'+
+        '</div>'+
+        '<div class="fhalf">'+
+          '<label class="flb" style="margin-top:0">VBD — Verified Before Dispensing</label>'+
+          '<select id="lVBD" onchange="upDWEFields()">'+
+            '<option value="">-- Select --</option>'+
+            '<option value="Caught">✅ Caught at VBD — error caught before dispensing</option>'+
+            '<option value="Missed">🚨 Missed at VBD — dispensed with error</option>'+
+            '<option value="NA">N/A — did not reach VBD</option>'+
+          '</select>'+
+        '</div>'+
+      '</div>'+
+      '<div id="lRphPV1CaughtW" style="display:none;margin-top:10px">'+
+        '<label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at PV1?</label>'+
+        '<div style="display:flex;gap:6px;margin-top:4px">'+
+          '<div class="name-wrap" style="flex:1"><input id="lRphPV1CaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphPV1CaughtDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphPV1CaughtDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphPV1CaughtDrop" class="name-dropdown"></div></div>'+
+          '<button type="button" onclick="addLogRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+        '</div>'+
+        '<div id="lRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>'+
+      '</div>'+
+      '<div id="lDWEDetails" style="display:none;margin-top:10px">'+
+
+        '<div>'+
+          '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>'+rphNote+
+          '<div style="display:flex;gap:6px;margin-top:4px">'+
+            '<div class="name-wrap" style="flex:1"><input id="lRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphSelDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphSelDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphSelDrop" class="name-dropdown"></div></div>'+
+            '<button type="button" onclick="addLogRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+          '</div>'+
+          '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="lRphCaughtW" style="display:none;margin-top:10px">'+
+        '<label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at VBD?</label>'+
+        '<div style="display:flex;gap:6px;margin-top:4px">'+
+          '<div class="name-wrap" style="flex:1"><input id="lRphCaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphCaughtDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphCaughtDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphCaughtDrop" class="name-dropdown"></div></div>'+
+          '<button type="button" onclick="addLogRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+        '</div>'+
+        '<div id="lRphCaughtTags" class="rph-box" style="margin-top:6px"></div>'+
+      '</div>'+
+      '<div id="lDWECount" style="display:none;margin-top:10px">'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+          '<div>'+
+            '<label class="flb" style="margin-top:0">How many times dispensed?</label>'+
+            '<input type="number" id="lRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">'+
+          '</div>'+
+          '<div>'+
+            '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who checked at VBD</label>'+
+            '<div style="display:flex;gap:6px;margin-top:4px">'+
+              '<div class="name-wrap" style="flex:1"><input id="lRphVBDSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphVBDDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphVBDDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphVBDDrop" class="name-dropdown"></div></div>'+
+              '<button type="button" onclick="addLogRphVBD()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+            '</div>'+
+            '<div id="lRphVBDTags" class="rph-box" style="margin-top:6px"></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="lVerifSummary" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:600"></div>'+
     '</div>'+
     '<button class="btn btn-full" onclick="subLog()" style="margin-top:14px">Log Error</button>'+
     '</div>';
@@ -1504,17 +1495,20 @@ function subLog(){
   if(!date){alert("Please select the date the error was found.");return;}
   var ds=document.getElementById("lDrugSel").value;
   var drug=ds==="__other__"?document.getElementById("lDrug").value.trim():ds;
-  var pv1Val=""; // PV1 outcome no longer a dropdown — derived from names
-  var vbdVal=document.getElementById("lVBD")?document.getElementById("lVBD").value:"";
-  var gcVal=(vbdVal==="Caught")?"Yes":"No";
+  // Good catch is now derived from PV1/VBD — no separate form field
+  var gcVal=(pv1Val==="Caught"||(pv1Val==="Missed"&&vbdVal==="Caught"))?"Yes":"No";
   var gcTeam="",gcWho="";
-  var dweVal=(vbdVal==="Missed")?"Yes":"No";
-  var rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"0";
-  var rphNames=getLogRphs();          // PV1 missed
-  var rphPV1CaughtNames=getLogRphsPV1Caught(); // PV1 caught
-  var rphVBDNames=getLogRphsVBD();    // VBD missed
-  var rphCaughtNames=getLogRphsCaught(); // VBD caught
-  var rphPrevNames=getLogRphsPrev();  // Previous fill verifiers
+  var pv1Val=document.getElementById("lPV1")?document.getElementById("lPV1").value:"";
+  var vbdVal=document.getElementById("lVBD")?document.getElementById("lVBD").value:"";
+  var dweVal=(pv1Val==="Missed"&&vbdVal==="Missed")?"Yes":"No";
+  var rphCount="",rphNames=[],rphCaughtNames=[],rphPV1CaughtNames=[],rphVBDNames=[];
+  if(pv1Val==="Missed"){
+    rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";
+    rphNames=getLogRphs();
+    rphCaughtNames=getLogRphsCaught();
+  }
+  if(pv1Val==="Caught") rphPV1CaughtNames=getLogRphsPV1Caught();
+  if(vbdVal==="Missed") rphVBDNames=getLogRphsVBD();
   var row={};
   row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
   row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
@@ -1533,7 +1527,7 @@ function subLog(){
   row.driveUrl=ph&&ph._driveUrl?ph._driveUrl:"";
   row.goodCatch=gcVal;row.gcTeam=gcTeam;row.gcWho=gcWho;
   row.pv1=pv1Val;row.vbd=vbdVal;
-  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;row.rphCaughtNames=rphCaughtNames;row.rphPV1CaughtNames=rphPV1CaughtNames;row.rphVBDNames=rphVBDNames;row.rphPrevNames=rphPrevNames;
+  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;row.rphCaughtNames=rphCaughtNames;row.rphPV1CaughtNames=rphPV1CaughtNames;row.rphVBDNames=rphVBDNames;
   row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(pv1Val==="Missed"&&vbdVal==="Caught")?"caught_at_vbd":(gcVal==="Yes"?"good_catch":"");
   row.needsReview=false;
   // Check for duplicate
@@ -1570,207 +1564,431 @@ function impBulk(){
 
 // ── Edit Modal ─────────────────────────────────────────────────────────────
 function upEditRphFields(){
+  var pv1=document.getElementById("ePV1");
   var vbd=document.getElementById("eVBD");
-  if(!vbd) return;
-  var vbdVal=vbd.value;
+  if(!pv1||!vbd) return;
+  var pv1Val=pv1.value, vbdVal=vbd.value;
+  var showPV1Caught=pv1Val==="Caught";
+  var showMissed=pv1Val==="Missed";
+  var showCaught=vbdVal==="Caught";
+  var showCount=vbdVal==="Missed";
+  document.getElementById("eRphNamesW").style.display=showMissed?"block":"none";
+  var p1cW=document.getElementById("eRphPV1CaughtW");if(p1cW)p1cW.style.display=showPV1Caught?"block":"none";
+  var caughtW=document.getElementById("eRphCaughtW");
+  if(caughtW) caughtW.style.display=showCaught?"block":"none";
+  document.getElementById("eRphCountW").style.display=showCount?"block":"none";
   var sum=document.getElementById("eVerifSummary");
   if(sum){
     var msg="",bg="",col="";
-    if(vbdVal==="Caught"){msg="\u2705 Caught at VBD \u2014 error stopped before dispensing";bg="#f0fdf4";col="#15803d";}
-    else if(vbdVal==="Missed"){msg="\ud83d\udea8 Missed at VBD \u2014 error dispensed this fill";bg="#fef2f2";col="#dc2626";}
+    if(pv1Val==="NA"||pv1Val===""){msg="";}
+    else if(pv1Val==="Caught"){msg="\u2705 Caught at PV1";bg="#f0fdf4";col="#15803d";}
+    else if(pv1Val==="Missed"&&vbdVal==="Caught"){msg="\u26a0 Missed at PV1, caught at VBD";bg="#fffbeb";col="#d97706";}
+    else if(pv1Val==="Missed"&&vbdVal==="Missed"){msg="\ud83d\udea8 Missed at PV1 and VBD \u2014 dispensed with error";bg="#fef2f2";col="#dc2626";}
+    else if(pv1Val==="Missed"&&vbdVal==="NA"){msg="\u26a0 Missed at PV1, did not reach VBD";bg="#fffbeb";col="#d97706";}
     if(msg){sum.style.display="block";sum.style.background=bg;sum.style.color=col;sum.textContent=msg;}
     else sum.style.display="none";
   }
 }
-function rEntries(){
-  var sec=document.getElementById("sec-entries"),fil=[];
-  for(var i=0;i<D.length;i++){var e=D[i];if((eFF==="All"||e.team===eFF||(eFF==="Bot"&&e.source==="Bot")||(eFF==="API"&&e.source==="API"))&&(eFT==="All"||e.errorType===eFT)&&(eFS==="All"||e.source===eFS)&&(eFSt==="All"||(eFSt==="Initials Given"&&!!FBI[e.id])||(eFSt==="Pending"&&!FBI[e.id])))fil.push(e);}
-  var ffO='<option'+(eFF==="All"?" selected":"")+'>All</option>';for(var ti=0;ti<TM.length;ti++)ffO+='<option'+(eFF===TM[ti]?" selected":"")+'>'+TM[ti]+'</option>';ffO+='<option'+(eFF==="Bot"?" selected":"")+'>Bot</option><option'+(eFF==="API"?" selected":"")+'>API</option>';
-  var ftO='<option'+(eFT==="All"?" selected":"")+'>All</option>';for(var ei2=0;ei2<ET.length;ei2++)ftO+='<option'+(eFT===ET[ei2]?" selected":"")+'>'+ET[ei2]+'</option>';
-  var fsO='<option'+(eFS==="All"?" selected":"")+'>All</option>';for(var si2=0;si2<SR.length;si2++)fsO+='<option'+(eFS===SR[si2]?" selected":"")+'>'+SR[si2]+'</option>';
-  var rows="",shown=fil.length>300?fil.slice(0,300):fil;
-  for(var ri=0;ri<shown.length;ri++){var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id],bg=hi?"#f0fdf4":(ri%2===0?"#f8fafc":"#fff");rows+='<tr style="background:'+bg+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="color:#94a3b8">'+e2.week+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+bdg(e2.source,TLC[e2.source]||"#6366f1")+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#6366f1"):"")+'</td><td>'+(e2.who||"—")+'</td><td style="color:#64748b">'+(e2.faxErx||"—")+'</td><td style="color:#374151">'+(e2.drug||"—")+'</td><td style="color:#374151">'+(e2.rxNum||"—")+'</td><td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">'+(e2.notes||"—")+'</td><td>'+(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">')+'</td><td style="font-size:11px;color:#64748b;white-space:nowrap">'+(hi?hi.date:"—")+'</td><td style="white-space:nowrap"><button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;cursor:pointer;margin-right:3px">Edit</button>'+(hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+'<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button></td></tr>';}
-  sec.innerHTML='<div class="card fbar" style="margin-bottom:10px"><label style="font-size:11px;color:#64748b">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select><label style="font-size:11px;color:#64748b">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select><label style="font-size:11px;color:#64748b">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select><label style="font-size:11px;color:#64748b">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select><span style="font-size:11px;color:#94a3b8;margin-left:auto">'+fil.length+' entries</span></div><div class="card" style="padding:0;overflow:hidden"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Week</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>Lead Initials</th><th>FB Date</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+
+function addEditRphCaught(){
+  var sel=document.getElementById("eRphCaughtSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
+  var existing=document.querySelectorAll(".erph-caught-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-caught-tag";tag.dataset.name=val;
+  tag.style.background="#dcfce7";tag.style.color="#15803d";
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+  document.getElementById("eRphCaughtTags").appendChild(tag);
 }
 
-
+function getEditRphsCaught(){
+  var tags=document.querySelectorAll(".erph-caught-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
+function upEditGCTeam(){
+  // eGCTeam removed — good catch section replaced by PV1/VBD
+  var opts='<option value="">-- Select person --</option>';
+  var members=SM[t]||[];
+  for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
+  var gcWhoInpX=document.getElementById("eGCWho");if(gcWhoInpX)gcWhoInpX.value="";
+}
+function upEditGCFields(){
+  // eGC removed — good catch section replaced by PV1/VBD
+  // eGCDetails removed — good catch section replaced by PV1/VBD
+}
+function addEditRph(){
+  var sel=document.getElementById("eRphSel");
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
+  var existing=document.querySelectorAll(".erph-tag");
+  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
+  var tag=document.createElement("span");
+  tag.className="rph-tag erph-tag";tag.dataset.name=val;
+  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
+  document.getElementById("eRphTags").appendChild(tag);
+  sel.value="";
+}
+function getEditRphs(){
+  var tags=document.querySelectorAll(".erph-tag"),names=[];
+  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
+  return names;
+}
 function openEdit(id){
   var e=null;for(var i=0;i<D.length;i++)if(D[i].id===id){e=D[i];break;}
   if(!e)return;editId=id;
   document.getElementById("eDt").value=e.date||"";
+  document.getElementById("eDtRx").value=e.dateRxEntered||"";
   document.getElementById("eTy").innerHTML=etOpts(e.errorType||"");
+  // Severity display — auto-calculated, shown read-only
+  var sev=e.severity||autoSeverity(e.errorType||"",e.dispensedWithError||"",e.goodCatch||"",e.pv1||"",e.vbd||"");
+  var sevCol=SEVERITY_COLORS[sev]||'#7c5c76';
+  var sevBg=SEVERITY_BG[sev]||'#f3f4f6';
+  var sevDisp=document.getElementById("eSevDisplay");
+  if(sevDisp){sevDisp.textContent=sev;sevDisp.style.background=sevBg;sevDisp.style.color=sevCol;sevDisp.style.borderColor=sevCol+'60';sevDisp.style.fontWeight='700';}
   document.getElementById("eSr").innerHTML=srOpts(e.source||"Human");
   document.getElementById("eTm").innerHTML=tmOpts(e.team||"Intake");
-  document.getElementById("eWh").innerHTML=whoOpts(e.team||"Intake",e.who||"");
+  var eWhEl=document.getElementById("eWh");
+  if(eWhEl) eWhEl.value=e.who||"";
   document.getElementById("eFx").innerHTML=fxOpts(e.faxErx||"");
   document.getElementById("eDrug").innerHTML=drugOpts(e.drug||"");
   document.getElementById("eRx").value=e.rxNum||"";
+  document.getElementById("eCall").value=e.callRequired||"No";
   document.getElementById("eNt").value=e.notes||"";
-  var show=(e.source||"Human")==="Human";
+  // Photo — show existing if present
+  var ePhotoInput=document.getElementById("ePhoto");
+  ePhotoInput.value="";
+  ePhotoInput._photoData=e.photo||"";
+  ePhotoInput._driveId=e.driveId||"";
+  ePhotoInput._driveUrl=e.driveUrl||"";
+  ePhotoInput._removed=false;
+  var wrap=document.getElementById("ePhotoPreviewWrap");
+  var prev=document.getElementById("ePhotoPreview");
+  if(e.driveUrl){
+    // Drive photo — show as clickable link preview
+    wrap.style.display="block";
+    prev.src="";
+    prev.style.display="none";
+    // Show a Drive link card instead
+    var existing=document.getElementById("eDriveCard");
+    if(existing) existing.remove();
+    var card=document.createElement("div");
+    card.id="eDriveCard";
+    card.style.cssText="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px";
+    card.innerHTML='<span style="font-size:20px">📷</span>'+
+      '<div style="flex:1"><div style="font-size:12px;font-weight:700;color:#15803d">Photo saved in Google Drive</div>'+
+      '<a href="'+e.driveUrl+'" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:underline">Click to view photo ↗</a></div>'+
+      '<button type="button" onclick="removeEditPhoto()" style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✕ Remove</button>';
+    wrap.insertBefore(card, wrap.firstChild);
+  } else if(e.photo){
+    wrap.style.display="block";
+    prev.src=e.photo;
+    prev.style.display="block";
+    var dc=document.getElementById("eDriveCard");
+    if(dc) dc.remove();
+  } else {
+    wrap.style.display="none";
+    prev.src="";
+    prev.style.display="none";
+    var dc2=document.getElementById("eDriveCard");
+    if(dc2) dc2.remove();
+  }
+  // Good Catch derived from PV1/VBD — no form fields needed
+  // PV1/VBD fields
+  var ePV1=document.getElementById("ePV1");
+  var eVBD=document.getElementById("eVBD");
+  if(ePV1) ePV1.value=e.pv1||"";
+  if(eVBD) eVBD.value=e.vbd||"";
+  upEditRphFields(); // this handles eRphNamesW and eRphCountW visibility
+  document.getElementById("eRphCount").value=e.rphCount||"";
+  var eRphSelEl=document.getElementById("eRphSel");if(eRphSelEl&&eRphSelEl.tagName==="SELECT")eRphSelEl.innerHTML=rphOpts();else if(eRphSelEl)eRphSelEl.value="";
+  // Populate missed RPH tags
+  var tagsBox=document.getElementById("eRphTags");tagsBox.innerHTML="";
+  if(e.rphNames&&e.rphNames.length){
+    for(var rpi=0;rpi<e.rphNames.length;rpi++){
+      var rtag=document.createElement("span");
+      rtag.className="rph-tag erph-tag";rtag.dataset.name=e.rphNames[rpi];
+      rtag.innerHTML=e.rphNames[rpi]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;color:#ef4444;font-weight:700">×</button>';
+      tagsBox.appendChild(rtag);
+    }
+  }
+  // Populate PV1 caught RPH tags
+  var pv1CaughtSel=document.getElementById("eRphPV1CaughtSel");
+  if(pv1CaughtSel&&pv1CaughtSel.tagName==="SELECT") pv1CaughtSel.innerHTML=rphOpts();else if(pv1CaughtSel) pv1CaughtSel.value="";
+  var pv1CaughtBox=document.getElementById("eRphPV1CaughtTags");
+  if(pv1CaughtBox){
+    pv1CaughtBox.innerHTML="";
+    if(e.rphPV1CaughtNames&&e.rphPV1CaughtNames.length){
+      for(var pci=0;pci<e.rphPV1CaughtNames.length;pci++){
+        var pctag=document.createElement("span");
+        pctag.className="rph-tag erph-pv1caught-tag";pctag.dataset.name=e.rphPV1CaughtNames[pci];
+        pctag.style.background="#dcfce7";pctag.style.color="#15803d";
+        pctag.innerHTML=e.rphPV1CaughtNames[pci]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+        pv1CaughtBox.appendChild(pctag);
+      }
+    }
+  }
+  // Populate caught RPH tags
+  var caughtSel=document.getElementById("eRphCaughtSel");
+  if(caughtSel&&caughtSel.tagName==="SELECT") caughtSel.innerHTML=rphOpts();else if(caughtSel) caughtSel.value="";
+  var caughtBox=document.getElementById("eRphCaughtTags");
+  if(caughtBox){
+    caughtBox.innerHTML="";
+    if(e.rphCaughtNames&&e.rphCaughtNames.length){
+      for(var rci=0;rci<e.rphCaughtNames.length;rci++){
+        var ctag=document.createElement("span");
+        ctag.className="rph-tag erph-caught-tag";ctag.dataset.name=e.rphCaughtNames[rci];
+        ctag.style.background="#dcfce7";ctag.style.color="#15803d";
+        ctag.innerHTML=e.rphCaughtNames[rci]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+        caughtBox.appendChild(ctag);
+      }
+    }
+  }
+  // Populate VBD RPH tags
+  var vbdSelEl=document.getElementById("eRphVBDSel");
+  if(vbdSelEl) vbdSelEl.value="";
+  var vbdBox=document.getElementById("eRphVBDTags");
+  if(vbdBox){
+    vbdBox.innerHTML="";
+    if(e.rphVBDNames&&e.rphVBDNames.length){
+      for(var vbi=0;vbi<e.rphVBDNames.length;vbi++){
+        var vtag=document.createElement("span");
+        vtag.className="rph-tag erph-vbd-tag";vtag.dataset.name=e.rphVBDNames[vbi];
+        vtag.innerHTML=e.rphVBDNames[vbi]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
+        vbdBox.appendChild(vtag);
+      }
+    }
+  }
   document.getElementById("eTmW").style.display=show?"block":"none";
   document.getElementById("eWhW").style.display=show?"block":"none";
   document.getElementById("editModal").style.display="block";
 }
-
-
 function closeEdit(){document.getElementById("editModal").style.display="none";editId=null;}
 
+function previewEditPhoto(){
+  var input=document.getElementById("ePhoto");
+  if(!input||!input.files[0]) return;
+  var prev=document.getElementById("ePhotoPreview");
+  var wrap=document.getElementById("ePhotoPreviewWrap");
+  wrap.style.display="block";
+  input._removed=false;
+  processAndUploadPhoto(input.files[0], input, prev, function(status){
+    prev.style.display='block';
+  });
+}
 
+function removeEditPhoto(){
+  var input=document.getElementById("ePhoto");
+  input.value="";
+  input._photoData="";
+  input._driveId="";
+  input._driveUrl="";
+  input._removed=true;
+  var card=document.getElementById("eDriveCard");
+  if(card) card.remove();
+  document.getElementById("ePhotoPreviewWrap").style.display="none";
+  document.getElementById("ePhotoPreview").src="";
+  document.getElementById("ePhotoPreview").style.display="none";
+}
+function upEF(){var s=document.getElementById("eSr").value,show=s==="Human";document.getElementById("eTmW").style.display=show?"block":"none";document.getElementById("eWhW").style.display=show?"block":"none";}
+function upEW(){var inp=document.getElementById("eWh");if(inp&&inp.tagName==="INPUT")inp.value="";}
 function saveEdit(){
   if(!editId)return;
   var src=document.getElementById("eSr").value,date=document.getElementById("eDt").value;
   var ds=document.getElementById("eDrug").value;
   var drug=ds==="__other__"?(prompt("Enter drug name:",""))||"":ds;
-  for(var i=0;i<D.length;i++){if(D[i].id===editId){D[i].date=date;D[i].week=getWk(date);D[i].errorType=document.getElementById("eTy").value;D[i].source=src;D[i].team=src==="Human"?document.getElementById("eTm").value:"";D[i].who=src==="Human"?document.getElementById("eWh").value:"";D[i].faxErx=document.getElementById("eFx").value;D[i].drug=drug;D[i].rxNum=document.getElementById("eRx").value.trim();D[i].notes=document.getElementById("eNt").value;break;}}
+  var pv1Val2=document.getElementById("ePV1")?document.getElementById("ePV1").value:"";
+  var vbdVal2=document.getElementById("eVBD")?document.getElementById("eVBD").value:"";
+  var rphVerified=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"dispensed_with_error":(pv1Val2==="Missed"&&vbdVal2==="Caught")?"caught_at_vbd":"";
+  var showDWE2=(rphVerified==="Yes");
+  var rphCount=showDWE2?(document.getElementById("eRphCount").value||""):"";
+      var rphNames=(pv1Val2==="Missed")?getEditRphs():[];
+      var rphCaughtNames=(pv1Val2==="Missed"&&vbdVal2==="Caught")||vbdVal2==="Caught"?getEditRphsCaught():[];
+      var rphPV1CaughtNames=pv1Val2==="Caught"?getEditRphsPV1Caught():[];
+      var rphVBDNames=vbdVal2==="Missed"?getEditRphsVBD():[];
+  // Derive good catch from PV1/VBD
+  var gcVal=(pv1Val2==="Caught"||(pv1Val2==="Missed"&&vbdVal2==="Caught"))?"Yes":"No";
+  var gcTeam="",gcWho="";  for(var i=0;i<D.length;i++){
+    if(D[i].id===editId){
+      D[i].date=date;D[i].week=getWk(date);
+      D[i].dateRxEntered=document.getElementById("eDtRx").value||"";
+      D[i].errorType=document.getElementById("eTy").value;
+      D[i].severity=autoSeverity(D[i].errorType||"",D[i].dispensedWithError||"",D[i].goodCatch||"",D[i].pv1||"",D[i].vbd||"");
+      D[i].callRequired=document.getElementById("eCall").value||"No";
+      D[i].daysToCatch=calcDaysToCatch(D[i].date,D[i].dateRxEntered);
+      D[i].source=src;
+      D[i].team=src==="Human"?document.getElementById("eTm").value:"";
+      D[i].who=src==="Human"?document.getElementById("eWh").value:"";
+      D[i].faxErx=document.getElementById("eFx").value;
+      D[i].drug=drug;
+      D[i].rxNum=document.getElementById("eRx").value.trim();
+      D[i].notes=document.getElementById("eNt").value;
+      // Photo — use new upload, or keep existing, or clear if removed
+      var ep=document.getElementById("ePhoto");
+      if(ep._removed){D[i].photo="";D[i].driveId="";D[i].driveUrl="";}
+      else if(ep._driveId){D[i].photo="";D[i].driveId=ep._driveId;D[i].driveUrl=ep._driveUrl;}
+      else if(ep._photoData&&ep._photoData!==D[i].photo){D[i].photo=ep._photoData;D[i].driveId="";D[i].driveUrl="";}
+      // (else keep existing photo unchanged)
+      D[i].goodCatch=gcVal;
+      D[i].gcTeam=gcTeam;
+      D[i].gcWho=gcWho;
+      D[i].pv1=pv1Val2;
+      D[i].vbd=vbdVal2;
+      D[i].dispensedWithError=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"Yes":"No";
+      D[i].rphCount=rphCount;
+      D[i].rphNames=rphNames;D[i].rphCaughtNames=rphCaughtNames;D[i].rphPV1CaughtNames=rphPV1CaughtNames;D[i].rphVBDNames=rphVBDNames;
+      D[i].rphVerified=rphVerified;
+      // Clear review flag — entry now enters metrics
+      D[i].needsReview=false;
+      D[i].reviewedBy=currentUser?currentUser.name:"Manager";
+      D[i].reviewedAt=new Date().toISOString();
+      break;
+    }
+  }
   save();closeEdit();rEntries();
 }
 
+// ── All Entries ────────────────────────────────────────────────────────────
+function rEntries(){
+  var sec=document.getElementById("sec-entries"),fil=[];
+  var reviewCount=D.filter(function(e){return e.needsReview;}).length;
+  for(var i=0;i<D.length;i++){
+    var e=D[i];
+    if((eFF==="All"||e.team===eFF||(eFF==="Bot"&&e.source==="Bot")||(eFF==="API"&&e.source==="API"))
+      &&(eFT==="All"||e.errorType===eFT)
+      &&(eFS==="All"||e.source===eFS)
+      &&(eFSt==="All"||(eFSt==="Initials Given"&&!!FBI[e.id])||(eFSt==="Pending"&&!FBI[e.id]))
+      &&(eReview==="All"||(eReview==="Needs Review"&&e.needsReview)||(eReview==="Complete"&&!e.needsReview))
+      &&(!eRxSearch||(e.rxNum||"").toLowerCase().indexOf(eRxSearch.toLowerCase())>=0)
+      &&(eCallF==="All"||(e.callRequired||"No")===eCallF)
+      &&(eSevF==="All"||(e.severity||"")===eSevF))
+      fil.push(e);
+  }
+  // Needs Review pinned to top, then newest date first within each group
+  fil.sort(function(a,b){
+    if(a.needsReview && !b.needsReview) return -1;
+    if(!a.needsReview && b.needsReview) return 1;
+    return b.date>a.date?1:b.date<a.date?-1:0;
+  });
+  var ffO='<option'+(eFF==="All"?" selected":"")+'>All</option>';
+  for(var ti=0;ti<TM.length;ti++)ffO+='<option'+(eFF===TM[ti]?" selected":"")+'>'+TM[ti]+'</option>';
+  ffO+='<option'+(eFF==="Bot"?" selected":"")+'>Bot</option><option'+(eFF==="API"?" selected":"")+'>API</option>';
+  var ftO='<option'+(eFT==="All"?" selected":"")+'>All</option>';
+  for(var ei2=0;ei2<ET.length;ei2++)ftO+='<option'+(eFT===ET[ei2]?" selected":"")+'>'+ET[ei2]+'</option>';
+  var fsO='<option'+(eFS==="All"?" selected":"")+'>All</option>';
+  for(var si2=0;si2<SR.length;si2++)fsO+='<option'+(eFS===SR[si2]?" selected":"")+'>'+SR[si2]+'</option>';
 
+  // Build duplicate ID set — entries sharing RX + error type
+  var dupKeys={}, dupIds={};
+  for(var di2=0;di2<fil.length;di2++){
+    var de=fil[di2];
+    if(de.rxNum && de.errorType){
+      var dk=(de.rxNum.trim().toLowerCase())+'|'+(de.errorType.trim().toLowerCase());
+      if(dupKeys[dk]===undefined) dupKeys[dk]=[];
+      dupKeys[dk].push(de.id);
+    }
+  }
+  for(var dk2 in dupKeys){
+    if(dupKeys[dk2].length>1){
+      dupKeys[dk2].forEach(function(id){ dupIds[id]=true; });
+    }
+  }
+
+  var rows="",shown=fil.length>300?fil.slice(0,300):fil;
+  for(var ri=0;ri<shown.length;ri++){
+    var e2=shown[ri],tc=tyC(e2.errorType),hi=FBI[e2.id];
+    var isReview=!!e2.needsReview;
+    var isDup=!!dupIds[e2.id];
+    var bg=isReview?"#fffbeb":isDup?"#fff7ed":(hi?"#f0fdf4":(ri%2===0?"#fdf8fc":"#fff"));
+    var rowClass=isReview?"review-row":isDup?"dup-row":"";
+    var rphBdg="";
+    if(isReview){
+      rphBdg='<span class="bdg" style="background:#fef3c7;color:#92400e">⏳ Needs Review</span>';
+    } else {
+      if(e2.pv1==="Caught"){var p1c=e2.rphPV1CaughtNames&&e2.rphPV1CaughtNames.length?e2.rphPV1CaughtNames.join(", "):"";rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ PV1 Caught'+(p1c?' — '+p1c:'')+'</span> ';}
+      if(e2.vbd==="Caught"){
+        var catcher2=e2.rphCaughtNames&&e2.rphCaughtNames.length?e2.rphCaughtNames.join(", "):"";
+        rphBdg+='<span class="bdg" style="background:#dcfce7;color:#15803d">✅ VBD Caught'+(catcher2?' — '+catcher2:'')+'</span> ';
+      }
+      if(e2.pv1==="Missed"&&e2.vbd==="Missed") rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">🚨 Dispensed</span>';
+      else if(e2.pv1==="Missed"&&(!e2.vbd||e2.vbd==="NA")) rphBdg+='<span class="bdg" style="background:#fef3c7;color:#d97706">⚠ PV1 Missed</span>';
+      else if(e2.dispensedWithError==="Yes"&&!e2.pv1) rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed</span>';
+      if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">Missed: '+e2.rphNames.join(", ")+'</span>';
+      if(!rphBdg)rphBdg='<span style="color:#cbd5e1;font-size:11px">—</span>';
+    }
+    var actionBtns=isReview
+      ?'<button class="complete-btn" onclick="completeEntry('+e2.id+')">✏ Complete</button> <button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>'
+      :(e2.driveUrl?'<button onclick="showPhotoModal('+e2.id+')" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer;border:1px solid #e8d5e4;background:#eef2ff;font-size:11px;padding:0" title="View in Drive">📷</button>':(e2.photo?'<img src="'+e2.photo+'" onclick="showPhotoModal('+e2.id+')" class="photo-thumb" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer" title="View photo">':''))+
+       '<button onclick="openEdit('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;cursor:pointer;margin-right:3px">Edit</button>'+
+       (hi?'<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #e8d5e4;background:#fff;cursor:pointer;margin-right:3px">Clear</button>':'')+
+       '<button onclick="delE('+e2.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer;opacity:.5">Del</button>';
+    rows+='<tr class="'+rowClass+'"><td style="white-space:nowrap">'+e2.date+'</td><td style="white-space:nowrap;color:#9b7294">'+(e2.dateRxEntered||"\u2014")+'</td><td style="text-align:center">'+daysBadge(e2.daysToCatch!==null&&e2.daysToCatch!==undefined?e2.daysToCatch:calcDaysToCatch(e2.date,e2.dateRxEntered))+'</td><td style="color:#7c5c76">'+e2.week+'</td><td>'+sevBadge(e2.severity)+'</td><td>'+bdg(e2.errorType,tc)+'</td><td>'+(isReview?'<span class="bdg" style="background:#fef3c7;color:#92400e">RPH Quick</span>':bdg(e2.source,TLC[e2.source]||"#440B39"))+'</td><td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"")+'</td><td>'+(e2.who||"\u2014")+'</td><td style="color:#7c5c76">'+(e2.faxErx||"\u2014")+'</td><td style="color:#2E0326">'+(e2.drug||"\u2014")+'</td><td style="color:#2E0326">'+(e2.rxNum||"\u2014")+(isDup?' <span class="bdg" style="background:#fee2e2;color:#dc2626;font-size:9px">&#9888; DUP</span>':'')+'</td><td style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c5c76">'+(e2.notes||"\u2014")+'</td><td style="min-width:80px">'+rphBdg+'</td><td style="text-align:center">'+(e2.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td><td>'+(isReview?'<span style="color:#f59e0b;font-size:10px">Awaiting review</span>':(hi?'<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>':'<input class="ii" maxlength="4" placeholder="Init." onblur="setIE('+e2.id+',this.value)">'))+'</td><td style="font-size:11px;color:#7c5c76;white-space:nowrap">'+(hi?hi.date:"\u2014")+'</td>'+rphLeadCell(e2)+'<td style="white-space:nowrap">'+actionBtns+'</td></tr>';
+  }
+
+  // Review queue banner
+  var reviewBanner=reviewCount>0
+    ?'<div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+      +'<span style="font-size:18px">⏳</span>'
+      +'<div style="flex:1"><div style="font-weight:800;font-size:13px;color:#92400e">'+reviewCount+' RPH Quick Log'+(reviewCount>1?'s':'')+' Need Review</div>'
+      +'<div style="font-size:11px;color:#92400e;opacity:.8">These entries are not included in metrics until completed by a Manager or Admin</div></div>'
+      +'<button onclick="eReview=\'Needs Review\';rEntries()" style="padding:6px 14px;background:#f59e0b;color:#fff;border:none;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer">View '+(reviewCount)+' Pending</button>'
+      +'</div>'
+    :'';
+
+  sec.innerHTML=reviewBanner+
+    '<div class="card fbar" style="margin-bottom:10px">'+
+      '<label style="font-size:11px;color:#7c5c76">Team:</label><select onchange="eFF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ffO+'</select>'+
+      '<label style="font-size:11px;color:#7c5c76">Type:</label><select onchange="eFT=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+ftO+'</select>'+
+      '<label style="font-size:11px;color:#7c5c76">Source:</label><select onchange="eFS=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+fsO+'</select>'+
+      '<label style="font-size:11px;color:#7c5c76">Status:</label><select onchange="eFSt=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eFSt==="All"?" selected":"")+'>All</option><option'+(eFSt==="Initials Given"?" selected":"")+'>Initials Given</option><option'+(eFSt==="Pending"?" selected":"")+'>Pending</option></select>'+
+      '<label style="font-size:11px;color:#7c5c76">Review:</label><select onchange="eReview=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px;border-color:'+(eReview==="Needs Review"?"#f59e0b":"")+'"><option'+(eReview==="All"?" selected":"")+'>All</option><option'+(eReview==="Needs Review"?" selected":"")+'>Needs Review</option><option'+(eReview==="Complete"?" selected":"")+'>Complete</option></select>'+
+      '<input placeholder="🔍 RX #" value="'+eRxSearch+'" oninput="eRxSearch=this.value;rEntries()" style="width:110px;padding:5px 8px;font-size:11px;border-radius:20px;border:1.5px solid '+(eRxSearch?'var(--purple)':'var(--border)')+'">'+
+      '<label style="font-size:11px;color:#7c5c76">Severity:</label><select onchange="eSevF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eSevF==="All"?" selected":"")+' value="All">All</option><option'+(eSevF==="Low"?" selected":"")+' value="Low">Low</option><option'+(eSevF==="Medium"?" selected":"")+' value="Medium">Medium</option><option'+(eSevF==="High"?" selected":"")+' value="High">High</option><option'+(eSevF==="Critical"?" selected":"")+' value="Critical">Critical</option></select>'+
+      '<label style="font-size:11px;color:#7c5c76">Call Required:</label><select onchange="eCallF=this.value;rEntries()" style="width:auto;padding:5px 8px;font-size:11px"><option'+(eCallF==="All"?" selected":"")+' value="All">All</option><option'+(eCallF==="Yes"?" selected":"")+' value="Yes">Yes</option><option'+(eCallF==="No"?" selected":"")+' value="No">No</option></select>'+
+      '<span style="font-size:11px;color:#7c5c76;margin-left:auto">'+fil.length+' entries</span>'+
+      ((eReview!=="All"||eRxSearch||eCallF!=="All"||eSevF!=="All")?'<button onclick="eReview=\'All\';eRxSearch=\'\';eCallF=\'All\';eSevF=\'All\';rEntries()" style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:#7c5c76">Clear all ✕</button>':'')+
+    '</div>'+
+    '<div class="card" style="padding:0;overflow:hidden"><div class="tbl-scroll"><table><thead><tr><th>Error Found</th><th>RX Entered</th><th>Days</th><th>Week</th><th>Severity</th><th>Error Type</th><th>Source</th><th>Team</th><th>Who</th><th>Fax/eRx</th><th>Drug</th><th>RX</th><th>Notes</th><th>RPH Verified</th><th>Follow-up</th><th>Intake Lead</th><th>FB Date</th><th>RPH Lead(s)</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
+function completeEntry(id){
+  // Opens edit modal pre-filled — saving will clear needsReview
+  openEdit(id);
+  // Show banner inside modal
+  setTimeout(function(){
+    var mb=document.querySelector(".modal-box");
+    if(mb&&!document.getElementById("reviewNotice")){
+      var notice=document.createElement("div");
+      notice.id="reviewNotice";
+      notice.style.cssText="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e;font-weight:600";
+      notice.innerHTML="⏳ RPH Quick Log — please complete the missing fields below. Saving will add this entry to the metrics.";
+      mb.insertBefore(notice,mb.firstChild);
+    }
+  },100);
+}
 function setIE(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rEntries();}}
-
-
 function clrI(id){delete FBI[id];save();upHdr();rEntries();}
 
-
-function delE(id){if(!confirm("Delete this entry?"))return;var nl=[];for(var i=0;i<D.length;i++)if(D[i].id!==id)nl.push(D[i]);D=nl;delete FBI[id];save();upHdr();rEntries();}
-
-
-function rAdmin(){
-  var sec=document.getElementById("sec-admin");
-  var etList=ET.map(function(t,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+t+'</span><button onclick="removeET('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-  var tmList=TM.map(function(t,i){return'<div class="admin-item"><span style="flex:1">'+bdg(t,TLC[t]||"#6366f1")+'</span><button onclick="removeTM('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-  var drugList=DRUGS.map(function(d,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+d+'</span><button onclick="removeDrug('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
-
-  var cloudSection='<div class="card" style="border:2px solid #dbeafe"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">☁ Cloud Sync</h3><p style="font-size:11px;color:#64748b;margin-bottom:10px">Your data syncs automatically when cloud is connected.</p>'+(BIN_ID?'<div style="font-size:12px;color:#064e3b;background:#d1fae5;padding:8px 12px;border-radius:8px;margin-bottom:10px">✅ Connected to Bin: <strong>'+BIN_ID+'</strong></div>':'<div style="font-size:12px;color:#7c2d12;background:#fee2e2;padding:8px 12px;border-radius:8px;margin-bottom:10px">⚠ Not connected to cloud</div>')+'<div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="openSetup()" class="btn" style="margin-top:0;font-size:12px;padding:7px 14px">⚙ Cloud Settings</button>'+(BIN_ID?'<button onclick="forcePush()" style="padding:7px 14px;background:#10b981;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">↑ Push Now</button><button onclick="forcePull()" style="padding:7px 14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">↓ Pull Now</button>':'')+'</div></div>';
-
-  sec.innerHTML='<p style="font-size:12px;color:#64748b;margin-bottom:14px">Changes here update dropdowns immediately.</p>'+cloudSection+'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Error Types</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Shown in Log Error dropdown</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Teams</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Available when logging errors</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#1e293b;margin-bottom:4px">Drug List</h3><p style="font-size:11px;color:#94a3b8;margin-bottom:10px">Available in drug dropdown</p><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
-}
-
-
-function addET(){var v=document.getElementById("newET").value.trim();if(!v)return;ET.push(v);save();document.getElementById("newET").value="";rAdmin();}
-
-
-function removeET(i){if(!confirm("Remove?"))return;ET.splice(i,1);save();rAdmin();}
-
-
-function addTM(){var v=document.getElementById("newTM").value.trim();if(!v)return;TM.push(v);if(!TLC[v])TLC[v]="#6366f1";save();document.getElementById("newTM").value="";rAdmin();}
-
-
-function removeTM(i){if(!confirm("Remove?"))return;TM.splice(i,1);save();rAdmin();}
-
-
-function addDrug(){var v=document.getElementById("newDrug").value.trim();if(!v)return;DRUGS.push(v);save();document.getElementById("newDrug").value="";rAdmin();}
-
-
-function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rAdmin();}
-
-
-
-
-async function init(){
-  // Load data — but don't block login if it fails
-  try{ await jbLoad(); } catch(e){ console.warn('Cloud load failed:',e); }
-  // Check for saved session
-  try {
-    var saved=localStorage.getItem('pet_auth');
-    if(saved){var u=JSON.parse(saved);if(u&&u.email){
-      currentUser=u;
-      var auth=document.getElementById('authScreen');
-      var app=document.getElementById('mainApp');
-      if(auth) auth.style.display='none';
-      if(app) app.style.display='block';
-      buildNav();goTo('board');upHdr();return;
-    }}
-  } catch(e){}
-  // Show login
-  if(!GOOGLE_CLIENT_ID){
-    document.getElementById('googleSignInBtn').innerHTML=
-      '<div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:10px;font-size:11px;color:#92400e">'+
-      '⚠ Google OAuth not configured — using temporary access below.</div>'+
-      '<button onclick="devLogin(\'Admin\')" style="width:100%;padding:12px;background:#440B39;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">Enter as Admin</button>'+
-      '<button onclick="devLogin(\'Manager\')" style="width:100%;padding:12px;background:#0369a1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">Enter as Manager</button>'+
-      '<button onclick="devLogin(\'RPH\')" style="width:100%;padding:12px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">Enter as RPH</button>';
-  } else {
-    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleSignIn});
-    google.accounts.id.renderButton(document.getElementById('googleSignInBtn'),{theme:'outline',size:'large',width:280});
-    google.accounts.id.prompt();
-  }
-}
-
-function onGoogleSignIn(response){
-  try {
-    var parts = response.credential.split('.');
-    // Fix base64 padding
-    var b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
-    while(b64.length % 4) b64 += '=';
-    var payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
-    console.log('Google sign-in email:', payload.email);
-    onGoogleSignInWithInfo({
-      email: payload.email,
-      name: payload.name||payload.email,
-      picture: payload.picture||''
-    });
-  } catch(e) {
-    console.error('JWT decode error:', e);
-    // Fallback — try google's userinfo endpoint approach
-    alert('Sign-in error: ' + e.message + '\n\nPlease try again or contact Dominique.');
-  }
-}
-
-function onGoogleSignInWithInfo(info){
-  var email=info.email,name=info.name,picture=info.picture;
-  console.log('Signing in:', email);
-  var dirUser=USER_DIRECTORY[email];
-  if(email==='dominique.l@gifthealth.com'){
-    currentUser={name:name||'Dominique',email:email,role:'Admin',picture:picture};
-  } else if(dirUser){
-    currentUser={name:dirUser.name||name,email:email,role:dirUser.role||'RPH',picture:picture};
-  } else if(email&&email.endsWith('@gifthealth.com')){
-    currentUser={name:name,email:email,role:'RPH',picture:picture};
-  } else {
-    alert('Access denied.\n\nEmail: '+email+'\n\nPlease use your gifthealth Google account.');
-    return;
-  }
-  localStorage.setItem('pet_auth',JSON.stringify(currentUser));
-  // Show app, hide auth screen
-  var auth=document.getElementById('authScreen');
-  var app=document.getElementById('mainApp');
-  if(auth) auth.style.display='none';
-  if(app) app.style.display='block';
-  buildNav();goTo('board');upHdr();
-}
-function signOut() {
-  if(!confirm('Sign out?')) return;
-  currentUser = null;
-  localStorage.removeItem('pet_auth');
-  document.getElementById('mainApp').style.display = 'none';
-  document.getElementById('authScreen').style.display = 'flex';
-  document.getElementById('userPill').innerHTML = '';
-}
-
+// ── RPH Lead Initials ────────────────────────────────────────────────────────
+// RFBI[entryId][rphName] = {initials, date}
 function rphLeadCell(e){
-  var allRphs=[];
-  if(e.rphNames&&e.rphNames.length) e.rphNames.forEach(function(n){allRphs.push({name:n,label:'PV1 Miss',bg:'#dc2626'});});
-  if(e.rphPV1CaughtNames&&e.rphPV1CaughtNames.length) e.rphPV1CaughtNames.forEach(function(n){allRphs.push({name:n,label:'PV1 Catch',bg:'#15803d'});});
-  if(e.rphVBDNames&&e.rphVBDNames.length) e.rphVBDNames.forEach(function(n){allRphs.push({name:n,label:'VBD Miss',bg:'#dc2626'});});
-  if(e.rphCaughtNames&&e.rphCaughtNames.length) e.rphCaughtNames.forEach(function(n){allRphs.push({name:n,label:'VBD Catch',bg:'#15803d'});});
-  if(e.rphPrevNames&&e.rphPrevNames.length) e.rphPrevNames.forEach(function(n){allRphs.push({name:n,label:'Prev Fill',bg:'#7c3aed'});});
-  if(e.needsReview||!allRphs.length) return '<td style="min-width:120px;padding:6px 8px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">\u2014</span></td>';
-  var cell='<td style="min-width:140px;padding:6px 8px;vertical-align:middle">';
-  for(var i=0;i<allRphs.length;i++){
-    var rn=allRphs[i].name,lbl=allRphs[i].label,bg=allRphs[i].bg;
-    var safeKey=encodeURIComponent(rn+'_'+lbl);
-    var rfb=(RFBI[e.id]||{})[rn+'_'+lbl]||(RFBI[e.id]||{})[rn];
+  if(e.needsReview||!e.rphNames||!e.rphNames.length) return '<td style="min-width:120px;padding:8px 12px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
+  var cell='<td style="min-width:130px;padding:6px 12px;vertical-align:middle">';
+  for(var i=0;i<e.rphNames.length;i++){
+    var rn=e.rphNames[i];
+    var rfb=(RFBI[e.id]||{})[rn];
     var firstName=rn.split(' ')[0];
-    cell+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:'+(i<allRphs.length-1?'4px':'0')+'">';
-    cell+='<span style="font-size:9px;color:#fff;background:'+bg+';border-radius:4px;padding:1px 4px;white-space:nowrap">'+lbl+'</span>';
-    cell+='<span style="font-size:10px;color:#7c5c76;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50px" title="'+rn+'">'+firstName+'</span>';
+    var safeRn=encodeURIComponent(rn);
+    cell+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:'+(i<e.rphNames.length-1?'5px':'0')+'">';
+    cell+='<span style="font-size:10px;color:#7c5c76;min-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+rn+'">'+firstName+':</span>';
     if(rfb){
-      cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:10px;padding:2px 5px">'+rfb.initials+'</span>';
+      cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:10px;padding:2px 6px">'+rfb.initials+'</span>';
       cell+='<span style="font-size:10px;color:#7c5c76">'+rfb.date+'</span>';
-      cell+='<button onclick="clrRphI('+e.id+',decodeURIComponent(\''+safeKey+'\'))" style="font-size:9px;padding:1px 4px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">\u2715</button>';
+      cell+='<button onclick="clrRphI('+e.id+',decodeURIComponent(\''+safeRn+'\'))" style="font-size:10px;padding:1px 5px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">✕</button>';
     } else {
-      cell+='<input class="ii" maxlength="4" placeholder="Init." style="width:36px;font-size:11px;padding:2px 4px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" data-id="'+e.id+'" data-rph="'+safeKey+'" onblur="setRphIE(this)">';
+      cell+='<input class="ii" maxlength="4" placeholder="Init." style="width:40px;font-size:11px;padding:3px 5px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" data-id="'+e.id+'" data-rph="'+safeRn+'" onblur="setRphIE(this)">';
     }
     cell+='</div>';
   }
@@ -1783,79 +2001,25 @@ function setRphIE(input){
   var id=parseInt(input.getAttribute('data-id'));
   var rphName=decodeURIComponent(input.getAttribute('data-rph'));
   if(!RFBI[id]) RFBI[id]={};
-
-
-  RFBI[id][rphName]={initials:v,date:fmtD(new Date())};save();upHdr();rEntries();
+  RFBI[id][rphName]={initials:v,date:fmtD(new Date())};
+  save();upHdr();rEntries();
 }
+
+function setRphI(id,rphName,val){
+  var v=(val||'').trim().toUpperCase();
+  if(!v) return;
+  if(!RFBI[id]) RFBI[id]={};
+  RFBI[id][rphName]={initials:v,date:fmtD(new Date())};
+  save();upHdr();rEntries();
+}
+
 function clrRphI(id,rphName){
   if(RFBI[id]) delete RFBI[id][rphName];
   save();upHdr();rEntries();
 }
+function delE(id){if(!confirm("Delete this entry?"))return;var nl=[];for(var i=0;i<D.length;i++)if(D[i].id!==id)nl.push(D[i]);D=nl;delete FBI[id];save();upHdr();rEntries();}
 
-function completeEntry(id){
-  // Opens edit modal pre-filled \\u2014 saving will clear needsReview
-  openEdit(id);
-  // Show banner inside modal
-  setTimeout(function(){
-    var mb=document.querySelector(".modal-box");
-    if(mb&&!document.getElementById("reviewNotice")){
-      var notice=document.createElement("div");
-      notice.id="reviewNotice";
-      notice.style.cssText="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e;font-weight:600";
-      notice.innerHTML="\\u23f3 RPH Quick Log \\u2014 please complete the missing fields below. Saving will add this entry to the metrics.";
-      mb.insertBefore(notice,mb.firstChild);
-    }
-  },100);
-}
-
-function previewLogPhoto() {
-  var input = document.getElementById('lPhoto');
-  if(!input || !input.files[0]) return;
-  var file = input.files[0];
-  if(file.size > 5 * 1024 * 1024) { alert('Photo must be under 5MB'); input.value=''; return; }
-  compressPhoto(file, function(compressed){
-    input._photoData = compressed;
-    var preview = document.getElementById('lPhotoPreview');
-    if(preview){ preview.src = compressed; preview.style.display = 'block'; }
-  });
-}
-
-function previewEditPhoto(){
-  var inp=document.getElementById("ePhoto");
-  if(!inp||!inp.files||!inp.files[0]) return;
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    var prev=document.getElementById("ePhotoPreview");
-    var wrap=document.getElementById("ePhotoPreviewWrap");
-    if(prev){prev.src=ev.target.result;prev.style.display="block";}
-    if(wrap) wrap.style.display="block";
-  };
-  reader.readAsDataURL(inp.files[0]);
-}
-
-function removeEditPhoto(){
-  var input=document.getElementById("ePhoto");
-  input.value="";
-  input._photoData="";
-  input._removed=true;
-  document.getElementById("ePhotoPreviewWrap").style.display="none";
-  document.getElementById("ePhotoPreview").src="";
-}
-
-function showPhotoModal(id) {
-  var entry = D.find(function(e){ return e.id == id; });
-  if(!entry || !entry.photo) return;
-  var existing = document.getElementById('photoModal');
-  if(existing) existing.remove();
-  var modal = document.createElement('div');
-  modal.id = 'photoModal';
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
-  modal.onclick = function(){ modal.remove(); };
-  modal.innerHTML = '<img src="' + entry.photo + '" style="max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
-    '<button style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">\u2715</button>';
-  document.body.appendChild(modal);
-}
-
+// ── Admin ──────────────────────────────────────────────────────────────────
 function _rAdminInner(){
   var sec=document.getElementById("sec-admin");
   var etList=ET.map(function(t,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+t+'</span><button onclick="removeET('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
@@ -1863,30 +2027,331 @@ function _rAdminInner(){
   var drugList=DRUGS.map(function(d,i){return'<div class="admin-item"><span style="flex:1;font-size:13px">'+d+'</span><button onclick="removeDrug('+i+')" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></div>';}).join("");
   sec.innerHTML='<p style="font-size:12px;color:#7c5c76;margin-bottom:14px">Changes here update dropdowns and save to cloud automatically.</p><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Error Types</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newET" placeholder="New error type" style="flex:1"><button onclick="addET()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+etList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Teams</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newTM" placeholder="New team name" style="flex:1"><button onclick="addTM()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+tmList+'</div></div><div class="card" style="flex:1;min-width:280px"><h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">Drug List</h3><div style="display:flex;gap:8px;margin-bottom:12px"><input id="newDrug" placeholder="e.g. Metformin 500mg" style="flex:1"><button onclick="addDrug()" class="btn" style="margin-top:0;padding:7px 12px">Add</button></div><div style="max-height:300px;overflow-y:auto">'+drugList+'</div></div></div>';
 }
-function rUserDirectory(){if(typeof rDirectory==='function')rDirectory();}
-
-function showDirToast(msg){
-  var t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:20px;right:20px;background:#2E0326;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9999;animation:fadeIn .3s';
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(function(){t.remove();},2500);
+function rAdmin(){
+  _rAdminInner();
+  if(currentUser&&currentUser.role==="Admin") rUserDirectory();
+  _rAdminKey();
 }
 
-function devLogin(role){
-  var roleMap={'Admin':'dominique.l@gifthealth.com','Manager':'manager@gifthealth.com','Lead':'lead@gifthealth.com','Trainer':'trainer@gifthealth.com','RPH':'rph@gifthealth.com'};
-  currentUser={name:role+' User',email:roleMap[role]||'dev@gifthealth.com',role:role,picture:''};
-  localStorage.setItem('pet_auth',JSON.stringify(currentUser));
-  var auth=document.getElementById('authScreen');
-  var app=document.getElementById('mainApp');
-  if(auth) auth.style.display='none';
-  if(app) app.style.display='block';
-  buildNav();goTo('board');upHdr();
+function _rAdminKey(){
+  var sec=document.getElementById('sec-admin');
+  var key=document.createElement('div');
+  key.className='card';
+  key.style.marginTop='12px';
+  key.innerHTML=
+    '<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">🗝️ System Key &amp; Reference</h3>'+
+
+    // Role access table
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">👥 Roles &amp; Access</div>'+
+      '<div class="tbl-wrap"><table><thead><tr>'+
+        '<th>Role</th><th>Board</th><th>Dashboard</th><th>Summary</th><th>Trends</th><th>RPH Report</th><th>Staff</th><th>Member View</th><th>Log Error</th><th>Import</th><th>All Entries</th><th>Directory</th><th>Admin</th>'+
+      '</tr></thead><tbody>'+
+        _roleRow('RPH',      ['board','log'])+
+        _roleRow('Trainer',  ['board','summary','staff','member','log'])+
+        _roleRow('Lead',     ['board','dashboard','summary','trends','rph','staff','member','log'])+
+        _roleRow('Manager',  ['board','dashboard','summary','trends','rph','staff','member','log'])+
+        _roleRow('Admin',    ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin'])+
+      '</tbody></table></div>'+
+    '</div>'+
+
+    // Severity key
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">🔴 Severity Levels (auto-assigned)</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<div style="padding:8px 14px;border-radius:8px;border:1px solid #fecaca;background:#fef2f2"><span style="font-weight:800;color:#ef4444">High</span> <span style="font-size:11px;color:#7c5c76">— Invalid Rx, Drug Mismatch, or Wrong PT dispensed to patient</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;border:1px solid #fde68a;background:#fffbeb"><span style="font-weight:800;color:#f59e0b">Medium</span> <span style="font-size:11px;color:#7c5c76">— Same error types caught before dispensing (good catch)</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4"><span style="font-weight:800;color:#10b981">Low</span> <span style="font-size:11px;color:#7c5c76">— All other error types regardless of outcome</span></div>'+
+      '</div>'+
+    '</div>'+
+
+    // Days to catch key
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">⏱ Days to Catch</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0"><span style="font-weight:800;color:#10b981">0–7d</span> <span style="font-size:11px;color:#7c5c76">Same week</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a"><span style="font-weight:800;color:#f59e0b">8–30d / 1–4w</span> <span style="font-size:11px;color:#7c5c76">Within the month</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca"><span style="font-weight:800;color:#ef4444">31–90d / 1–3mo</span> <span style="font-size:11px;color:#7c5c76">1–3 months</span></div>'+
+        '<div style="padding:8px 14px;border-radius:8px;background:#f5f3ff;border:1px solid #ddd6fe"><span style="font-weight:800;color:#7c3aed">90d+ / 3mo+</span> <span style="font-size:11px;color:#7c5c76">Over 3 months — review needed</span></div>'+
+      '</div>'+
+    '</div>'+
+
+    // Badge key
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">🏷️ Badges &amp; Indicators</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+
+        _badgeRow('⏳ Needs Review','#fef3c7','#92400e','RPH quick log — not yet counted in metrics')+
+        _badgeRow('⚠ DUP','#fee2e2','#dc2626','Same RX + same error type already exists')+
+        _badgeRow('📌 PINNED','#fef3c7','#d97706','Board post pinned to top')+
+        _badgeRow('✅ Good Catch','#dcfce7','#16a34a','Error caught before dispensing')+
+        _badgeRow('⚠ Dispensed','#fee2e2','#dc2626','Error dispensed to patient')+
+        _badgeRow('📞 Call Required','#fffbeb','#d97706','Patient call needed')+
+        _badgeRow('TOP THIS WEEK','#f97316','#fff','Highest error count this week')+
+        _badgeRow('TOP CATCHER','#f59e0b','#fff','Most good catches this week')+
+      '</div>'+
+    '</div>'+
+
+    // Review queue note
+    '<div style="padding:12px 16px;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe">'+
+      '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:4px">ℹ️ Review Queue</div>'+
+      '<div style="font-size:11px;color:#1e40af;line-height:1.6">RPH quick logs are held in a review queue and excluded from all dashboards, KPIs, and reports until a Manager or Admin opens the entry and clicks <strong>✏ Complete</strong> to fill in the missing details. Once completed the entry enters the metrics automatically.</div>'+
+    '</div>';
+
+  sec.appendChild(key);
 }
 
-init();
+function _roleRow(role, pages){
+  var all=['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin'];
+  var roleColors={Admin:'#440B39',Manager:'#0369a1',Lead:'#7c3aed',Trainer:'#059669',RPH:'#10b981'};
+  var col=roleColors[role]||'#7c5c76';
+  var cells=all.map(function(p){
+    return '<td style="text-align:center">'+(pages.indexOf(p)>=0?'<span style="color:#10b981;font-weight:700">✓</span>':'<span style="color:#e2e8f0">—</span>')+'</td>';
+  }).join('');
+  return '<tr><td><span class="bdg" style="background:'+col+'22;color:'+col+'">'+role+'</span></td>'+cells+'</tr>';
+}
+
+function _badgeRow(label, bg, col, desc){
+  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fdf8fc;border-radius:8px;border:1px solid #f3e8f1">'+
+    '<span class="bdg" style="background:'+bg+';color:'+col+';white-space:nowrap">'+label+'</span>'+
+    '<span style="font-size:11px;color:#7c5c76">'+desc+'</span>'+
+  '</div>';
+}
+function addET(){var v=document.getElementById("newET").value.trim();if(!v)return;ET.push(v);save();document.getElementById("newET").value="";rAdmin();}
+function removeET(i){if(!confirm("Remove?"))return;ET.splice(i,1);save();rAdmin();}
+function addTM(){var v=document.getElementById("newTM").value.trim();if(!v)return;TM.push(v);if(!TLC[v])TLC[v]="#440B39";save();document.getElementById("newTM").value="";rAdmin();}
+function removeTM(i){if(!confirm("Remove?"))return;TM.splice(i,1);save();rAdmin();}
+function addDrug(){var v=document.getElementById("newDrug").value.trim();if(!v)return;DRUGS.push(v);save();document.getElementById("newDrug").value="";rAdmin();}
+function removeDrug(i){if(!confirm("Remove?"))return;DRUGS.splice(i,1);save();rAdmin();}
 
 
+// ═══════════════════════════════════════════════
+// AUTH & ROLES
+// ═══════════════════════════════════════════════
+// Google OAuth Client ID — replace with your own from console.cloud.google.com
+var GOOGLE_CLIENT_ID = '203752171136-mqi4h82emc96c6sgbdag7k3aa2sd91g9.apps.googleusercontent.com';
+var DRIVE_FOLDER_ID = '1Xv2XGxWiFv6EYx5GULmVdvM73euRd9xN';
+var driveAccessToken = null;  // obtained via OAuth token client
+var driveTokenClient = null;  // GIS token client for drive.file scope
+
+// ── Google Drive Upload ────────────────────────────────────────────────────
+function initDriveTokenClient(){
+  if(!window.google || !google.accounts || !google.accounts.oauth2) return;
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: function(resp){
+      if(resp.error){ console.warn('Drive token error:', resp.error); return; }
+      driveAccessToken = resp.access_token;
+      // Resume any pending upload
+      if(window._pendingDriveUpload){
+        var p = window._pendingDriveUpload;
+        window._pendingDriveUpload = null;
+        uploadToDrive(p.blob, p.filename, p.callback);
+      }
+    }
+  });
+}
+
+function requestDriveToken(then){
+  // If we already have a token try using it; if expired GIS will refresh
+  if(driveAccessToken){then();return;}
+  if(!driveTokenClient){initDriveTokenClient();}
+  if(!driveTokenClient){console.warn('Drive token client not ready'); return;}
+  window._pendingDriveUpload = then; // store callback ref
+  driveTokenClient.requestAccessToken({prompt:''});
+}
+
+function uploadToDrive(file, filename, callback){
+  if(!driveAccessToken){ console.warn('No Drive access token'); callback(null); return; }
+  var metadata = {name: filename, parents: [DRIVE_FOLDER_ID]};
+  var form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+  form.append('file', file); // send original file as-is
+
+  fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer ' + driveAccessToken},
+    body: form
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(e){ throw new Error(e.error&&e.error.message?e.error.message:'HTTP '+r.status); }); }
+    return r.json();
+  })
+  .then(function(data){
+    if(data.id){
+      // Make file viewable by anyone in the org
+      fetch('https://www.googleapis.com/drive/v3/files/'+data.id+'/permissions', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+driveAccessToken,'Content-Type':'application/json'},
+        body: JSON.stringify({role:'reader', type:'domain', domain:'gifthealth.com'})
+      });
+      callback({id: data.id, url: data.webViewLink || ('https://drive.google.com/file/d/'+data.id+'/view')});
+    } else {
+      console.warn('Drive upload — no id in response:', data);
+      callback(null);
+    }
+  })
+  .catch(function(err){
+    console.warn('Drive upload error:', err.message);
+    showDirToast('⚠ Drive error: ' + err.message);
+    driveAccessToken = null;
+    callback(null);
+  });
+}
+
+// Compress + upload to Drive, store {driveId, driveUrl} on input element
+function processAndUploadPhoto(file, inputEl, previewEl, onDone){
+  if(!file) return;
+  if(file.size > 20*1024*1024){alert('Photo must be under 20MB'); return;}
+
+  // Show a low-res preview immediately using original file (for UI only)
+  var previewReader=new FileReader();
+  previewReader.onload=function(ev){
+    if(previewEl){
+      previewEl.src=ev.target.result;
+      previewEl.style.display='block';
+      previewEl.style.opacity='1';
+    }
+  };
+  previewReader.readAsDataURL(file);
+
+  // Store small compressed version as local fallback only
+  compressPhoto(file, function(compressed){
+    inputEl._photoData = compressed; // fallback if Drive fails
+    inputEl._driveId = null;
+    inputEl._driveUrl = null;
+    if(onDone) onDone('uploading');
+
+    // Upload ORIGINAL uncompressed file to Drive for full quality
+    var filename='rx-error-'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9.]/g,'_');
+
+    function doUpload(){
+      uploadToDrive(file, filename, function(result){
+        if(result){
+          inputEl._driveId = result.id;
+          inputEl._driveUrl = result.url;
+          inputEl._photoData = compressed; // keep small version for thumbnail only
+          if(onDone) onDone('done', result);
+          showDirToast('📷 Full quality photo saved to Drive');
+        } else {
+          inputEl._photoData = compressed;
+          if(onDone) onDone('fallback');
+          showDirToast('⚠ Drive upload failed — compressed photo saved locally');
+        }
+      });
+    }
+
+    if(driveAccessToken){
+      doUpload();
+    } else {
+      window._pendingDriveUpload = {blob:file, filename:filename, callback:function(result){
+        if(result){
+          inputEl._driveId=result.id;inputEl._driveUrl=result.url;
+          inputEl._photoData=compressed;
+          if(onDone) onDone('done',result);
+          showDirToast('📷 Full quality photo saved to Drive');
+        } else {
+          inputEl._photoData=compressed;
+          if(onDone) onDone('fallback');
+        }
+      }};
+      if(!driveTokenClient) initDriveTokenClient();
+      if(driveTokenClient) driveTokenClient.requestAccessToken({prompt:''});
+    }
+  });
+}
+
+// Role directory — stored in JSONBin alongside data
+// Format: { "email@gifthealth.com": "Admin" }
+var USER_DIRECTORY = {}; // populated from JSONBin
+
+var currentUser = null; // { name, email, picture, role }
+
+// Role permissions
+var ROLE_PAGES = {
+  'RPH':     ['board','log'],
+  'Trainer': ['board','summary','staff','member','log'],
+  'Lead':    ['board','dashboard','summary','trends','rph','staff','member','log'],
+  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log'],
+  'Admin':   ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
+};
+
+function onGoogleSignInWithInfo(info) {
+  var email = info.email;
+  var name = info.name;
+  var picture = info.picture;
+
+  var ud = USER_DIRECTORY[email.toLowerCase()];
+  var role = ud ? (typeof ud === 'string' ? ud : ud.role) : null;
+  if(!role) {
+    if(email.toLowerCase() === 'dominique.l@gifthealth.com') role = 'Admin';
+    else {
+      document.getElementById('authError').style.display = 'block';
+      document.getElementById('authError').textContent = '⚠ Access denied — ' + email + ' is not in the gifthealth directory. Contact your Admin to be added.';
+      return;
+    }
+  }
+
+  currentUser = { name: name, email: email, picture: picture, role: role };
+  localStorage.setItem('pet_auth', JSON.stringify(currentUser));
+
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  updateUserPill();
+  buildNav();
+  upHdr();
+  var pages = ROLE_PAGES[role] || ['log'];
+  goTo(pages[0]);
+}
+
+function onGoogleSignIn(response) {
+  var parts = response.credential.split('.');
+  var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+  onGoogleSignInWithInfo({ email: payload.email, name: payload.name, picture: payload.picture });
+}
+
+function updateUserPill() {
+  if(!currentUser) return;
+  var roleColors = { Admin:'#440B39', Manager:'#0369a1', RPH:'#10b981' };
+  var col = roleColors[currentUser.role] || '#440B39';
+  document.getElementById('userPill').innerHTML =
+    '<div class="user-pill" onclick="signOut()" title="Click to sign out">' +
+    '<img src="' + currentUser.picture + '" class="auth-avatar">' +
+    '<span>' + currentUser.name.split(' ')[0] + '</span>' +
+    '<span class="auth-role-badge" style="background:' + col + '33;color:' + col + '">' + currentUser.role + '</span>' +
+    '</div>';
+}
+
+function signOut() {
+  if(!confirm('Sign out?')) return;
+  currentUser = null;
+  localStorage.removeItem('pet_auth');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('userPill').innerHTML = '';
+}
+
+// ── Role-filtered nav ──
+function buildNav() {
+  var allowed = currentUser ? (ROLE_PAGES[currentUser.role] || ['log']) : ['log'];
+  var h = '';
+  for(var i = 0; i < NAVS.length; i++) {
+    if(allowed.indexOf(NAVS[i].k) >= 0) {
+      h += '<button class="' + (NAVS[i].k === curV ? 'on' : '') + '" onclick="goTo(\'' + NAVS[i].k + '\')">' + NAVS[i].l + '</button>';
+    }
+  }
+  document.getElementById('navBar').innerHTML = h;
+}
+
+// ── Admin — User Directory management ──
+// ── Bulletin Board ────────────────────────────────────────────────────────
+var POST_TYPES={
+  announcement:{label:'📢 Announcement',color:'#440B39',bg:'#f3e8f1'},
+  update:      {label:'🔄 Workflow Update',color:'#0369a1',bg:'#eff6ff'},
+  reminder:    {label:'⏰ Reminder',color:'#d97706',bg:'#fffbeb'},
+  sop:         {label:'📄 SOP / Policy',color:'#059669',bg:'#f0fdf4'},
+  urgent:      {label:'🚨 Urgent',color:'#dc2626',bg:'#fff1f2'},
+};
 
 function rBoard(){
   var sec=document.getElementById('sec-board');
@@ -1902,7 +2367,7 @@ function rBoard(){
 
   var postCards=sorted.length===0?
     '<div class="card" style="text-align:center;padding:40px;color:#7c5c76">'+
-      '<div style="font-size:32px;margin-bottom:8px">\ud83d\udccb</div>'+
+      '<div style="font-size:32px;margin-bottom:8px">📋</div>'+
       '<div style="font-weight:700;font-size:14px;margin-bottom:4px">No posts yet</div>'+
       '<div style="font-size:12px">Managers and Admins can post announcements, reminders, and workflow updates here</div>'+
     '</div>'
@@ -1915,20 +2380,20 @@ function rBoard(){
       '<div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">' +
         '<div style="flex:1">' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
-            (p.pinned?'<span style="font-size:10px;font-weight:800;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:10px">\ud83d\udccc PINNED</span>':'')+
+            (p.pinned?'<span style="font-size:10px;font-weight:800;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:10px">📌 PINNED</span>':'')+
             '<span class="bdg" style="background:'+pt.bg+';color:'+pt.color+'">'+pt.label+'</span>'+
             '<span style="font-size:11px;font-weight:700;color:#2E0326">'+p.title+'</span>'+
           '</div>'+
           '<div style="font-size:13px;color:#2E0326;line-height:1.6;white-space:pre-wrap">'+p.body+'</div>'+
           '<div style="font-size:10px;color:#7c5c76;margin-top:8px">'+
-            'Posted by <strong>'+p.author+'</strong> \u00b7 '+dateStr+' at '+timeStr+
-            (p.edited?' \u00b7 <em>edited</em>':'')+
+            'Posted by <strong>'+p.author+'</strong> · '+dateStr+' at '+timeStr+
+            (p.edited?' · <em>edited</em>':'')+
           '</div>'+
         '</div>'+
         (canPost?
           '<div style="display:flex;flex-direction:column;gap:4px;min-width:60px;align-items:flex-end">'+
             '<button onclick="editPost(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;cursor:pointer;white-space:nowrap">Edit</button>'+
-            '<button onclick="togglePin(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #fde68a;background:#fffbeb;color:#d97706;border-radius:5px;cursor:pointer;white-space:nowrap">'+(p.pinned?'Unpin':'\ud83d\udccc Pin')+'</button>'+
+            '<button onclick="togglePin(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #fde68a;background:#fffbeb;color:#d97706;border-radius:5px;cursor:pointer;white-space:nowrap">'+(p.pinned?'Unpin':'📌 Pin')+'</button>'+
             '<button onclick="deletePost(\''+p.id+'\')" style="font-size:10px;padding:3px 9px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;cursor:pointer">Delete</button>'+
           '</div>'
         :'')+
@@ -1944,7 +2409,7 @@ function rBoard(){
     // Header
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">'+
       '<div>'+
-        '<h2 style="font-size:18px;font-weight:800;color:#2E0326;margin:0">\ud83d\udccb Team Board</h2>'+
+        '<h2 style="font-size:18px;font-weight:800;color:#2E0326;margin:0">📋 Team Board</h2>'+
         '<div style="font-size:11px;color:#7c5c76;margin-top:2px">Announcements, workflow updates &amp; reminders</div>'+
       '</div>'+
       (canPost?'<button onclick="openPostCompose()" class="btn" style="margin:0">+ New Post</button>':'')+
@@ -1977,7 +2442,94 @@ function rBoard(){
     postCards;
 }
 
+var _editingPostId=null;
 
+function openPostCompose(){
+  _editingPostId=null;
+  document.getElementById('boardCompose').style.display='block';
+  document.getElementById('composeTitle').textContent='New Post';
+  document.getElementById('postTitle').value='';
+  document.getElementById('postBody').value='';
+  document.getElementById('postType').value='announcement';
+  document.getElementById('postPin').checked=false;
+  document.getElementById('postEditId').value='';
+  document.getElementById('postTitle').focus();
+}
+
+function closePostCompose(){
+  document.getElementById('boardCompose').style.display='none';
+  _editingPostId=null;
+}
+
+function submitPost(){
+  var title=(document.getElementById('postTitle').value||'').trim();
+  var body=(document.getElementById('postBody').value||'').trim();
+  var type=document.getElementById('postType').value;
+  var pin=document.getElementById('postPin').checked;
+  if(!title){alert('Please add a title');return;}
+  if(!body){alert('Please add a message');return;}
+
+  var editId=document.getElementById('postEditId').value;
+  if(editId){
+    // Edit existing
+    for(var i=0;i<POSTS.length;i++){
+      if(POSTS[i].id===editId){
+        POSTS[i].title=title;
+        POSTS[i].body=body;
+        POSTS[i].type=type;
+        POSTS[i].pinned=pin;
+        POSTS[i].edited=true;
+        POSTS[i].editedTs=Date.now();
+        break;
+      }
+    }
+  } else {
+    // New post
+    POSTS.unshift({
+      id:'post_'+Date.now(),
+      type:type,
+      title:title,
+      body:body,
+      pinned:pin,
+      author:currentUser?currentUser.name:'Manager',
+      ts:Date.now(),
+      edited:false
+    });
+  }
+  save();
+  closePostCompose();
+  rBoard();
+  showDirToast(editId?'✅ Post updated':'✅ Post published');
+}
+
+function editPost(id){
+  var p=POSTS.find(function(x){return x.id===id;});
+  if(!p) return;
+  document.getElementById('boardCompose').style.display='block';
+  document.getElementById('composeTitle').textContent='Edit Post';
+  document.getElementById('postType').value=p.type||'announcement';
+  document.getElementById('postTitle').value=p.title||'';
+  document.getElementById('postBody').value=p.body||'';
+  document.getElementById('postPin').checked=!!p.pinned;
+  document.getElementById('postEditId').value=p.id;
+  document.getElementById('postTitle').focus();
+}
+
+function togglePin(id){
+  var p=POSTS.find(function(x){return x.id===id;});
+  if(!p) return;
+  p.pinned=!p.pinned;
+  save();rBoard();
+}
+
+function deletePost(id){
+  if(!confirm('Delete this post?')) return;
+  POSTS=POSTS.filter(function(p){return p.id!==id;});
+  save();rBoard();
+  showDirToast('Post deleted');
+}
+
+// ── Directory ──────────────────────────────────────────────────────────────
 function rDirectory(){
   var sec=document.getElementById('sec-directory');
   if(!sec) return;
@@ -1988,11 +2540,16 @@ function rDirectory(){
   var entries=Object.values(USER_DIRECTORY).filter(function(u){return u&&typeof u==='object';});
   var tableRows=entries.sort(function(a,b){return(a.name||'').localeCompare(b.name||'');}).map(function(u){
     var col=roleColors[u.role]||'#440B39';
-    return '<tr><td style="font-weight:600">'+u.name+'</td>'+
+    var safeEmail=encodeURIComponent(u.email);
+    return '<tr>'+
+      '<td style="font-weight:600">'+u.name+'</td>'+
       '<td style="color:#7c5c76;font-size:11px">'+u.email+'</td>'+
       '<td><span class="bdg" style="background:'+col+'22;color:'+col+'">'+u.role+'</span></td>'+
-      '<td><span class="bdg" style="background:#f3e8f1;color:#7c5c76">'+(u.team||'\u2014')+'</span></td>'+
-      '<td><button onclick="removeDirUser(this)" data-email="'+u.email+'" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button></td></tr>';
+      '<td><span class="bdg" style="background:#f3e8f1;color:#7c5c76">'+(u.team||'—')+'</span></td>'+
+      '<td style="white-space:nowrap">'+
+        '<button onclick="openDirEdit(decodeURIComponent(\''+safeEmail+'\'))" style="padding:2px 8px;border:1px solid #c7d2fe;background:#eef2ff;color:#440B39;border-radius:5px;font-size:11px;cursor:pointer;margin-right:4px">Edit</button>'+
+        '<button onclick="removeDirUser(this)" data-email="'+u.email+'" style="padding:2px 8px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;border-radius:5px;font-size:11px;cursor:pointer">Remove</button>'+
+      '</td></tr>';
   }).join('');
 
   sec.innerHTML=
@@ -2004,9 +2561,11 @@ function rDirectory(){
         '<div><label class="flb" style="margin-top:0">Work Email</label><input id="dirEmail" type="email" placeholder="sarah@gifthealth.com"></div>'+
         '<div><label class="flb" style="margin-top:0">Role / Access Level</label>'+
           '<select id="dirRole">'+
-            '<option value="RPH">RPH \u2014 Log Error only</option>'+
-            '<option value="Manager">Manager \u2014 All except Admin</option>'+
-            '<option value="Admin">Admin \u2014 Full access</option>'+
+            '<option value="RPH">RPH — Board &amp; Log only</option>'+
+            '<option value="Trainer">Trainer — Board, Staff, Summary, Member View, Log</option>'+
+            '<option value="Lead">Lead — All except Entries, Directory &amp; Admin</option>'+
+            '<option value="Manager">Manager — Same as Lead</option>'+
+            '<option value="Admin">Admin — Full access</option>'+
           '</select></div>'+
         '<div><label class="flb" style="margin-top:0">Team (auto-adds to Staff tab)</label>'+
           '<select id="dirTeam">'+teamOpts+'</select></div>'+
@@ -2017,186 +2576,446 @@ function rDirectory(){
       '<div class="card" style="padding:0;overflow:hidden;margin-top:12px">'+
         '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Team</th><th></th></tr></thead>'+
         '<tbody>'+tableRows+'</tbody></table></div></div>'
-    :'<div class="card" style="text-align:center;color:#7c5c76;padding:32px;margin-top:12px">No team members yet \u2014 add someone above.</div>');
+    :'<div class="card" style="text-align:center;color:#7c5c76;padding:32px;margin-top:12px">No team members yet — add someone above.</div>')+
+    // Edit modal
+    '<div id="dirEditModal" class="modal-bg" style="display:none">'+
+      '<div class="modal-box" style="max-width:480px">'+
+        '<h3 style="font-size:16px;color:#2E0326;margin-bottom:4px">Edit Team Member</h3>'+
+        '<p id="dirEditSub" style="font-size:11px;color:#7c5c76;margin-bottom:16px"></p>'+
+        '<label class="flb" style="margin-top:0">Full Name</label>'+
+        '<input id="dirEditName" placeholder="Full name">'+
+        '<label class="flb">Work Email <span style="font-weight:400;font-size:10px;color:#7c5c76">(changing this updates their login)</span></label>'+
+        '<input id="dirEditEmail" type="email" placeholder="email@gifthealth.com">'+
+        '<label class="flb">Role / Access Level</label>'+
+        '<select id="dirEditRole">'+
+          '<option value="RPH">RPH — Board &amp; Log only</option>'+
+          '<option value="Trainer">Trainer — Board, Staff, Summary, Member View, Log</option>'+
+          '<option value="Lead">Lead — All except Entries, Directory &amp; Admin</option>'+
+          '<option value="Manager">Manager — Same as Lead</option>'+
+          '<option value="Admin">Admin — Full access</option>'+
+        '</select>'+
+        '<label class="flb">Team</label>'+
+        '<select id="dirEditTeam">'+teamOpts+'</select>'+
+        '<input type="hidden" id="dirEditOrigEmail">'+
+        '<div style="display:flex;gap:10px;margin-top:16px">'+
+          '<button class="btn btn-full" onclick="saveDirEdit()">Save Changes</button>'+
+          '<button onclick="closeDirEdit()" style="padding:9px 16px;background:#FFF1EE;color:#7c5c76;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:1;margin-top:10px">Cancel</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
 }
 
-
-function removeLogPhoto(){
-  document.getElementById("lPhoto").value="";
-  var p=document.getElementById("lPhotoPreview");if(p){p.src="";p.style.display="none";}
+function openDirEdit(email){
+  var u=USER_DIRECTORY[email];
+  if(!u) return;
+  document.getElementById('dirEditModal').style.display='block';
+  document.getElementById('dirEditSub').textContent='Editing: '+u.email;
+  document.getElementById('dirEditName').value=u.name||'';
+  document.getElementById('dirEditEmail').value=u.email||'';
+  document.getElementById('dirEditRole').value=u.role||'RPH';
+  document.getElementById('dirEditTeam').value=u.team||'';
+  document.getElementById('dirEditOrigEmail').value=u.email||'';
 }
 
-function addEditRph(){
-  var sel=document.getElementById("eRphSel");
-  var val=(sel?sel.value:"").trim();if(!val)return;
-  var existing=document.querySelectorAll(".erph-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag erph-tag";tag.dataset.name=val;
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-  document.getElementById("eRphTags").appendChild(tag);
-  if(sel&&sel.tagName==="INPUT")sel.value="";
+function closeDirEdit(){
+  document.getElementById('dirEditModal').style.display='none';
 }
 
-function addEditRphCaught(){
-  var sel=document.getElementById("eRphCaughtSel");
-  var val=(sel?sel.value:"").trim();if(!val)return;
-  var existing=document.querySelectorAll(".erph-caught-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag erph-caught-tag";tag.dataset.name=val;
-  tag.style.background="#dcfce7";tag.style.color="#15803d";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-  document.getElementById("eRphCaughtTags").appendChild(tag);
-  if(sel&&sel.tagName==="INPUT")sel.value="";
+function saveDirEdit(){
+  var origEmail=document.getElementById('dirEditOrigEmail').value;
+  var newName=document.getElementById('dirEditName').value.trim();
+  var newEmail=document.getElementById('dirEditEmail').value.trim().toLowerCase();
+  var newRole=document.getElementById('dirEditRole').value;
+  var newTeam=document.getElementById('dirEditTeam').value;
+
+  if(!newName){alert('Name is required');return;}
+  if(!newEmail||!newEmail.includes('@')){alert('Valid email is required');return;}
+
+  var old=USER_DIRECTORY[origEmail];
+  if(!old) return;
+
+  // Remove old name from SM if team changed or name changed
+  if(old.team&&old.name&&SM[old.team]){
+    var oi=SM[old.team].indexOf(old.name);
+    if(oi>-1) SM[old.team].splice(oi,1);
+  }
+
+  // If email changed, remove old key
+  if(origEmail!==newEmail) delete USER_DIRECTORY[origEmail];
+
+  // Save updated record
+  USER_DIRECTORY[newEmail]={name:newName,email:newEmail,role:newRole,team:newTeam};
+
+  // Add new name to SM
+  if(newTeam){
+    if(!SM[newTeam]) SM[newTeam]=[];
+    if(SM[newTeam].indexOf(newName)===-1) SM[newTeam].push(newName);
+  }
+
+  // Update any error entries that referenced old name or team
+  var updated=0;
+  if(old.name!==newName || old.team!==newTeam){
+    for(var i=0;i<D.length;i++){
+      if(D[i].who===old.name){
+        if(old.name!==newName) D[i].who=newName;
+        if(old.team&&D[i].team===old.team&&newTeam) D[i].team=newTeam;
+        updated++;
+      }
+    }
+  }
+
+  save();
+  closeDirEdit();
+  rDirectory();
+  rStaff();
+  var msg='✅ '+newName+' updated'+(old.role!==newRole?' — role changed to '+newRole:'');
+  if(updated>0) msg+=' · '+updated+' entr'+(updated===1?'y':'ies')+' updated';
+  showDirToast(msg);
 }
 
-function getEditRphs(){
-  var tags=document.querySelectorAll(".erph-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
-
-function getEditRphsCaught(){
-  var tags=document.querySelectorAll(".erph-caught-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
-
-function addDir(){
-  var n=document.getElementById("newDirName"),e=document.getElementById("newDirEmail"),r=document.getElementById("newDirRole"),tm=document.getElementById("newDirTeam");
-  if(!n||!e||!r)return;
-  var name=n.value.trim(),email=e.value.trim().toLowerCase(),role=r.value,team=tm?tm.value:"";
-  if(!name||!email||!role){alert("Please fill in name, email and role.");return;}
+function addDirUser(){
+  var name=(document.getElementById('dirName')||{value:''}).value.trim();
+  var email=(document.getElementById('dirEmail').value||'').trim().toLowerCase();
+  var role=document.getElementById('dirRole').value;
+  var team=(document.getElementById('dirTeam')||{value:''}).value;
+  if(!name){alert('Please enter a name');return;}
+  if(!email||!email.includes('@')){alert('Please enter a valid email');return;}
   USER_DIRECTORY[email]={name:name,email:email,role:role,team:team};
-  if(team&&SM[team]&&SM[team].indexOf(name)<0)SM[team].push(name);
-  save();n.value="";e.value="";rDirectory();
+  if(team){if(!SM[team])SM[team]=[];if(SM[team].indexOf(name)===-1)SM[team].push(name);}
+  save();
+  if(document.getElementById('dirName')) document.getElementById('dirName').value='';
+  document.getElementById('dirEmail').value='';
+  rDirectory();
+  rStaff();
+  showDirToast('✅ '+name+' added as '+role+(team?' — '+team:''));
 }
 
-function saveDir(email){
-  var nameEl=document.getElementById("editDirName_"+email);
-  var roleEl=document.getElementById("editDirRole_"+email);
-  var teamEl=document.getElementById("editDirTeam_"+email);
-  if(!nameEl||!roleEl)return;
-  var oldEntry=USER_DIRECTORY[email]||{};
-  var oldName=oldEntry.name;
-  var newName=nameEl.value.trim();
-  var newRole=roleEl.value;
-  var newTeam=teamEl?teamEl.value:oldEntry.team||"";
-  USER_DIRECTORY[email]={name:newName,email:email,role:newRole,team:newTeam};
-  // Update SM
-  for(var tm in SM){var idx=SM[tm].indexOf(oldName);if(idx>=0)SM[tm].splice(idx,1);}
-  if(newTeam&&SM[newTeam]&&SM[newTeam].indexOf(newName)<0)SM[newTeam].push(newName);
-  save();rDirectory();showDirToast("\u2705 Updated "+newName);
-}
-
-function closeDir(){rDirectory();}
-
-function removeDir(email){
-  if(!confirm("Remove "+email+" from directory?"))return;
-  var entry=USER_DIRECTORY[email];
-  if(entry&&entry.name){for(var tm in SM){var idx=SM[tm].indexOf(entry.name);if(idx>=0)SM[tm].splice(idx,1);}}
+function removeDirUser(btn){
+  var email=btn.getAttribute('data-email');
+  if(!email||!confirm('Remove '+email+' from the directory?')) return;
+  var ud=USER_DIRECTORY[email];
+  if(ud&&ud.team&&ud.name&&SM[ud.team]){var idx=SM[ud.team].indexOf(ud.name);if(idx>-1)SM[ud.team].splice(idx,1);}
   delete USER_DIRECTORY[email];
-  save();rDirectory();
+  save();rDirectory();rStaff();
 }
 
-function _rAdminKey(){
-  var sec=document.getElementById("sec-admin");
-  if(!sec)return;
-  var key=document.createElement("div");
-  key.className="card";key.style.marginTop="12px";
-  key.innerHTML='<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">\ud83d\udddd\ufe0f System Key &amp; Reference</h3>'
-  +'<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:#2E0326;margin-bottom:8px">\ud83d\udc65 Roles &amp; Access</div><div class="tbl-wrap"><table><thead><tr><th>Role</th><th>Board</th><th>Dashboard</th><th>Summary</th><th>Trends</th><th>RPH Report</th><th>Staff</th><th>Member View</th><th>Log Error</th><th>Import</th><th>All Entries</th><th>Directory</th><th>Admin</th></tr></thead><tbody>'
-  +_roleRow("RPH",["board","log"])+_roleRow("Trainer",["board","summary","staff","member","log"])+_roleRow("Lead",["board","dashboard","summary","trends","rph","staff","member","log"])+_roleRow("Manager",["board","dashboard","summary","trends","rph","staff","member","log"])+_roleRow("Admin",["board","dashboard","summary","trends","rph","staff","member","log","import","entries","directory","admin"])
-  +'</tbody></table></div></div>';
-  sec.appendChild(key);
+function rUserDirectory(){rDirectory();} // legacy shim
+
+function showDirToast(msg){
+  var t=document.getElementById('petToast');
+  if(!t){t=document.createElement('div');t.id='petToast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2E0326;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s';
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2800);
 }
 
-function _roleRow(role,pages){
-  var all=["board","dashboard","summary","trends","rph","staff","member","log","import","entries","directory","admin"];
-  var col={Admin:"#440B39",Manager:"#0369a1",Lead:"#7c3aed",Trainer:"#059669",RPH:"#10b981"}[role]||"#7c5c76";
-  var cells=all.map(function(p){return '<td style="text-align:center">'+(pages.indexOf(p)>=0?'<span style="color:#10b981;font-weight:700">\u2713</span>':'<span style="color:#e2e8f0">\u2014</span>')+'</td>';}).join("");
-  return '<tr><td><span class="bdg" style="background:'+col+'22;color:'+col+'">'+role+'</span></td>'+cells+'</tr>';
+
+// ── Photo helpers ──
+// ── Photo compression helper ──────────────────────────────────────────────
+// Compresses image to max 800px wide and JPEG quality 0.7 before storing
+// Reduces a 2MB photo to ~100-200KB in base64
+function compressPhoto(file, callback){
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=2400; // high enough to read RX label text clearly
+      var w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      // portrait — cap height too
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      var canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      callback(canvas.toDataURL('image/jpeg',0.92)); // high quality for text legibility
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
-function _badgeRow(label,bg,col,desc){
-  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fdf8fc;border-radius:8px;border:1px solid #f3e8f1"><span class="bdg" style="background:'+bg+';color:'+col+';white-space:nowrap">'+label+'</span><span style="font-size:11px;color:#7c5c76">'+desc+'</span></div>';
+function previewLogPhoto() {
+  var input = document.getElementById('lPhoto');
+  if(!input || !input.files[0]) return;
+  var preview = document.getElementById('lPhotoPreview');
+  processAndUploadPhoto(input.files[0], input, preview, function(status){
+    if(preview) preview.style.display='block';
+  });
 }
 
+function showPhotoModal(id) {
+  var entry = D.find(function(e){ return e.id == id; });
+  if(!entry) return;
+  // If stored on Drive, open directly in new tab
+  if(entry.driveUrl){
+    window.open(entry.driveUrl, '_blank');
+    return;
+  }
+  // Fallback — show base64 in lightbox
+  if(!entry.photo) return;
+  var existing = document.getElementById('photoModal');
+  if(existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'photoModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  modal.onclick = function(){ modal.remove(); };
+  modal.innerHTML = '<img src="' + entry.photo + '" style="max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
+    '<button style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">✕</button>';
+  document.body.appendChild(modal);
+}
+
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init(){
+  await jbLoad();
+
+  // Check for saved session
+  try {
+    var saved = localStorage.getItem('pet_auth');
+    if(saved) {
+      var u = JSON.parse(saved);
+      // Re-validate role against current directory
+      var ud2 = USER_DIRECTORY[u.email.toLowerCase()];
+      var role = ud2 ? (typeof ud2 === 'string' ? ud2 : ud2.role) : (u.email.toLowerCase()==='dominique.l@gifthealth.com'?'Admin':null);
+      if(role) {
+        u.role = role;
+        currentUser = u;
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        updateUserPill();
+        buildNav();
+        upHdr();
+        rDash();
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Show Google Sign-In button
+  if(!GOOGLE_CLIENT_ID) {
+    // Dev mode — show bypass button
+    document.getElementById('googleSignInBtn').innerHTML =
+      '<div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:10px;font-size:11px;color:#92400e;margin-bottom:12px">' +
+      '⚠ Google OAuth not yet configured — using temporary access below.' +
+      '</div>' +
+      '<button onclick="devLogin(\'Admin\')" style="width:100%;padding:12px;background:#440B39;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">Enter as Admin</button>' +
+      '<button onclick="devLogin(\'Manager\')" style="width:100%;padding:12px;background:#0369a1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">Enter as Manager</button>' +
+      '<button onclick="devLogin(\'RPH\')" style="width:100%;padding:12px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">Enter as RPH</button>';
+  } else {
+    // Use OAuth2 token client so sign-in and Drive scope happen in ONE popup
+    // This eliminates the separate Drive permission prompt entirely
+    var combinedClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid profile email https://www.googleapis.com/auth/drive.file',
+      callback: function(resp) {
+        if(resp.error){ console.warn('Auth error:', resp.error); return; }
+        driveAccessToken = resp.access_token;
+        // Fetch user info using the access token
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {'Authorization': 'Bearer ' + resp.access_token}
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(info){
+          // Build a credential-like response and pass to existing handler
+          onGoogleSignInWithInfo({
+            email: info.email,
+            name: info.name,
+            picture: info.picture
+          });
+        });
+      }
+    });
+
+    // Render a custom sign-in button matching gifthealth style
+    var btn = document.getElementById('googleSignInBtn');
+    btn.innerHTML =
+      '<button onclick="window._gSignIn()" style="display:flex;align-items:center;gap:10px;padding:11px 20px;background:#fff;border:1.5px solid #dadce0;border-radius:24px;font-size:14px;font-weight:600;color:#3c4043;cursor:pointer;width:100%;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.12);transition:box-shadow .2s" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.2)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.12)\'">' +
+      '<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.706c-.18-.54-.282-1.117-.282-1.706s.102-1.166.282-1.706V4.962H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.962L3.964 7.294C4.672 5.167 6.656 3.58 9 3.58z"/></svg>' +
+      'Sign in with Google</button>';
+    window._gSignIn = function(){ combinedClient.requestAccessToken({prompt:'consent'}); };
+  }
+}
+
+function devLogin(role) {
+  currentUser = {
+    name: role === 'Admin' ? 'Dominique London' : role + ' User',
+    email: role === 'Admin' ? 'dominique.l@gifthealth.com' : role.toLowerCase()+'@gifthealth.com',
+    picture: '',
+    role: role
+  };
+  localStorage.setItem('pet_auth', JSON.stringify(currentUser));
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  updateUserPill();
+  buildNav();
+  upHdr();
+  var pages = ROLE_PAGES[role] || ['log'];
+  goTo(pages[0]);
+}
+
+
+// ── Smart Date Parser ─────────────────────────────────────────────────────
+// Accepts: 041726, 4/17/26, 4-17-26, apr 17, april 17 2026, 04172026, etc.
 function parseSmartDate(str){
-  if(!str)return null;
-  str=str.trim();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(str)){var d=new Date(str+"T00:00:00");return isNaN(d)?null:str;}
-  var months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+  if(!str) return null;
+  str = str.trim();
+
+  // Already a valid YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(str)){
+    var d=new Date(str+'T00:00:00');
+    return isNaN(d)?null:str;
+  }
+
+  var months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+    january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+
+  // Month name formats: "Apr 17", "April 17 2026", "apr17"
   var mMatch=str.toLowerCase().match(/([a-z]+)\s*(\d{1,2})[,\s]*(\d{2,4})?/);
-  if(mMatch&&months[mMatch[1]]){var mo=months[mMatch[1]],dy=parseInt(mMatch[2]),yr=mMatch[3]?parseInt(mMatch[3]):new Date().getFullYear();if(yr<100)yr=yr<50?2000+yr:1900+yr;return fmtD(new Date(yr,mo-1,dy));}
-  var digits=str.replace(/[\s\-\/]/g,"");
-  if(/^\d{6,8}$/.test(digits)){var m,d2,y;if(digits.length===8){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));}else if(digits.length===6){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));if(y<100)y=y<50?2000+y:1900+y;}else if(digits.length===7){m=parseInt(digits.slice(0,1));d2=parseInt(digits.slice(1,3));y=parseInt(digits.slice(3));if(y<100)y=y<50?2000+y:1900+y;}if(m&&d2&&y&&m>=1&&m<=12&&d2>=1&&d2<=31)return fmtD(new Date(y,m-1,d2));}
+  if(mMatch && months[mMatch[1]]){
+    var mo=months[mMatch[1]],dy=parseInt(mMatch[2]),yr=mMatch[3]?parseInt(mMatch[3]):new Date().getFullYear();
+    if(yr<100) yr=yr<50?2000+yr:1900+yr;
+    return fmtD(new Date(yr,mo-1,dy));
+  }
+
+  // Pure digits: 041726, 04172026, 4172026, 41726
+  var digits=str.replace(/[\s\-\/]/g,'');
+  if(/^\d{6,8}$/.test(digits)){
+    var m,d2,y;
+    if(digits.length===8){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));}
+    else if(digits.length===6){m=parseInt(digits.slice(0,2));d2=parseInt(digits.slice(2,4));y=parseInt(digits.slice(4));if(y<100)y=y<50?2000+y:1900+y;}
+    else if(digits.length===7){m=parseInt(digits.slice(0,1));d2=parseInt(digits.slice(1,3));y=parseInt(digits.slice(3));if(y<100)y=y<50?2000+y:1900+y;}
+    if(m&&d2&&y&&m>=1&&m<=12&&d2>=1&&d2<=31){return fmtD(new Date(y,m-1,d2));}
+  }
+
+  // Slash/dash separated: 4/17/26, 04-17-2026
   var parts=str.split(/[\/\-\.]/);
-  if(parts.length===3){var pm=parseInt(parts[0]),pd=parseInt(parts[1]),py=parseInt(parts[2]);if(py<100)py=py<50?2000+py:1900+py;if(pm>=1&&pm<=12&&pd>=1&&pd<=31)return fmtD(new Date(py,pm-1,pd));}
+  if(parts.length===3){
+    var pm=parseInt(parts[0]),pd=parseInt(parts[1]),py=parseInt(parts[2]);
+    if(py<100) py=py<50?2000+py:1900+py;
+    if(pm>=1&&pm<=12&&pd>=1&&pd<=31) return fmtD(new Date(py,pm-1,pd));
+  }
+
   return null;
 }
 
-function smartDateInput(el){
-  var raw=el.value.trim();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return;
+function smartDateInput(inputEl){
+  var raw=inputEl.value.trim();
+  // Only try to parse if it doesn't look like a native date picker value
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)) return; // already formatted
   var parsed=parseSmartDate(raw);
-  if(parsed){el.value=parsed;el.style.borderColor="#10b981";setTimeout(function(){el.style.borderColor="";},1500);}
-  else if(raw){el.style.borderColor="#ef4444";setTimeout(function(){el.style.borderColor="";},2000);}
+  if(parsed){
+    inputEl.value=parsed;
+    inputEl.style.borderColor='#10b981';
+    inputEl.title='Parsed: '+parsed;
+    setTimeout(function(){inputEl.style.borderColor='';},1500);
+  } else if(raw) {
+    inputEl.style.borderColor='#ef4444';
+    inputEl.title='Could not parse date — try MM/DD/YY or Apr 17';
+    setTimeout(function(){inputEl.style.borderColor='';inputEl.title='';},2000);
+  }
 }
 
+// ── Smart Name Autocomplete ──────────────────────────────────────────────
 function getAllStaffNames(){
   var names={};
-  for(var tm in SM){var arr=SM[tm]||[];for(var i=0;i<arr.length;i++)names[arr[i].toLowerCase()]={display:arr[i],team:tm};}
-  Object.keys(USER_DIRECTORY).forEach(function(k){var u=USER_DIRECTORY[k];if(u&&u.name)names[u.name.toLowerCase()]={display:u.name,team:u.team||""};});
+  // From SM (staff map)
+  for(var tm in SM){ var arr=SM[tm]||[]; for(var i=0;i<arr.length;i++) names[arr[i].toLowerCase()]={display:arr[i],team:tm}; }
+  // From USER_DIRECTORY
+  Object.values(USER_DIRECTORY).forEach(function(u){
+    if(u&&u.name) names[u.name.toLowerCase()]={display:u.name,team:u.team||''};
+  });
   return names;
 }
 
-function smartNameSuggest(inputEl,dropdownId){
-  var val=(inputEl.value||"").toLowerCase().trim();
+function smartNameSuggest(inputEl, dropdownId){
+  var val=(inputEl.value||'').toLowerCase().trim();
   var dd=document.getElementById(dropdownId);
-  if(!dd)return;
-  if(!val){dd.style.display="none";return;}
+  if(!dd) return;
+  if(!val){dd.style.display='none';return;}
   var names=getAllStaffNames();
   var matches=Object.values(names).filter(function(n){
     return n.display.toLowerCase().indexOf(val)>=0;
   }).slice(0,6);
-  if(!matches.length){dd.style.display="none";return;}
-  var html="";
-  for(var mi=0;mi<matches.length;mi++){
-    var m=matches[mi];
-    var re2=new RegExp("("+val.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi");
-    var hl=m.display.replace(re2,"<strong>$1</strong>");
-    var safeDisp=m.display.replace(/'/g,"&#39;");
-    var row=document.createElement("div");
-    row.style.cssText="padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f3e8f1";
-    row.innerHTML=hl+'<span style="font-size:10px;color:#7c5c76;margin-left:6px">'+m.team+"</span>";
-    row.onmouseover=function(){this.style.background="#f3e8f1";};
-    row.onmouseout=function(){this.style.background="";};
-    (function(name){
-      row.onclick=function(){pickName(null,dropdownId,inputEl.id,name);};
-    })(m.display);
-    html+=row.outerHTML;
-  }
-  dd.innerHTML=html;
-  // Re-attach onclick since outerHTML loses event handlers
-  var divs=dd.querySelectorAll("div");
-  for(var di=0;di<divs.length&&di<matches.length;di++){
-    (function(name){
-      divs[di].onclick=function(){pickName(null,dropdownId,inputEl.id,name);};
-      divs[di].onmouseover=function(){this.style.background="#f3e8f1";};
-      divs[di].onmouseout=function(){this.style.background="";};
-    })(matches[di].display);
-  }
-  dd.style.display="block";
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(function(m){
+    var hl=m.display.replace(new RegExp('('+val.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');
+    return '<div onclick="pickName(this,\''+dropdownId+'\',\''+inputEl.id+'\',\''+m.display.replace(/'/g,"\\'")+'\')" style="padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f3e8f1" onmouseover="this.style.background=\'#f3e8f1\'" onmouseout="this.style.background=\'\'">'
+      +hl+'<span style="font-size:10px;color:#7c5c76;margin-left:6px">'+m.team+'</span></div>';
+  }).join('');
+  dd.style.display='block';
 }
 
-function pickName(el,dropdownId,inputId,name){
+function pickName(el, dropdownId, inputId, name){
   var inp=document.getElementById(inputId);
-  if(inp)inp.value=name;
+  if(inp) inp.value=name;
   var dd=document.getElementById(dropdownId);
-  if(dd)dd.style.display="none";
+  if(dd) dd.style.display='none';
 }
+
+// Close dropdowns on click outside
+document.addEventListener('click',function(e){
+  var dds=document.querySelectorAll('.name-dropdown');
+  dds.forEach(function(dd){if(!dd.contains(e.target))dd.style.display='none';});
+});
+
+// ── Paste image support ────────────────────────────────────────────────────
+// Listens for Ctrl+V / Cmd+V anywhere on the page and routes the image
+// to whichever photo input is currently active (log form or edit modal)
+document.addEventListener('paste', function(ev){
+  var items = (ev.clipboardData || ev.originalEvent && ev.originalEvent.clipboardData || {}).items;
+  if(!items) return;
+  var imageFile = null;
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')!==-1){ imageFile=items[i].getAsFile(); break; }
+  }
+  if(!imageFile) return;
+
+  // Determine which form is visible
+  var editModalOpen = document.getElementById('editModal') &&
+    document.getElementById('editModal').style.display==='block';
+
+  if(editModalOpen){
+    // Route to edit modal photo
+    var input=document.getElementById('ePhoto');
+    var prev=document.getElementById('ePhotoPreview');
+    var wrap=document.getElementById('ePhotoPreviewWrap');
+    if(!input) return;
+    input._removed=false;
+    if(wrap) wrap.style.display='block';
+    processAndUploadPhoto(imageFile, input, prev, function(){
+      if(prev) prev.style.display='block';
+      showPasteBadge('edit');
+    });
+  } else if(document.getElementById('lPhoto')){
+    // Route to log form photo
+    var linput=document.getElementById('lPhoto');
+    var lprev=document.getElementById('lPhotoPreview');
+    if(!linput) return;
+    processAndUploadPhoto(imageFile, linput, lprev, function(){
+      if(lprev){ lprev.style.display='block'; }
+      showPasteBadge('log');
+    });
+  }
+  ev.preventDefault();
+});
+
+function showPasteBadge(context){
+  var targetId = context==='edit' ? 'ePhotoPreview' : 'lPhotoPreview';
+  var target = document.getElementById(targetId);
+  if(!target) return;
+  var badge = document.createElement('div');
+  badge.style.cssText='position:absolute;bottom:8px;left:8px;background:#440B39;color:#fff;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;pointer-events:none;z-index:10';
+  badge.textContent='📋 Pasted';
+  var parent=target.parentNode;
+  if(parent && parent.style.position!=='relative') parent.style.position='relative';
+  parent.appendChild(badge);
+  setTimeout(function(){badge.remove();},2000);
+}
+
+init();
+
 </script>
 </body>
 </html>
