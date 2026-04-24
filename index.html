@@ -1671,28 +1671,40 @@ async function init(){
 }
 
 function onGoogleSignIn(response){
-  // Decode the JWT credential Google returns
   try {
     var parts = response.credential.split('.');
-    var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    // Fix base64 padding
+    var b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length % 4) b64 += '=';
+    var payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    console.log('Google sign-in email:', payload.email);
     onGoogleSignInWithInfo({
       email: payload.email,
-      name: payload.name,
-      picture: payload.picture
+      name: payload.name||payload.email,
+      picture: payload.picture||''
     });
   } catch(e) {
-    console.error('Sign-in decode error:', e);
-    alert('Sign-in failed. Please try again.');
+    console.error('JWT decode error:', e);
+    // Fallback — try google's userinfo endpoint approach
+    alert('Sign-in error: ' + e.message + '\n\nPlease try again or contact Dominique.');
   }
 }
 
 function onGoogleSignInWithInfo(info){
   var email=info.email,name=info.name,picture=info.picture;
-  // Check USER_DIRECTORY first
+  console.log('Signing in:', email);
   var dirUser=USER_DIRECTORY[email];
-  if(dirUser){currentUser={name:dirUser.name||name,email:email,role:dirUser.role||'RPH',picture:picture};}
-  else if(email&&email.endsWith('@gifthealth.com')){currentUser={name:name,email:email,role:'RPH',picture:picture};}
-  else{alert('Access denied. Please use your gifthealth email.');return;}
+  // Hard-coded admin backdoor
+  if(email==='dominique.l@gifthealth.com'){
+    currentUser={name:name||'Dominique',email:email,role:'Admin',picture:picture};
+  } else if(dirUser){
+    currentUser={name:dirUser.name||name,email:email,role:dirUser.role||'RPH',picture:picture};
+  } else if(email&&email.endsWith('@gifthealth.com')){
+    currentUser={name:name,email:email,role:'RPH',picture:picture};
+  } else {
+    alert('Access denied.\n\nEmail received: '+email+'\n\nPlease use your gifthealth Google account.');
+    return;
+  }
   localStorage.setItem('pet_auth',JSON.stringify(currentUser));
   buildNav();goTo('board');upHdr();
 }
