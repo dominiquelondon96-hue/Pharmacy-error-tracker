@@ -1977,14 +1977,22 @@ function clrI(id){delete FBI[id];save();upHdr();rEntries();}
 // ── RPH Lead Initials ────────────────────────────────────────────────────────
 // RFBI[entryId][rphName] = {initials, date}
 function rphLeadCell(e){
-  if(e.needsReview||!e.rphNames||!e.rphNames.length) return '<td style="min-width:120px;padding:8px 12px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
+  // Collect all RPH names that need lead feedback:
+  // — rphNames: missed at PV1
+  // — rphVBDNames: checked at VBD but dispensed
+  var allRphs=[];
+  if(e.rphNames&&e.rphNames.length) e.rphNames.forEach(function(n){allRphs.push({name:n,label:'PV1'});});
+  if(e.rphVBDNames&&e.rphVBDNames.length) e.rphVBDNames.forEach(function(n){allRphs.push({name:n,label:'VBD'});});
+  if(e.needsReview||!allRphs.length) return '<td style="min-width:120px;padding:8px 12px;vertical-align:middle"><span style="color:#cbd5e1;font-size:11px">—</span></td>';
   var cell='<td style="min-width:130px;padding:6px 12px;vertical-align:middle">';
-  for(var i=0;i<e.rphNames.length;i++){
-    var rn=e.rphNames[i];
+  for(var i=0;i<allRphs.length;i++){
+    var rn=allRphs[i].name;
+    var lbl=allRphs[i].label;
     var rfb=(RFBI[e.id]||{})[rn];
     var firstName=rn.split(' ')[0];
     var safeRn=encodeURIComponent(rn);
-    cell+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:'+(i<e.rphNames.length-1?'5px':'0')+'">';
+    cell+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:'+(i<allRphs.length-1?'5px':'0')+'">';
+    cell+='<span style="font-size:9px;color:#fff;background:'+(lbl==='VBD'?'#dc2626':'#f59e0b')+';border-radius:4px;padding:1px 4px;margin-right:2px">'+lbl+'</span>';
     cell+='<span style="font-size:10px;color:#7c5c76;min-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+rn+'">'+firstName+':</span>';
     if(rfb){
       cell+='<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px;font-size:10px;padding:2px 6px">'+rfb.initials+'</span>';
