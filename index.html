@@ -1555,7 +1555,7 @@ function upEditGCTeam(){
 }
 function upEditGCFields(){
   // eGC removed — good catch section replaced by PV1/VBD
-  document.getElementById("eGCDetails").style.display=v==="Yes"?"block":"none";
+  // eGCDetails removed — good catch section replaced by PV1/VBD
 }
 function addEditRph(){
   var sel=document.getElementById("eRphSel");
@@ -1633,16 +1633,8 @@ function openEdit(id){
     var dc2=document.getElementById("eDriveCard");
     if(dc2) dc2.remove();
   }
-  // Good Catch fields
-  // PV1/VBD populated above — good catch derived automatically
-  // eGCTeam removed
-  var gcTeamOpts='<option value="">-- Select team --</option>';
-  for(var gti=0;gti<TM.length;gti++)gcTeamOpts+='<option'+(TM[gti]===(e.gcTeam||"")?" selected":"")+'>'+TM[gti]+'</option>';
-  gcTeamSel.innerHTML=gcTeamOpts;
-  // eGCWho is now a smart text input — clear it when team changes
-  // eGCWho removed — gcWho derived from PV1/VBD
-  document.getElementById("eGCDetails").style.display=(e.goodCatch==="Yes")?"block":"none";
-  // Dispensed with Error fields
+  // Good Catch derived from PV1/VBD — no form fields needed
+  // PV1/VBD fields
   var ePV1=document.getElementById("ePV1");
   var eVBD=document.getElementById("eVBD");
   if(ePV1) ePV1.value=e.pv1||"";
