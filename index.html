@@ -216,7 +216,7 @@ tr.alt td{background:#fdf5fb}
         <div id="eRphPV1CaughtW" style="display:none;margin-top:8px">
           <label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at PV1?</label>
           <div style="display:flex;gap:6px;margin-top:4px">
-            <select id="eRphPV1CaughtSel" style="flex:1"></select>
+            <div class="name-wrap" style="flex:1"><input id="eRphPV1CaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphPV1CaughtDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphPV1CaughtDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphPV1CaughtDrop" class="name-dropdown"></div></div>
             <button type="button" onclick="addEditRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
           </div>
           <div id="eRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>
@@ -224,7 +224,7 @@ tr.alt td{background:#fdf5fb}
         <div id="eRphNamesW" style="display:none;margin-top:8px">
           <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>
           <div style="display:flex;gap:6px;margin-top:4px">
-            <select id="eRphSel" style="flex:1"></select>
+            <div class="name-wrap" style="flex:1"><input id="eRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphSelDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphSelDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphSelDrop" class="name-dropdown"></div></div>
             <button type="button" onclick="addEditRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
           </div>
           <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
@@ -232,7 +232,7 @@ tr.alt td{background:#fdf5fb}
         <div id="eRphCaughtW" style="display:none;margin-top:8px">
           <label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at VBD?</label>
           <div style="display:flex;gap:6px;margin-top:4px">
-            <select id="eRphCaughtSel" style="flex:1"></select>
+            <div class="name-wrap" style="flex:1"><input id="eRphCaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,'eRphCaughtDrop')" onblur="setTimeout(function(){var d=document.getElementById('eRphCaughtDrop');if(d)d.style.display='none'},200)" style="width:100%"><div id="eRphCaughtDrop" class="name-dropdown"></div></div>
             <button type="button" onclick="addEditRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
           </div>
           <div id="eRphCaughtTags" class="rph-box" style="margin-top:6px"></div>
@@ -1092,7 +1092,8 @@ function upDWEFields(){
 
 function addLogRphPV1Caught(){
   var sel=document.getElementById("lRphPV1CaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
   var existing=document.querySelectorAll(".lrph-pv1caught-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
@@ -1110,7 +1111,8 @@ function getLogRphsPV1Caught(){
 
 function addEditRphPV1Caught(){
   var sel=document.getElementById("eRphPV1CaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
   var existing=document.querySelectorAll(".erph-pv1caught-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
@@ -1128,7 +1130,8 @@ function getEditRphsPV1Caught(){
 
 function addLogRphCaught(){
   var sel=document.getElementById("lRphCaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
   var existing=document.querySelectorAll(".lrph-caught-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
@@ -1145,7 +1148,8 @@ function getLogRphsCaught(){
 }
 function addLogRph(){
   var sel=document.getElementById("lRphSel");
-  var val=sel.value.trim();if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
   var existing=document.querySelectorAll(".lrph-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
@@ -1395,7 +1399,7 @@ function rFullLog(){
       '<div id="lRphPV1CaughtW" style="display:none;margin-top:10px">'+
         '<label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at PV1?</label>'+
         '<div style="display:flex;gap:6px;margin-top:4px">'+
-          '<select id="lRphPV1CaughtSel" style="flex:1">'+rphOpts()+'</select>'+
+          '<div class="name-wrap" style="flex:1"><input id="lRphPV1CaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphPV1CaughtDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphPV1CaughtDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphPV1CaughtDrop" class="name-dropdown"></div></div>'+
           '<button type="button" onclick="addLogRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
         '</div>'+
         '<div id="lRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>'+
@@ -1405,7 +1409,7 @@ function rFullLog(){
         '<div>'+
           '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>'+rphNote+
           '<div style="display:flex;gap:6px;margin-top:4px">'+
-            '<select id="lRphSel" style="flex:1">'+rphOpts()+'</select>'+
+            '<div class="name-wrap" style="flex:1"><input id="lRphSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphSelDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphSelDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphSelDrop" class="name-dropdown"></div></div>'+
             '<button type="button" onclick="addLogRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
           '</div>'+
           '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
@@ -1414,7 +1418,7 @@ function rFullLog(){
       '<div id="lRphCaughtW" style="display:none;margin-top:10px">'+
         '<label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at VBD?</label>'+
         '<div style="display:flex;gap:6px;margin-top:4px">'+
-          '<select id="lRphCaughtSel" style="flex:1">'+rphOpts()+'</select>'+
+          '<div class="name-wrap" style="flex:1"><input id="lRphCaughtSel" placeholder="Type RPH name..." autocomplete="off" oninput="smartNameSuggest(this,\'lRphCaughtDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphCaughtDrop\');if(d)d.style.display=\'none\'},200)" style="width:100%"><div id="lRphCaughtDrop" class="name-dropdown"></div></div>'+
           '<button type="button" onclick="addLogRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
         '</div>'+
         '<div id="lRphCaughtTags" class="rph-box" style="margin-top:6px"></div>'+
@@ -1531,7 +1535,8 @@ function upEditRphFields(){
 
 function addEditRphCaught(){
   var sel=document.getElementById("eRphCaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
   var existing=document.querySelectorAll(".erph-caught-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
@@ -1559,7 +1564,8 @@ function upEditGCFields(){
 }
 function addEditRph(){
   var sel=document.getElementById("eRphSel");
-  var val=sel.value.trim();if(!val)return;
+  var val=(sel?sel.value:"").trim();if(!val)return;
+  if(sel&&sel.tagName==="INPUT") sel.value="";
   var existing=document.querySelectorAll(".erph-tag");
   for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
   var tag=document.createElement("span");
@@ -1641,7 +1647,7 @@ function openEdit(id){
   if(eVBD) eVBD.value=e.vbd||"";
   upEditRphFields(); // this handles eRphNamesW and eRphCountW visibility
   document.getElementById("eRphCount").value=e.rphCount||"";
-  document.getElementById("eRphSel").innerHTML=rphOpts();
+  var eRphSelEl=document.getElementById("eRphSel");if(eRphSelEl&&eRphSelEl.tagName==="SELECT")eRphSelEl.innerHTML=rphOpts();else if(eRphSelEl)eRphSelEl.value="";
   // Populate missed RPH tags
   var tagsBox=document.getElementById("eRphTags");tagsBox.innerHTML="";
   if(e.rphNames&&e.rphNames.length){
@@ -1654,7 +1660,7 @@ function openEdit(id){
   }
   // Populate PV1 caught RPH tags
   var pv1CaughtSel=document.getElementById("eRphPV1CaughtSel");
-  if(pv1CaughtSel) pv1CaughtSel.innerHTML=rphOpts();
+  if(pv1CaughtSel&&pv1CaughtSel.tagName==="SELECT") pv1CaughtSel.innerHTML=rphOpts();else if(pv1CaughtSel) pv1CaughtSel.value="";
   var pv1CaughtBox=document.getElementById("eRphPV1CaughtTags");
   if(pv1CaughtBox){
     pv1CaughtBox.innerHTML="";
@@ -1670,7 +1676,7 @@ function openEdit(id){
   }
   // Populate caught RPH tags
   var caughtSel=document.getElementById("eRphCaughtSel");
-  if(caughtSel) caughtSel.innerHTML=rphOpts();
+  if(caughtSel&&caughtSel.tagName==="SELECT") caughtSel.innerHTML=rphOpts();else if(caughtSel) caughtSel.value="";
   var caughtBox=document.getElementById("eRphCaughtTags");
   if(caughtBox){
     caughtBox.innerHTML="";
