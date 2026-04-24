@@ -189,57 +189,56 @@ tr.alt td{background:#fdf5fb}
         <input type="file" id="ePhoto" accept="image/*" onchange="previewEditPhoto()" style="font-size:12px;padding:6px">
         <div style="font-size:10px;color:#7c5c76;margin-top:3px">Upload a new photo or remove the existing one</div>
       </div>
-      <!-- Verification Stages section -->
-      <div style="margin-top:8px;padding:12px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa">
-        <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:8px">⚠ Verification Stages</div>
+      <!-- Good Catch section -->
+      <div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+        <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:8px">✅ Good Catch</div>
         <div class="fgrid">
           <div class="fhalf">
-            <label class="flb" style="margin-top:0">PV1 — RPH First Verification</label>
-            <select id="ePV1" onchange="upEditRphFields()">
+            <label class="flb" style="margin-top:0">Caught &amp; reported by someone?</label>
+            <select id="eGC" onchange="upEditGCFields()">
               <option value="">-- Select --</option>
-              <option value="Caught">✅ Caught at PV1</option>
-              <option value="Missed">⚠ Missed at PV1</option>
-              <option value="NA">N/A — no PV1</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
             </select>
           </div>
+        </div>
+        <div id="eGCDetails" style="display:none">
+          <div class="fgrid" style="margin-top:6px">
+            <div class="fhalf">
+              <label class="flb" style="margin-top:0">Which team?</label>
+              <select id="eGCTeam" onchange="upEditGCTeam()"></select>
+            </div>
+            <div class="fhalf">
+              <label class="flb" style="margin-top:0">Who specifically?</label>
+              <div class="name-wrap"><input type="text" id="eGCWho" placeholder="Type name..." autocomplete="off" oninput="smartNameSuggest(this,'eGCWhoDrop')" onblur="setTimeout(function(){var d=document.getElementById('eGCWhoDrop');if(d)d.style.display='none'},200)"><div id="eGCWhoDrop" class="name-dropdown"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Dispensed with Error section -->
+      <div style="margin-top:8px;padding:12px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa">
+        <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:8px">⚠ Dispensed with Error</div>
+        <div class="fgrid">
           <div class="fhalf">
-            <label class="flb" style="margin-top:0">VBD — Verified Before Dispensing</label>
-            <select id="eVBD" onchange="upEditRphFields()">
+            <label class="flb" style="margin-top:0">Verified by RPH &amp; dispensed with error?</label>
+            <select id="eRphVerified" onchange="upEditRphFields()">
               <option value="">-- Select --</option>
-              <option value="Caught">✅ Caught at VBD</option>
-              <option value="Missed">🚨 Missed at VBD — dispensed with error</option>
-              <option value="NA">N/A — did not reach VBD</option>
+              <option value="Yes">Yes — dispensed with error</option>
+              <option value="No">No</option>
             </select>
           </div>
-        </div>
-        <div id="eVerifSummary" style="display:none;margin-top:8px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:600"></div>
-        <div id="eRphPV1CaughtW" style="display:none;margin-top:8px">
-          <label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at PV1?</label>
-          <div style="display:flex;gap:6px;margin-top:4px">
-            <select id="eRphPV1CaughtSel" style="flex:1"></select>
-            <button type="button" onclick="addEditRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+          <div class="fhalf" id="eRphCountW" style="display:none">
+            <label class="flb" style="margin-top:0">How many times?</label>
+            <input type="number" id="eRphCount" min="1" max="20" placeholder="e.g. 2">
           </div>
-          <div id="eRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>
         </div>
-        <div id="eRphNamesW" style="display:none;margin-top:8px">
-          <label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>
+        <div id="eRphNamesW" style="display:none">
+          <label class="flb">Which RPH(s)?</label>
           <div style="display:flex;gap:6px;margin-top:4px">
             <select id="eRphSel" style="flex:1"></select>
-            <button type="button" onclick="addEditRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+            <button type="button" onclick="addEditRph()" style="padding:6px 14px;background:#c2410c;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
           </div>
           <div id="eRphTags" class="rph-box" style="margin-top:6px"></div>
-        </div>
-        <div id="eRphCaughtW" style="display:none;margin-top:8px">
-          <label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at VBD?</label>
-          <div style="display:flex;gap:6px;margin-top:4px">
-            <select id="eRphCaughtSel" style="flex:1"></select>
-            <button type="button" onclick="addEditRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
-          </div>
-          <div id="eRphCaughtTags" class="rph-box" style="margin-top:6px"></div>
-        </div>
-        <div id="eRphCountW" style="display:none;margin-top:8px">
-          <label class="flb" style="margin-top:0">How many times dispensed?</label>
-          <input type="number" id="eRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">
@@ -951,15 +950,12 @@ function rMember(){
     var rphBdg="";
     if(isReview){rphBdg='<span class="bdg" style="background:#fef3c7;color:#92400e">\u23f3 Needs Review</span>';}
     else{
-    if(me.pv1==="Caught"){var p1cm=me.rphPV1CaughtNames&&me.rphPV1CaughtNames.length?me.rphPV1CaughtNames.join(", "):"";rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ PV1 Caught'+(p1cm?' — '+p1cm:'')+'</span> ';}
-    if(me.vbd==="Caught"){
-      var catcher=me.rphCaughtNames&&me.rphCaughtNames.length?me.rphCaughtNames.join(", "):"";
-      rphBdg+='<span class="bdg" style="background:#dcfce7;color:#15803d">✅ VBD Caught'+(catcher?' — '+catcher:'')+'</span> ';
-    }
-    if(me.pv1==="Missed"&&me.vbd==="Missed") rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">\ud83d\udea8 Dispensed</span>';
-    else if(me.pv1==="Missed"&&(!me.vbd||me.vbd==="NA")) rphBdg+='<span class="bdg" style="background:#fef3c7;color:#d97706">\u26a0 PV1 Missed</span>';
-    else if(me.dispensedWithError==="Yes"&&!me.pv1) rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">\u26a0 Dispensed</span>';
-    if(me.rphNames&&me.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">Missed: '+me.rphNames.join(", ")+'</span>';
+      if(me.goodCatch==="Yes") rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">\u2705 '+(me.gcWho||me.gcTeam||"Good Catch")+'</span> ';
+      if(me.dispensedWithError==="Yes"||me.rphVerified==="dispensed_with_error"){
+        rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">\u26a0 Dispensed</span>';
+        if(me.rphNames&&me.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">'+me.rphNames.join(", ")+'</span>';
+      }
+      if(!rphBdg)rphBdg='<span style="color:#cbd5e1;font-size:11px">\u2014</span>';
     }
     var actionBtns=(me.driveUrl?'<button onclick="showPhotoModal('+me.id+')" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer;border:1px solid #e8d5e4;background:#eef2ff;font-size:11px;padding:0" title="View in Drive">\ud83d\udcf7</button>':(me.photo?'<img src="'+me.photo+'" onclick="showPhotoModal('+me.id+')" class="photo-thumb" style="width:22px;height:22px;vertical-align:middle;margin-right:4px;border-radius:4px;cursor:pointer" title="View photo">':''));
     rows+='<tr class="'+rowClass+'">'+
@@ -1050,98 +1046,13 @@ function upGCTeam(){
   var gcWhoInp=document.getElementById("lGCWho");if(gcWhoInp)gcWhoInp.value="";
 }
 
+// Dispensed with Error section
 function upDWEFields(){
-  var pv1=document.getElementById("lPV1");
-  var vbd=document.getElementById("lVBD");
-  if(!pv1||!vbd) return;
-  var pv1Val=pv1.value, vbdVal=vbd.value;
-
-  // Show PV1 caught RPH when PV1 = Caught
-  var showPV1Caught=pv1Val==="Caught";
-  var ep1c=document.getElementById("lRphPV1CaughtW");
-  if(ep1c) ep1c.style.display=showPV1Caught?"block":"none";
-
-  // Show missed RPH section when PV1 was missed
-  var showMissed=pv1Val==="Missed";
-  var el=document.getElementById("lDWEDetails");
-  if(el) el.style.display=showMissed?"block":"none";
-
-  // Show caught RPH section whenever VBD=Caught (regardless of PV1)
-  var showCaught=vbdVal==="Caught";
-  var ec=document.getElementById("lRphCaughtW");
-  if(ec) ec.style.display=showCaught?"block":"none";
-
-  // Show count when dispensed
-  var showCount=vbdVal==="Missed";
-  var ed=document.getElementById("lDWECount");
-  if(ed) ed.style.display=showCount?"block":"none";
-
-  // Summary pill
-  var sum=document.getElementById("lVerifSummary");
-  if(sum){
-    var msg="",bg="",col="";
-    if(pv1Val==="NA"||pv1Val===""){msg="";}
-    else if(pv1Val==="Caught"){msg="\u2705 Caught at PV1 \u2014 error found by RPH during first verification";bg="#f0fdf4";col="#15803d";}
-    else if(pv1Val==="Missed"&&vbdVal==="Caught"){msg="\u26a0 Missed at PV1, caught at VBD \u2014 error reached second check but not dispensed";bg="#fffbeb";col="#d97706";}
-    else if(pv1Val==="Missed"&&vbdVal==="Missed"){msg="\ud83d\udea8 Missed at PV1 and VBD \u2014 error was dispensed to patient";bg="#fef2f2";col="#dc2626";}
-    else if(pv1Val==="Missed"&&vbdVal==="NA"){msg="\u26a0 Missed at PV1, did not reach VBD";bg="#fffbeb";col="#d97706";}
-    if(msg){sum.style.display="block";sum.style.background=bg;sum.style.color=col;sum.textContent=msg;}
-    else sum.style.display="none";
-  }
-}
-
-function addLogRphPV1Caught(){
-  var sel=document.getElementById("lRphPV1CaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
-  var existing=document.querySelectorAll(".lrph-pv1caught-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag lrph-pv1caught-tag";tag.dataset.name=val;
-  tag.style.background="#dcfce7";tag.style.color="#15803d";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
-  document.getElementById("lRphPV1CaughtTags").appendChild(tag);
-}
-
-function getLogRphsPV1Caught(){
-  var tags=document.querySelectorAll(".lrph-pv1caught-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
-
-function addEditRphPV1Caught(){
-  var sel=document.getElementById("eRphPV1CaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
-  var existing=document.querySelectorAll(".erph-pv1caught-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag erph-pv1caught-tag";tag.dataset.name=val;
-  tag.style.background="#dcfce7";tag.style.color="#15803d";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-  document.getElementById("eRphPV1CaughtTags").appendChild(tag);
-}
-
-function getEditRphsPV1Caught(){
-  var tags=document.querySelectorAll(".erph-pv1caught-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
-}
-
-function addLogRphCaught(){
-  var sel=document.getElementById("lRphCaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
-  var existing=document.querySelectorAll(".lrph-caught-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag lrph-caught-tag";tag.dataset.name=val;
-  tag.style.background="#dcfce7";tag.style.color="#15803d";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()">×</button>';
-  document.getElementById("lRphCaughtTags").appendChild(tag);
-}
-
-function getLogRphsCaught(){
-  var tags=document.querySelectorAll(".lrph-caught-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
+  var v=document.getElementById("lDWE");
+  if(!v)return;
+  var show=v.value==="Yes";
+  document.getElementById("lDWEDetails").style.display=show?"block":"none";
+  document.getElementById("lDWECount").style.display=show?"block":"none";
 }
 function addLogRph(){
   var sel=document.getElementById("lRphSel");
@@ -1178,14 +1089,10 @@ var HIGH_ERROR_TYPES=['Invalid Rx','Drug Mismatch','Entered Under Wrong PT'];
 var SEVERITY_COLORS={Low:'#10b981',Medium:'#f59e0b',High:'#ef4444'};
 var SEVERITY_BG={Low:'#f0fdf4',Medium:'#fffbeb',High:'#fef2f2'};
 
-function autoSeverity(errorType, dispensedWithError, goodCatch, pv1, vbd){
+function autoSeverity(errorType, dispensedWithError, goodCatch){
   var isHighType=HIGH_ERROR_TYPES.indexOf(errorType)>=0;
-  // Dispensed = missed at both PV1 and VBD
-  var dispensed=(dispensedWithError==='Yes')||(pv1==='Missed'&&vbd==='Missed');
-  // Caught = caught at PV1, or caught at VBD, or good catch
-  var caught=(goodCatch==='Yes')||(pv1==='Caught')||(vbd==='Caught');
-  if(isHighType && dispensed) return 'High';
-  if(isHighType && !dispensed) return 'Medium';
+  if(isHighType && (dispensedWithError==='Yes')) return 'High';
+  if(isHighType && (goodCatch==='Yes' || dispensedWithError!=='Yes')) return 'Medium';
   return 'Low';
 }
 
@@ -1308,7 +1215,7 @@ function subQuickLog(){
   row.daysToCatch=calcDaysToCatch(date,dateRxEntered);
   row.week=getWk(date);
   row.errorType=errorType;
-  row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
+  row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"");
   row.callRequired=document.getElementById("lCall")?document.getElementById("lCall").value:"No";
   row.notes=notes;
   row.photo=driveId?"":photo;
@@ -1369,61 +1276,49 @@ function rFullLog(){
     '<label class="flb" style="margin-top:12px">📷 Photo Evidence <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
     '<input type="file" id="lPhoto" accept="image/*" onchange="previewLogPhoto()" style="font-size:12px;padding:6px;margin-bottom:4px">'+
     '<img id="lPhotoPreview" src="" alt="" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:8px;border:1px solid #e8d5e4;margin-top:4px">'+
-    '<div style="margin-top:10px;padding:14px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa">'+
-      '<div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:10px">⚠ Verification Stages</div>'+
+    '<div style="margin-top:14px;padding:14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">'+
+      '<div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:10px">✅ Good Catch</div>'+
       '<div class="fgrid">'+
         '<div class="fhalf">'+
-          '<label class="flb" style="margin-top:0">PV1 — RPH First Verification</label>'+
-          '<select id="lPV1" onchange="upDWEFields()">'+
+          '<label class="flb" style="margin-top:0">Was this caught &amp; reported by someone?</label>'+
+          '<select id="lGC" onchange="upGCFields()">'+
             '<option value="">-- Select --</option>'+
-            '<option value="Caught">✅ Caught at PV1 — error caught by RPH</option>'+
-            '<option value="Missed">⚠ Missed at PV1 — RPH did not catch it</option>'+
-            '<option value="NA">N/A — no PV1 for this error</option>'+
-          '</select>'+
-          '<div style="font-size:10px;color:#7c5c76;margin-top:3px">Optional — leave blank if unknown</div>'+
-        '</div>'+
-        '<div class="fhalf">'+
-          '<label class="flb" style="margin-top:0">VBD — Verified Before Dispensing</label>'+
-          '<select id="lVBD" onchange="upDWEFields()">'+
-            '<option value="">-- Select --</option>'+
-            '<option value="Caught">✅ Caught at VBD — error caught before dispensing</option>'+
-            '<option value="Missed">🚨 Missed at VBD — dispensed with error</option>'+
-            '<option value="NA">N/A — did not reach VBD</option>'+
+            '<option value="Yes">Yes — someone caught it</option>'+
+            '<option value="No">No</option>'+
           '</select>'+
         '</div>'+
       '</div>'+
-      '<div id="lRphPV1CaughtW" style="display:none;margin-top:10px">'+
-        '<label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at PV1?</label>'+
+      '<div id="lGCDetails" style="display:none">'+
+        '<div class="fgrid" style="margin-top:8px">'+
+          '<div class="fhalf"><label class="flb" style="margin-top:0">Which team?</label><select id="lGCTeam" onchange="upGCTeam()">'+gcTeamOpts+'</select></div>'+
+          '<div class="fhalf"><label class="flb" style="margin-top:0">Who?</label>'+
+          '<div class="name-wrap"><input id="lGCWho" placeholder="Type name..." autocomplete="off"'+
+          ' oninput="smartNameSuggest(this,\'lGCWhoDrop\')"'+
+          ' onblur="setTimeout(function(){var d=document.getElementById(\'lGCWhoDrop\');if(d)d.style.display=\'none\'},200)">'+
+          '<div id="lGCWhoDrop" class="name-dropdown"></div></div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="margin-top:10px;padding:14px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa">'+
+      '<div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:10px">⚠ Dispensed with Error</div>'+
+      '<div class="fgrid">'+
+        '<div class="fhalf"><label class="flb" style="margin-top:0">Verified by RPH &amp; dispensed with error?</label>'+
+          '<select id="lDWE" onchange="upDWEFields()">'+
+            '<option value="">-- Select --</option>'+
+            '<option value="Yes">Yes — dispensed with error</option>'+
+            '<option value="No">No</option>'+
+          '</select>'+
+        '</div>'+
+        '<div class="fhalf" id="lDWECount" style="display:none"><label class="flb" style="margin-top:0">How many times?</label><input type="number" id="lRphCount" min="1" max="20" placeholder="e.g. 2"></div>'+
+      '</div>'+
+      '<div id="lDWEDetails" style="display:none">'+
+        '<label class="flb">Which RPH(s)?</label>'+rphNote+
         '<div style="display:flex;gap:6px;margin-top:4px">'+
-          '<select id="lRphPV1CaughtSel" style="flex:1">'+rphOpts()+'</select>'+
-          '<button type="button" onclick="addLogRphPV1Caught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
+          '<select id="lRphSel" style="flex:1">'+rphOpts()+'</select>'+
+          '<button type="button" onclick="addLogRph()" style="padding:6px 14px;background:#c2410c;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
         '</div>'+
-        '<div id="lRphPV1CaughtTags" class="rph-box" style="margin-top:6px"></div>'+
+        '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
       '</div>'+
-      '<div id="lDWEDetails" style="display:none;margin-top:10px">'+
-
-        '<div>'+
-          '<label class="flb" style="margin-top:0;color:#dc2626">⚠ RPH who missed at PV1</label>'+rphNote+
-          '<div style="display:flex;gap:6px;margin-top:4px">'+
-            '<select id="lRphSel" style="flex:1">'+rphOpts()+'</select>'+
-            '<button type="button" onclick="addLogRph()" style="padding:6px 10px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
-          '</div>'+
-          '<div id="lRphTags" class="rph-box" style="margin-top:6px"></div>'+
-        '</div>'+
-      '</div>'+
-      '<div id="lRphCaughtW" style="display:none;margin-top:10px">'+
-        '<label class="flb" style="margin-top:0;color:#15803d">✅ Who caught it at VBD?</label>'+
-        '<div style="display:flex;gap:6px;margin-top:4px">'+
-          '<select id="lRphCaughtSel" style="flex:1">'+rphOpts()+'</select>'+
-          '<button type="button" onclick="addLogRphCaught()" style="padding:6px 10px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Add</button>'+
-        '</div>'+
-        '<div id="lRphCaughtTags" class="rph-box" style="margin-top:6px"></div>'+
-      '</div>'+
-      '<div id="lDWECount" style="display:none;margin-top:10px">'+
-        '<label class="flb" style="margin-top:0">How many times dispensed with error?</label>'+
-        '<input type="number" id="lRphCount" min="1" max="20" placeholder="e.g. 2" style="width:120px">'+
-      '</div>'+
-      '<div id="lVerifSummary" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:600"></div>'+
     '</div>'+
     '<button class="btn btn-full" onclick="subLog()" style="margin-top:14px">Log Error</button>'+
     '</div>';
@@ -1435,22 +1330,15 @@ function subLog(){
   if(!date){alert("Please select the date the error was found.");return;}
   var ds=document.getElementById("lDrugSel").value;
   var drug=ds==="__other__"?document.getElementById("lDrug").value.trim():ds;
-  // Good catch is now derived from PV1/VBD — no separate form field
-  var gcVal=(pv1Val==="Caught"||(pv1Val==="Missed"&&vbdVal==="Caught"))?"Yes":"No";
+  var gcVal=document.getElementById("lGC").value||"";
   var gcTeam="",gcWho="";
-  var pv1Val=document.getElementById("lPV1")?document.getElementById("lPV1").value:"";
-  var vbdVal=document.getElementById("lVBD")?document.getElementById("lVBD").value:"";
-  var dweVal=(pv1Val==="Missed"&&vbdVal==="Missed")?"Yes":"No";
-  var rphCount="",rphNames=[],rphCaughtNames=[],rphPV1CaughtNames=[];
-  if(pv1Val==="Missed"){
-    rphCount=document.getElementById("lRphCount")?document.getElementById("lRphCount").value.trim():"";
-    rphNames=getLogRphs();
-    rphCaughtNames=getLogRphsCaught();
-  }
-  if(pv1Val==="Caught") rphPV1CaughtNames=getLogRphsPV1Caught();
+  if(gcVal==="Yes"){gcTeam=document.getElementById("lGCTeam").value||"";gcWho=document.getElementById("lGCWho").value||"";}
+  var dweVal=document.getElementById("lDWE").value||"";
+  var rphCount="",rphNames=[];
+  if(dweVal==="Yes"){rphCount=document.getElementById("lRphCount").value.trim();rphNames=getLogRphs();}
   var row={};
   row.id=mkId();row.date=date;row.dateRxEntered=dateRxEntered;row.daysToCatch=calcDaysToCatch(date,dateRxEntered);row.week=getWk(date);
-  row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"",row.pv1||"",row.vbd||"");
+  row.severity=autoSeverity(row.errorType||"",row.dispensedWithError||"",row.goodCatch||"");
   row.callRequired=document.getElementById("lCall")?document.getElementById("lCall").value:"No";
   row.errorType=document.getElementById("lTy").value;
   row.source=src;
@@ -1465,9 +1353,8 @@ function subLog(){
   row.driveId=ph&&ph._driveId?ph._driveId:"";
   row.driveUrl=ph&&ph._driveUrl?ph._driveUrl:"";
   row.goodCatch=gcVal;row.gcTeam=gcTeam;row.gcWho=gcWho;
-  row.pv1=pv1Val;row.vbd=vbdVal;
-  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;row.rphCaughtNames=rphCaughtNames;row.rphPV1CaughtNames=rphPV1CaughtNames;
-  row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(pv1Val==="Missed"&&vbdVal==="Caught")?"caught_at_vbd":(gcVal==="Yes"?"good_catch":"");
+  row.dispensedWithError=dweVal;row.rphCount=rphCount;row.rphNames=rphNames;
+  row.rphVerified=dweVal==="Yes"?"dispensed_with_error":(gcVal==="Yes"?"good_catch":"");
   row.needsReview=false;
   // Check for duplicate
   var dup2=findDuplicate(row.rxNum, row.errorType, null);
@@ -1503,58 +1390,20 @@ function impBulk(){
 
 // ── Edit Modal ─────────────────────────────────────────────────────────────
 function upEditRphFields(){
-  var pv1=document.getElementById("ePV1");
-  var vbd=document.getElementById("eVBD");
-  if(!pv1||!vbd) return;
-  var pv1Val=pv1.value, vbdVal=vbd.value;
-  var showPV1Caught=pv1Val==="Caught";
-  var showMissed=pv1Val==="Missed";
-  var showCaught=vbdVal==="Caught";
-  var showCount=vbdVal==="Missed";
-  document.getElementById("eRphNamesW").style.display=showMissed?"block":"none";
-  var p1cW=document.getElementById("eRphPV1CaughtW");if(p1cW)p1cW.style.display=showPV1Caught?"block":"none";
-  var caughtW=document.getElementById("eRphCaughtW");
-  if(caughtW) caughtW.style.display=showCaught?"block":"none";
-  document.getElementById("eRphCountW").style.display=showCount?"block":"none";
-  var sum=document.getElementById("eVerifSummary");
-  if(sum){
-    var msg="",bg="",col="";
-    if(pv1Val==="NA"||pv1Val===""){msg="";}
-    else if(pv1Val==="Caught"){msg="\u2705 Caught at PV1";bg="#f0fdf4";col="#15803d";}
-    else if(pv1Val==="Missed"&&vbdVal==="Caught"){msg="\u26a0 Missed at PV1, caught at VBD";bg="#fffbeb";col="#d97706";}
-    else if(pv1Val==="Missed"&&vbdVal==="Missed"){msg="\ud83d\udea8 Missed at PV1 and VBD \u2014 dispensed with error";bg="#fef2f2";col="#dc2626";}
-    else if(pv1Val==="Missed"&&vbdVal==="NA"){msg="\u26a0 Missed at PV1, did not reach VBD";bg="#fffbeb";col="#d97706";}
-    if(msg){sum.style.display="block";sum.style.background=bg;sum.style.color=col;sum.textContent=msg;}
-    else sum.style.display="none";
-  }
-}
-
-function addEditRphCaught(){
-  var sel=document.getElementById("eRphCaughtSel");
-  var val=sel?sel.value.trim():"";if(!val)return;
-  var existing=document.querySelectorAll(".erph-caught-tag");
-  for(var i=0;i<existing.length;i++){if(existing[i].dataset.name===val)return;}
-  var tag=document.createElement("span");
-  tag.className="rph-tag erph-caught-tag";tag.dataset.name=val;
-  tag.style.background="#dcfce7";tag.style.color="#15803d";
-  tag.innerHTML=val+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-  document.getElementById("eRphCaughtTags").appendChild(tag);
-}
-
-function getEditRphsCaught(){
-  var tags=document.querySelectorAll(".erph-caught-tag"),names=[];
-  for(var i=0;i<tags.length;i++)names.push(tags[i].dataset.name);
-  return names;
+  var dwe=document.getElementById("eRphVerified").value;
+  var showDWE=dwe==="Yes";
+  document.getElementById("eRphCountW").style.display=showDWE?"block":"none";
+  document.getElementById("eRphNamesW").style.display=showDWE?"block":"none";
 }
 function upEditGCTeam(){
-  // eGCTeam removed — good catch section replaced by PV1/VBD
+  var t=document.getElementById("eGCTeam").value;
   var opts='<option value="">-- Select person --</option>';
   var members=SM[t]||[];
   for(var i=0;i<members.length;i++)opts+='<option>'+members[i]+'</option>';
   var gcWhoInpX=document.getElementById("eGCWho");if(gcWhoInpX)gcWhoInpX.value="";
 }
 function upEditGCFields(){
-  // eGC removed — good catch section replaced by PV1/VBD
+  var v=document.getElementById("eGC").value;
   document.getElementById("eGCDetails").style.display=v==="Yes"?"block":"none";
 }
 function addEditRph(){
@@ -1580,7 +1429,7 @@ function openEdit(id){
   document.getElementById("eDtRx").value=e.dateRxEntered||"";
   document.getElementById("eTy").innerHTML=etOpts(e.errorType||"");
   // Severity display — auto-calculated, shown read-only
-  var sev=e.severity||autoSeverity(e.errorType||"",e.dispensedWithError||"",e.goodCatch||"",e.pv1||"",e.vbd||"");
+  var sev=e.severity||autoSeverity(e.errorType||"",e.dispensedWithError||"",e.goodCatch||"");
   var sevCol=SEVERITY_COLORS[sev]||'#7c5c76';
   var sevBg=SEVERITY_BG[sev]||'#f3f4f6';
   var sevDisp=document.getElementById("eSevDisplay");
@@ -1634,64 +1483,30 @@ function openEdit(id){
     if(dc2) dc2.remove();
   }
   // Good Catch fields
-  // PV1/VBD populated above — good catch derived automatically
-  // eGCTeam removed
+  document.getElementById("eGC").value=e.goodCatch||"";
+  var gcTeamSel=document.getElementById("eGCTeam");
   var gcTeamOpts='<option value="">-- Select team --</option>';
   for(var gti=0;gti<TM.length;gti++)gcTeamOpts+='<option'+(TM[gti]===(e.gcTeam||"")?" selected":"")+'>'+TM[gti]+'</option>';
   gcTeamSel.innerHTML=gcTeamOpts;
   // eGCWho is now a smart text input — clear it when team changes
-  // eGCWho removed — gcWho derived from PV1/VBD
+  var eGCWhoFin=document.getElementById("eGCWho");if(eGCWhoFin)eGCWhoFin.value=e.gcWho||"";
   document.getElementById("eGCDetails").style.display=(e.goodCatch==="Yes")?"block":"none";
   // Dispensed with Error fields
-  var ePV1=document.getElementById("ePV1");
-  var eVBD=document.getElementById("eVBD");
-  if(ePV1) ePV1.value=e.pv1||"";
-  if(eVBD) eVBD.value=e.vbd||"";
-  upEditRphFields(); // this handles eRphNamesW and eRphCountW visibility
+  document.getElementById("eRphVerified").value=e.dispensedWithError||"";
   document.getElementById("eRphCount").value=e.rphCount||"";
   document.getElementById("eRphSel").innerHTML=rphOpts();
-  // Populate missed RPH tags
   var tagsBox=document.getElementById("eRphTags");tagsBox.innerHTML="";
   if(e.rphNames&&e.rphNames.length){
     for(var rpi=0;rpi<e.rphNames.length;rpi++){
       var rtag=document.createElement("span");
       rtag.className="rph-tag erph-tag";rtag.dataset.name=e.rphNames[rpi];
-      rtag.innerHTML=e.rphNames[rpi]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;color:#ef4444;font-weight:700">×</button>';
+      rtag.innerHTML=e.rphNames[rpi]+'<button type="button" onclick="this.parentNode.remove()">×</button>';
       tagsBox.appendChild(rtag);
     }
   }
-  // Populate PV1 caught RPH tags
-  var pv1CaughtSel=document.getElementById("eRphPV1CaughtSel");
-  if(pv1CaughtSel) pv1CaughtSel.innerHTML=rphOpts();
-  var pv1CaughtBox=document.getElementById("eRphPV1CaughtTags");
-  if(pv1CaughtBox){
-    pv1CaughtBox.innerHTML="";
-    if(e.rphPV1CaughtNames&&e.rphPV1CaughtNames.length){
-      for(var pci=0;pci<e.rphPV1CaughtNames.length;pci++){
-        var pctag=document.createElement("span");
-        pctag.className="rph-tag erph-pv1caught-tag";pctag.dataset.name=e.rphPV1CaughtNames[pci];
-        pctag.style.background="#dcfce7";pctag.style.color="#15803d";
-        pctag.innerHTML=e.rphPV1CaughtNames[pci]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-        pv1CaughtBox.appendChild(pctag);
-      }
-    }
-  }
-  // Populate caught RPH tags
-  var caughtSel=document.getElementById("eRphCaughtSel");
-  if(caughtSel) caughtSel.innerHTML=rphOpts();
-  var caughtBox=document.getElementById("eRphCaughtTags");
-  if(caughtBox){
-    caughtBox.innerHTML="";
-    if(e.rphCaughtNames&&e.rphCaughtNames.length){
-      for(var rci=0;rci<e.rphCaughtNames.length;rci++){
-        var ctag=document.createElement("span");
-        ctag.className="rph-tag erph-caught-tag";ctag.dataset.name=e.rphCaughtNames[rci];
-        ctag.style.background="#dcfce7";ctag.style.color="#15803d";
-        ctag.innerHTML=e.rphCaughtNames[rci]+'<button type="button" onclick="this.parentNode.remove()" style="margin-left:4px;background:none;border:none;cursor:pointer;font-weight:700">×</button>';
-        caughtBox.appendChild(ctag);
-      }
-    }
-  }
+  var showDWE=(e.dispensedWithError==="Yes");
+  document.getElementById("eRphCountW").style.display=showDWE?"block":"none";
+  document.getElementById("eRphNamesW").style.display=showDWE?"block":"none";
   var show=(e.source||"Human")==="Human";
   document.getElementById("eTmW").style.display=show?"block":"none";
   document.getElementById("eWhW").style.display=show?"block":"none";
@@ -1731,22 +1546,19 @@ function saveEdit(){
   var src=document.getElementById("eSr").value,date=document.getElementById("eDt").value;
   var ds=document.getElementById("eDrug").value;
   var drug=ds==="__other__"?(prompt("Enter drug name:",""))||"":ds;
-  var pv1Val2=document.getElementById("ePV1")?document.getElementById("ePV1").value:"";
-  var vbdVal2=document.getElementById("eVBD")?document.getElementById("eVBD").value:"";
-  var rphVerified=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"dispensed_with_error":(pv1Val2==="Missed"&&vbdVal2==="Caught")?"caught_at_vbd":"";
+  var rphVerified=document.getElementById("eRphVerified").value||"";
   var showDWE2=(rphVerified==="Yes");
   var rphCount=showDWE2?(document.getElementById("eRphCount").value||""):"";
-      var rphNames=(pv1Val2==="Missed")?getEditRphs():[];
-      var rphCaughtNames=(pv1Val2==="Missed"&&vbdVal2==="Caught")||vbdVal2==="Caught"?getEditRphsCaught():[];
-      var rphPV1CaughtNames=pv1Val2==="Caught"?getEditRphsPV1Caught():[];
-  // Derive good catch from PV1/VBD
-  var gcVal=(pv1Val2==="Caught"||(pv1Val2==="Missed"&&vbdVal2==="Caught"))?"Yes":"No";
-  var gcTeam="",gcWho="";  for(var i=0;i<D.length;i++){
+  var rphNames=showDWE2?getEditRphs():[];
+  var gcVal=document.getElementById("eGC").value||"";
+  var gcTeam=gcVal==="Yes"?(document.getElementById("eGCTeam").value||""):"";
+  var gcWho=gcVal==="Yes"?(document.getElementById("eGCWho").value||""):"";
+  for(var i=0;i<D.length;i++){
     if(D[i].id===editId){
       D[i].date=date;D[i].week=getWk(date);
       D[i].dateRxEntered=document.getElementById("eDtRx").value||"";
       D[i].errorType=document.getElementById("eTy").value;
-      D[i].severity=autoSeverity(D[i].errorType||"",D[i].dispensedWithError||"",D[i].goodCatch||"",D[i].pv1||"",D[i].vbd||"");
+      D[i].severity=autoSeverity(D[i].errorType||"",D[i].dispensedWithError||"",D[i].goodCatch||"");
       D[i].callRequired=document.getElementById("eCall").value||"No";
       D[i].daysToCatch=calcDaysToCatch(D[i].date,D[i].dateRxEntered);
       D[i].source=src;
@@ -1765,12 +1577,10 @@ function saveEdit(){
       D[i].goodCatch=gcVal;
       D[i].gcTeam=gcTeam;
       D[i].gcWho=gcWho;
-      D[i].pv1=pv1Val2;
-      D[i].vbd=vbdVal2;
-      D[i].dispensedWithError=(pv1Val2==="Missed"&&vbdVal2==="Missed")?"Yes":"No";
+      D[i].dispensedWithError=rphVerified;
       D[i].rphCount=rphCount;
-      D[i].rphNames=rphNames;D[i].rphCaughtNames=rphCaughtNames;D[i].rphPV1CaughtNames=rphPV1CaughtNames;
-      D[i].rphVerified=rphVerified;
+      D[i].rphNames=rphNames;
+      D[i].rphVerified=rphVerified==="Yes"?"dispensed_with_error":(gcVal==="Yes"?"good_catch":"");
       // Clear review flag — entry now enters metrics
       D[i].needsReview=false;
       D[i].reviewedBy=currentUser?currentUser.name:"Manager";
@@ -1838,15 +1648,11 @@ function rEntries(){
     if(isReview){
       rphBdg='<span class="bdg" style="background:#fef3c7;color:#92400e">⏳ Needs Review</span>';
     } else {
-      if(e2.pv1==="Caught"){var p1c=e2.rphPV1CaughtNames&&e2.rphPV1CaughtNames.length?e2.rphPV1CaughtNames.join(", "):"";rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ PV1 Caught'+(p1c?' — '+p1c:'')+'</span> ';}
-      if(e2.vbd==="Caught"){
-        var catcher2=e2.rphCaughtNames&&e2.rphCaughtNames.length?e2.rphCaughtNames.join(", "):"";
-        rphBdg+='<span class="bdg" style="background:#dcfce7;color:#15803d">✅ VBD Caught'+(catcher2?' — '+catcher2:'')+'</span> ';
+      if(e2.goodCatch==="Yes") rphBdg+='<span class="bdg" style="background:#dcfce7;color:#16a34a">✅ '+(e2.gcWho||e2.gcTeam||"Good Catch")+'</span> ';
+      if(e2.dispensedWithError==="Yes"||e2.rphVerified==="dispensed_with_error"){
+        rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed</span>';
+        if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">'+e2.rphNames.join(", ")+'</span>';
       }
-      if(e2.pv1==="Missed"&&e2.vbd==="Missed") rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">🚨 Dispensed</span>';
-      else if(e2.pv1==="Missed"&&(!e2.vbd||e2.vbd==="NA")) rphBdg+='<span class="bdg" style="background:#fef3c7;color:#d97706">⚠ PV1 Missed</span>';
-      else if(e2.dispensedWithError==="Yes"&&!e2.pv1) rphBdg+='<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Dispensed</span>';
-      if(e2.rphNames&&e2.rphNames.length)rphBdg+='<br><span style="font-size:10px;color:#7c5c76">Missed: '+e2.rphNames.join(", ")+'</span>';
       if(!rphBdg)rphBdg='<span style="color:#cbd5e1;font-size:11px">—</span>';
     }
     var actionBtns=isReview
