@@ -7,6 +7,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBDCCOmRfjijw0EjQEpCs8_GOv223kk51E",
+    authDomain: "gifthealth-pharmacy-tracker.firebaseapp.com",
+    projectId: "gifthealth-pharmacy-tracker",
+    storageBucket: "gifthealth-pharmacy-tracker.firebasestorage.app",
+    messagingSenderId: "526393069933",
+    appId: "1:526393069933:web:b8517391897b32312b8a64"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ── Expose Firebase functions to global scope ──
+  window._fbDb = db;
+  window._fbDoc = doc;
+  window._fbSetDoc = setDoc;
+  window._fbGetDoc = getDoc;
+  window._fbOnSnapshot = onSnapshot;
+  window._fbCollection = collection;
+  window._fbReady = true;
+
+  // Notify app that Firebase is ready
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
 
 <style>
 :root{
@@ -147,6 +175,7 @@ tr.alt td{background:#fdf5fb}
     <div class="sync-actions">
       <button class="sync-btn" onclick="forceSave()">💾 Save Now</button>
       <button class="sync-btn" onclick="exportData()">⬇ Export Backup</button>
+      <button class="sync-btn" onclick="migrateFromJSONBin()" title="One-time import of existing JSONBin data">📥 Import JSONBin</button>
     </div>
   </div>
   <div class="nav" id="navBar"></div>
@@ -278,7 +307,9 @@ tr.alt td{background:#fdf5fb}
 </div>
 <script>
 
-// ── JSONBin Config ─────────────────────────────────────────────────────────
+// ── Firebase Config (SDK loaded in <head> module script) ──────────────────
+var FIREBASE_PROJECT="gifthealth-pharmacy-tracker";
+// JSONBin kept as migration fallback only
 var BIN_ID="69de7f0d856a682189337141";
 var API_KEY="$2a$10$CYBsfBEtDArtHF/.GLAFG.ijVKYwl0jed/Eqelj4gIBsPjfIwf8Qq";
 var BIN_URL="https://api.jsonbin.io/v3/b/"+BIN_ID;
@@ -378,56 +409,106 @@ function lsSave(){
 }
 function lsLoad(){try{var r=localStorage.getItem("pet_v1");if(r)applyPayload(JSON.parse(r));}catch(e){}}
 
-async function jbLoad(){
-  setSyncUI("loading","Loading data from cloud…");
+// ── Firebase Save/Load ────────────────────────────────────────────────────
+var _fbUnsubscribe = null; // real-time listener handle
+var _lastSaveTs = 0;       // debounce guard
+
+async function fbSave(){
+  if(!window._fbReady){lsSave();return;}
+  lsSave(); // always save locally too
+  setSyncUI("saving","Saving…");
   try{
-    var res=await fetch(BIN_URL+"/latest",{
-      headers:{"X-Access-Key":API_KEY,"X-Bin-Meta":false}
-    });
-    if(!res.ok)throw new Error("HTTP "+res.status);
-    var json=await res.json();
-    // JSONBin wraps response in {record:{...}} — handle both
-    var data=json.record||json;
-    applyPayload(data);
-    lsSave();
+    var db=window._fbDb;
+    var docRef=window._fbDoc(db,"tracker","main");
+    var payload=getPayload();
+    payload.ts=Date.now();
+    await window._fbSetDoc(docRef,payload);
     var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-    setSyncUI("synced","☁ Synced · "+D.length+" entries · Works on any browser · Last loaded: "+t);
+    setSyncUI("synced","☁ Saved to Firebase · "+D.length+" entries · "+t);
   }catch(err){
-    console.warn("JSONBin load failed:",err);
+    console.warn("Firebase save failed:",err);
+    setSyncUI("error","Save failed — data kept locally. Retrying…");
+    setTimeout(function(){fbSave();},5000);
+  }
+}
+
+async function fbLoad(){
+  if(!window._fbReady){
+    // Firebase not ready yet — wait for it
+    window.addEventListener('firebaseReady',function(){fbLoad();},{once:true});
+    return;
+  }
+  setSyncUI("loading","Connecting to Firebase…");
+  try{
+    var db=window._fbDb;
+    var docRef=window._fbDoc(db,"tracker","main");
+    // One-time load first
+    var snap=await window._fbGetDoc(docRef);
+    if(snap.exists()){
+      applyPayload(snap.data());
+      lsSave();
+      var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+      setSyncUI("synced","☁ Connected · "+D.length+" entries · Live sync on · "+t);
+    } else {
+      // No Firebase data yet — try migrating from JSONBin
+      lsLoad();
+      setSyncUI("synced","☁ Connected · No data yet · Ready to log");
+    }
+    // ── Real-time listener ── fires every time data changes in Firebase
+    if(_fbUnsubscribe) _fbUnsubscribe(); // clear any existing listener
+    _fbUnsubscribe=window._fbOnSnapshot(docRef,function(snapshot){
+      if(!snapshot.exists()) return;
+      var data=snapshot.data();
+      // Ignore if this update came from our own save (within 3s)
+      if(data.ts && Date.now()-data.ts<3000 && data.ts===_lastSaveTs) return;
+      applyPayload(data);
+      lsSave();
+      upHdr();
+      render(curV);
+      var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+      setSyncUI("synced","☁ Live · "+D.length+" entries · Updated "+t);
+    });
+  }catch(err){
+    console.warn("Firebase load failed:",err);
     lsLoad();
-    setSyncUI("error","Cloud load failed — using local backup. Check your connection.");
+    setSyncUI("error","Firebase unavailable — using local backup");
   }
 }
 
-async function jbSave(){
-  lsSave();
-  setSyncUI("saving","Saving to cloud…");
-  try{
-    var res=await fetch(BIN_URL,{
-      method:"PUT",
-      headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},
-      body:JSON.stringify(getPayload())
-    });
-    if(!res.ok)throw new Error("HTTP "+res.status);
-    var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-    setSyncUI("synced","☁ Saved to cloud · "+D.length+" entries · Last saved: "+t);
-  }catch(err){
-    console.warn("JSONBin save failed:",err);
-    setSyncUI("error","Cloud save failed — saved locally. Will retry on next change.");
-  }
-}
+// Keep old names as aliases so nothing else breaks
+function jbLoad(){return fbLoad();}
+async function jbSave(){return fbSave();}
 
-// Debounced — waits 1.5s after last change
 function save(){
   lsSave();
   if(saveTimer)clearTimeout(saveTimer);
   setSyncUI("saving","Saving…");
-  saveTimer=setTimeout(function(){jbSave();},1500);
+  saveTimer=setTimeout(function(){fbSave();},1200);
 }
 
 function forceSave(){
   if(saveTimer)clearTimeout(saveTimer);
-  jbSave();
+  fbSave();
+}
+
+// ── One-time migration from JSONBin → Firebase ────────────────────────────
+async function migrateFromJSONBin(){
+  if(!confirm("This will import all your JSONBin data into Firebase.\n\nOnly do this once. Continue?")) return;
+  setSyncUI("loading","Importing from JSONBin…");
+  try{
+    var res=await fetch(BIN_URL+"/latest",{headers:{"X-Access-Key":API_KEY,"X-Bin-Meta":false}});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    var json=await res.json();
+    var data=json.record||json;
+    applyPayload(data);
+    await fbSave();
+    alert("✅ Migration complete! "+D.length+" entries imported from JSONBin into Firebase.");
+    render(curV);
+    upHdr();
+  }catch(err){
+    alert("Migration failed: "+err.message);
+    setSyncUI("error","Migration failed");
+  }
 }
 
 function exportData(){
@@ -2665,7 +2746,11 @@ function showPhotoModal(id) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init(){
-  await jbLoad();
+  // Load data — Firebase if ready, local fallback while waiting
+  try{
+    if(window._fbReady){ await fbLoad(); }
+    else{ lsLoad(); window.addEventListener('firebaseReady',function(){fbLoad();},{once:true}); }
+  }catch(e){ console.warn('Load error:',e); lsLoad(); }
 
   // Check for saved session
   try {
