@@ -184,6 +184,7 @@ tr.alt td{background:#fdf5fb}
   <div id="sec-trends" class="sec"></div>
   <div id="sec-rph" class="sec"></div>
   <div id="sec-staff" class="sec"></div>
+  <div id="sec-staffrev" class="sec"></div>
   <div id="sec-member" class="sec"></div>
   <div id="sec-log" class="sec"></div>
   <div id="sec-import" class="sec"></div>
@@ -344,6 +345,7 @@ function getSubset(){var base=D.filter(function(e){return !e.needsReview;});if(d
 var D=[],FBI={},RFBI={},POSTS=[];  // FBI=intake lead initials, RFBI=RPH lead initials per RPH
 var curV="dashboard",dashMode="weekly",selWk=null,trendM="weekly";
 var mvTm="All",mvWho="",mvTy="All",mvWk="All",mvRxSearch="";
+var mvLoc="All",srStaff="",srWk="All",srLoc="All";
 var eFF="All",eFT="All",eFS="All",eFSt="All",eReview="All",eRxSearch="",eCallF="All",eSevF="All",eLocF="All";
 var dashLoc="All",rphLoc="All",sumLoc="All",trendLoc="All",mvLoc="All";
 var charts={},editId=null;
@@ -446,6 +448,7 @@ async function fbLoad(){
     var snap=await window._fbGetDoc(docRef);
     if(snap.exists()){
       applyPayload(snap.data());
+      injectDemoStaff();
       lsSave();
       var t=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
       setSyncUI("synced","☁ Connected · "+D.length+" entries · Live sync on · "+t);
@@ -462,6 +465,7 @@ async function fbLoad(){
       // Ignore if this update came from our own save (within 3s)
       if(data.ts && Date.now()-data.ts<3000 && data.ts===_lastSaveTs) return;
       applyPayload(data);
+      injectDemoStaff();
       lsSave();
       upHdr();
       render(curV);
@@ -520,10 +524,10 @@ function exportData(){
 }
 
 // ── Nav ────────────────────────────────────────────────────────────────────
-var NAVS=[{k:"board",l:"📋 Board"},{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"directory",l:"Directory"},{k:"admin",l:"Admin"}];
+var NAVS=[{k:"board",l:"📋 Board"},{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"staffrev",l:"👤 Staff Review"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"directory",l:"Directory"},{k:"admin",l:"Admin"}];
 
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
-function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
+function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,staffrev:rStaffRev,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
 function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;var rv=D.filter(function(e){return e.needsReview;}).length;document.getElementById("hPnd").textContent=(D.filter(function(e){return !e.needsReview;}).length-Object.keys(FBI).length)+" Pending"+(rv>0?" · "+rv+" Needs Review":"");document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Prev Week":"All Time";}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -1032,6 +1036,200 @@ function addSt(){var n=document.getElementById("sNm").value.trim(),t=document.ge
 function removeSt(team,idx){if(!confirm("Delete "+((SM[team]||[])[idx]||"this staff member")+"?"))return;SM[team].splice(idx,1);save();rStaff();}
 
 // ── Member View ────────────────────────────────────────────────────────────
+function rStaffRev(){
+  var sec=document.getElementById("sec-staffrev");
+  if(!sec) return;
+
+  // Build full staff list from SM + directory
+  var allStaff={};
+  for(var tm in SM){ (SM[tm]||[]).forEach(function(n){ allStaff[n]={name:n,team:tm}; }); }
+  Object.values(USER_DIRECTORY).forEach(function(u){ if(u&&u.name) allStaff[u.name]={name:u.name,team:u.team||""}; });
+  var staffList=Object.values(allStaff).sort(function(a,b){return a.name.localeCompare(b.name);});
+
+  // Filters
+  var wks=allWks();
+  var staffOpts='<option value="">-- Select Staff Member --</option>'+staffList.map(function(s){return'<option value="'+s.name+'"'+(srStaff===s.name?" selected":"")+'>'+s.name+(s.team?" ("+s.team+")":"")+'</option>';}).join("");
+  var wkOpts='<option value="All"'+(srWk==="All"?" selected":"")+'>All Weeks</option>'+wks.map(function(w){return'<option value="'+w+'"'+(srWk==w?" selected":"")+'>Week '+w+(w===thisWk?" ★":"")+'</option>';}).join("");
+  var locOpts2='<option value="All"'+(srLoc==="All"?" selected":"")+'>All Locations</option>'+LOCATIONS.map(function(l){return'<option value="'+l+'"'+(srLoc===l?" selected":"")+'>'+l+'</option>';}).join("");
+
+  var filterBar=
+    '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">'+
+      '<div><label class="flb" style="margin-top:0">Staff Member</label>'+
+        '<select onchange="srStaff=this.value;rStaffRev()" style="min-width:200px">'+staffOpts+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">Week</label>'+
+        '<select onchange="srWk=this.value;rStaffRev()" style="width:120px">'+wkOpts+'</select></div>'+
+      '<div><label class="flb" style="margin-top:0">Location</label>'+
+        '<select onchange="srLoc=this.value;rStaffRev()" style="width:120px">'+locOpts2+'</select></div>'+
+    '</div>';
+
+  if(!srStaff){
+    sec.innerHTML=
+      '<h2 style="font-size:16px;font-weight:800;color:#2E0326;margin-bottom:14px">👤 Staff Review</h2>'+
+      filterBar+
+      '<div class="card" style="text-align:center;padding:48px;color:#7c5c76">'+
+        '<div style="font-size:32px;margin-bottom:10px">👤</div>'+
+        '<div style="font-size:14px;font-weight:700;color:#2E0326;margin-bottom:6px">Select a staff member above</div>'+
+        '<div style="font-size:12px">View individual error metrics, trends and entry history for any team member</div>'+
+      '</div>';
+    return;
+  }
+
+  // Filter entries for this person
+  var entries=D.filter(function(e){
+    return e.who===srStaff
+      && !e.needsReview
+      && (srWk==="All"||e.week==srWk)
+      && (srLoc==="All"||(e.location||"LDZ-OH")===srLoc);
+  }).sort(function(a,b){return b.date>a.date?1:-1;});
+
+  var allEntries=D.filter(function(e){ return e.who===srStaff&&!e.needsReview; });
+
+  // KPIs
+  var total=entries.length;
+  var allTime=allEntries.length;
+  var thisWkCount=allEntries.filter(function(e){return e.week===thisWk;}).length;
+  var highSev=entries.filter(function(e){return e.severity==="High";}).length;
+  var medSev=entries.filter(function(e){return e.severity==="Medium";}).length;
+  var lowSev=entries.filter(function(e){return e.severity==="Low";}).length;
+  var callReq=entries.filter(function(e){return e.callRequired==="Yes";}).length;
+  var dtcVals=entries.filter(function(e){return e.daysToCatch!==null&&e.daysToCatch>=0;}).map(function(e){return e.daysToCatch;});
+  var avgDtc=dtcVals.length?Math.round(dtcVals.reduce(function(a,b){return a+b;},0)/dtcVals.length):null;
+  var dispensed=entries.filter(function(e){return e.dispensedWithError==="Yes"||e.rphVerified==="dispensed_with_error";}).length;
+  var goodCatch=entries.filter(function(e){return e.goodCatch==="Yes"||e.rphVerified==="good_catch";}).length;
+
+  // Top error type
+  var etC={};entries.forEach(function(e){etC[e.errorType]=(etC[e.errorType]||0)+1;});
+  var topET="None",topEV=0;for(var k in etC){if(etC[k]>topEV){topEV=etC[k];topET=k;}}
+
+  // Week trend — errors per week
+  var wkTrend={};allEntries.forEach(function(e){wkTrend[e.week]=(wkTrend[e.week]||0)+1;});
+  var trend=wks.map(function(w){return{w:w,c:wkTrend[w]||0};});
+  var maxTrend=Math.max.apply(null,trend.map(function(t){return t.c;}),1);
+
+  var kpis=[
+    {l:"Errors (filtered)",v:total,c:"#440B39",s:allTime+" all time"},
+    {l:"This Week",v:thisWkCount,c:"#0369a1",s:"current week total"},
+    {l:"🔴 High Severity",v:highSev,c:"#ef4444",s:total?Math.round(highSev/total*100)+"% of filtered":"—"},
+    {l:"📞 Calls Required",v:callReq,c:"#d97706",s:"in filtered period"},
+    {l:"⏱ Avg Days to Catch",v:avgDtc!==null?(avgDtc<7?avgDtc+"d":avgDtc<30?Math.round(avgDtc/7)+"w":Math.round(avgDtc/30)+"mo"):"—",c:"#7c3aed",s:"date found vs RX entered",sm:true},
+    {l:"Top Error Type",v:topEV>0?topET:"None",c:"#ef4444",s:topEV>0?topEV+" occurrences":"",sm:true},
+    {l:"⚠ Dispensed w/ Error",v:dispensed,c:"#ef4444",s:"errors that reached patient"},
+    {l:"✅ Good Catches",v:goodCatch,c:"#10b981",s:"errors caught before dispensing"},
+  ];
+
+  var kHtml=kpis.map(function(k){
+    return '<div class="kpi" style="border-left-color:'+k.c+'">'+
+      '<div class="lb">'+k.l+'</div>'+
+      '<div class="vl" style="font-size:'+(k.sm?13:20)+'px;color:'+k.c+'">'+k.v+'</div>'+
+      (k.s?'<div class="sub">'+k.s+'</div>':'')+
+    '</div>';
+  }).join("");
+
+  // Severity bar
+  var sevBar='<div style="display:flex;gap:3px;height:12px;border-radius:6px;overflow:hidden;margin:8px 0">'+
+    (total?
+      '<div style="flex:'+(highSev/total*100)+';background:#ef4444" title="High: '+highSev+'"></div>'+
+      '<div style="flex:'+(medSev/total*100)+';background:#f59e0b" title="Medium: '+medSev+'"></div>'+
+      '<div style="flex:'+(lowSev/total*100)+';background:#10b981" title="Low: '+lowSev+'"></div>'
+    :'<div style="flex:1;background:#e8d5e4"></div>')+
+  '</div>'+
+  '<div style="display:flex;gap:12px;font-size:10px;color:#7c5c76">'+
+    '<span>🔴 High: '+highSev+'</span><span>🟡 Medium: '+medSev+'</span><span>🟢 Low: '+lowSev+'</span>'+
+  '</div>';
+
+  // Mini week trend bars
+  var trendBars=trend.length?
+    '<div style="display:flex;gap:3px;align-items:flex-end;height:48px;margin-top:8px">'+
+    trend.map(function(t){
+      var h=maxTrend>0?Math.max(4,Math.round(t.c/maxTrend*48)):4;
+      var isCur=t.w===thisWk;
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">'+
+        '<div style="width:100%;height:'+h+'px;background:'+(isCur?"#440B39":"#e8d5e4")+';border-radius:3px 3px 0 0" title="Wk '+t.w+': '+t.c+'"></div>'+
+        '<div style="font-size:8px;color:#7c5c76">'+(isCur?"★":t.w)+'</div>'+
+      '</div>';
+    }).join("")+
+    '</div>'
+  :'<div style="font-size:11px;color:#7c5c76;margin-top:8px">No week data</div>';
+
+  // Entry table
+  var rows=entries.slice(0,100).map(function(e2,ri){
+    var tc=tyC(e2.errorType);
+    var hi=FBI[e2.id];
+    return '<tr'+(ri%2===0?' class="alt"':'')+'>'+
+      '<td style="white-space:nowrap">'+e2.date+'</td>'+
+      '<td>'+sevBadge(e2.severity)+'</td>'+
+      '<td>'+bdg(e2.errorType,tc)+'</td>'+
+      '<td>'+(e2.team?bdg(e2.team,TLC[e2.team]||"#440B39"):"—")+'</td>'+
+      '<td style="color:#7c5c76">'+(e2.faxErx||"—")+'</td>'+
+      '<td style="color:#2E0326">'+(e2.rxNum||"—")+'</td>'+
+      '<td style="color:#7c5c76;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(e2.notes||"—")+'</td>'+
+      '<td style="text-align:center">'+(e2.callRequired==="Yes"?'<span class="bdg" style="background:#fef3c7;color:#d97706">Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td>'+
+      '<td>'+(e2.location||"LDZ-OH")+'</td>'+
+      '<td>'+
+        (hi
+          ?'<div style="display:flex;align-items:center;gap:4px">'+
+              '<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi.initials+'</span>'+
+              '<span style="font-size:10px;color:#7c5c76">'+hi.date+'</span>'+
+              '<button onclick="clrI('+e2.id+')" style="font-size:10px;padding:1px 5px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer" title="Clear">✕</button>'+
+            '</div>'
+          :'<input class="ii" maxlength="4" placeholder="Init." style="width:40px;font-size:11px;padding:3px 5px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" onblur="setStaffRevI('+e2.id+',this.value)">'
+        )+
+      '</td>'+
+    '</tr>';
+  }).join("");
+
+  var staffInfo=allStaff[srStaff];
+  sec.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">'+
+      '<div>'+
+        '<h2 style="font-size:16px;font-weight:800;color:#2E0326;margin:0">👤 Staff Review</h2>'+
+        '<div style="font-size:11px;color:#7c5c76;margin-top:2px">Individual performance metrics for lead feedback</div>'+
+      '</div>'+
+    '</div>'+
+    filterBar+
+
+    // Staff header card
+    '<div class="card" style="background:linear-gradient(135deg,#2E0326,#440B39);color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'+
+      '<div style="width:52px;height:52px;border-radius:50%;background:#DC5AEE33;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">👤</div>'+
+      '<div style="flex:1">'+
+        '<div style="font-size:20px;font-weight:800">'+srStaff+'</div>'+
+        '<div style="font-size:12px;opacity:.7;margin-top:2px">'+(staffInfo&&staffInfo.team?staffInfo.team+" · ":"")+''+allTime+' total errors logged</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div style="font-size:28px;font-weight:800;color:#DC5AEE">'+thisWkCount+'</div>'+
+        '<div style="font-size:10px;opacity:.7">this week</div>'+
+      '</div>'+
+    '</div>'+
+
+    // KPIs
+    '<div class="kpi-row" style="margin-bottom:12px">'+kHtml+'</div>'+
+
+    // Two-col: severity + trend
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="card" style="flex:1;min-width:220px;margin-bottom:0">'+
+        '<div style="font-size:13px;font-weight:700;color:#2E0326;margin-bottom:4px">Severity Breakdown</div>'+
+        sevBar+
+      '</div>'+
+      '<div class="card" style="flex:2;min-width:280px;margin-bottom:0">'+
+        '<div style="font-size:13px;font-weight:700;color:#2E0326;margin-bottom:4px">Errors by Week <span style="font-size:10px;font-weight:400;color:#7c5c76">(all time · ★ = current week)</span></div>'+
+        trendBars+
+      '</div>'+
+    '</div>'+
+
+    // Entry table
+    '<div class="card" style="padding:0;overflow:hidden">'+
+      '<div style="padding:12px 16px;border-bottom:1px solid #f3e8f1;display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="font-size:13px;font-weight:700;color:#2E0326">Error History</div>'+
+        '<span style="font-size:11px;color:#7c5c76">'+entries.length+' entries'+(entries.length>100?" · showing first 100":"")+'</span>'+
+      '</div>'+
+      (entries.length>0?
+        '<div class="tbl-scroll"><table><thead><tr>'+
+          '<th>Date</th><th>Severity</th><th>Error Type</th><th>Team</th><th>Fax/eRx</th><th>RX#</th><th>Notes</th><th>Call</th><th>Location</th><th>Lead FB</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>'
+      :'<div style="text-align:center;padding:40px;color:#7c5c76">No entries found for this filter</div>')+
+    '</div>';
+}
+
 function rMember(){
   var sec=document.getElementById("sec-member"),wks=allWks(),members={};
   for(var i=0;i<D.length;i++){var e=D[i];if(e.source==="Human"&&(mvTm==="All"||e.team===mvTm)&&e.who)members[e.who]=1;}
@@ -1939,7 +2137,8 @@ function completeEntry(id){
   },100);
 }
 function setIE(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rEntries();}}
-function clrI(id){delete FBI[id];save();upHdr();rEntries();}
+function setStaffRevI(id,val){var v=val.trim().toUpperCase();if(v){FBI[id]={initials:v,date:fmtD(new Date())};save();upHdr();rStaffRev();}}
+function clrI(id){delete FBI[id];save();upHdr();if(curV==='staffrev')rStaffRev();else rEntries();}
 
 // ── RPH Lead Initials ────────────────────────────────────────────────────────
 // RFBI[entryId][rphName] = {initials, date}
@@ -2248,9 +2447,9 @@ var currentUser = null; // { name, email, picture, role }
 var ROLE_PAGES = {
   'RPH':     ['board','log'],
   'Trainer': ['board','summary','staff','member','log'],
-  'Lead':    ['board','dashboard','summary','trends','rph','staff','member','log'],
-  'Manager': ['board','dashboard','summary','trends','rph','staff','member','log'],
-  'Admin':   ['board','dashboard','summary','trends','rph','staff','member','log','import','entries','directory','admin']
+  'Lead':    ['board','dashboard','summary','trends','rph','staff','staffrev','member','log'],
+  'Manager': ['board','dashboard','summary','trends','rph','staff','staffrev','member','log'],
+  'Admin':   ['board','dashboard','summary','trends','rph','staff','staffrev','member','log','import','entries','directory','admin']
 };
 
 function onGoogleSignInWithInfo(info) {
@@ -2882,6 +3081,40 @@ function showPhotoModal(id) {
 
 
 // ── Init ───────────────────────────────────────────────────────────────────
+function injectDemoStaff(){
+  // Only inject if Jessica Demo doesn't already exist
+  if(D.some(function(e){return e.who==="Jessica Demo";})) return;
+
+  var today2=new Date();
+  function demoDate(daysAgo){
+    var d=new Date(today2);d.setDate(d.getDate()-daysAgo);return fmtD(d);
+  }
+  function demoId(){return 9000000+Math.floor(Math.random()*99999);}
+
+  var demoEntries=[
+    {id:demoId(),date:demoDate(0),week:thisWk,errorType:"Drug Mismatch",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"New Erx",drug:"Ozempic 1mg",rxNum:"RX-DEMO-001",notes:"Wrong drug dispensed — caught at VBD",severity:"High",dispensedWithError:"No",goodCatch:"Yes",pv1:"Missed",vbd:"Caught",rphNames:["Mike Sample"],rphCaughtNames:["Jessica Demo"],rphVBDNames:[],rphPV1CaughtNames:[],callRequired:"Yes",location:"LDZ-OH",daysToCatch:0,needsReview:false},
+    {id:demoId(),date:demoDate(1),week:thisWk,errorType:"Wrong Quantity",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"Refill Response",drug:"Metformin 500mg",rxNum:"RX-DEMO-002",notes:"Quantity entered as 30 instead of 90",severity:"Low",dispensedWithError:"No",goodCatch:"No",pv1:"NA",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:[],callRequired:"No",location:"LDZ-OH",daysToCatch:1,needsReview:false},
+    {id:demoId(),date:demoDate(3),week:thisWk,errorType:"Invalid Rx",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"Fax",drug:"Lisinopril 10mg",rxNum:"RX-DEMO-003",notes:"Prescriber signature missing",severity:"Medium",dispensedWithError:"No",goodCatch:"Yes",pv1:"Caught",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:["Jessica Demo"],callRequired:"No",location:"LDZ-AZ",daysToCatch:3,needsReview:false},
+    {id:demoId(),date:demoDate(5),week:thisWk-1,errorType:"Wrong Prescriber",source:"Human",team:"PCR 3",who:"Jessica Demo",faxErx:"New Erx",drug:"Humira 40mg",rxNum:"RX-DEMO-004",notes:"Entered under wrong prescriber NPI",severity:"Low",dispensedWithError:"No",goodCatch:"No",pv1:"NA",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:[],callRequired:"No",location:"LDZ-OH",daysToCatch:5,needsReview:false},
+    {id:demoId(),date:demoDate(8),week:thisWk-1,errorType:"Drug Mismatch",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"Fax",drug:"Mounjaro 5mg",rxNum:"RX-DEMO-005",notes:"Wrong strength dispensed to patient",severity:"High",dispensedWithError:"Yes",goodCatch:"No",pv1:"Missed",vbd:"Missed",rphNames:["Mike Sample"],rphCaughtNames:[],rphVBDNames:["Mike Sample"],rphPV1CaughtNames:[],callRequired:"Yes",location:"LDZ-OH",daysToCatch:8,needsReview:false},
+    {id:demoId(),date:demoDate(10),week:thisWk-1,errorType:"Incorrect Refills",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"Refill Response",drug:"Jardiance 10mg",rxNum:"RX-DEMO-006",notes:"Refill count incorrect on label",severity:"Low",dispensedWithError:"No",goodCatch:"No",pv1:"NA",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:[],callRequired:"No",location:"NDP",daysToCatch:10,needsReview:false},
+    {id:demoId(),date:demoDate(14),week:thisWk-2,errorType:"Entered Under Wrong PT",source:"Human",team:"TLAC",who:"Jessica Demo",faxErx:"Verbal",drug:"Wegovy 1.7mg",rxNum:"RX-DEMO-007",notes:"Filed under wrong patient account",severity:"High",dispensedWithError:"Yes",goodCatch:"No",pv1:"Missed",vbd:"Missed",rphNames:["Sarah Sample"],rphCaughtNames:[],rphVBDNames:["Sarah Sample"],rphPV1CaughtNames:[],callRequired:"Yes",location:"LDZ-OH",daysToCatch:14,needsReview:false},
+    {id:demoId(),date:demoDate(18),week:thisWk-2,errorType:"Wrong Quick Sig",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"New Erx",drug:"Metformin 1000mg",rxNum:"RX-DEMO-008",notes:"Sig directions entered incorrectly",severity:"Low",dispensedWithError:"No",goodCatch:"No",pv1:"NA",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:[],callRequired:"No",location:"LDZ-AZ",daysToCatch:18,needsReview:false},
+    {id:demoId(),date:demoDate(21),week:thisWk-3,errorType:"Invalid Rx",source:"Human",team:"Intake",who:"Jessica Demo",faxErx:"Fax",drug:"Ozempic 0.5mg",rxNum:"RX-DEMO-009",notes:"Rx date expired by 90 days",severity:"Medium",dispensedWithError:"No",goodCatch:"Yes",pv1:"Caught",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:["Jessica Demo"],callRequired:"No",location:"LDZ-OH",daysToCatch:21,needsReview:false},
+    {id:demoId(),date:demoDate(25),week:thisWk-3,errorType:"Wrong DAW",source:"Human",team:"PCR 3",who:"Jessica Demo",faxErx:"New Erx",drug:"Lisinopril 10mg",rxNum:"RX-DEMO-010",notes:"DAW code entered as 1 instead of 0",severity:"Low",dispensedWithError:"No",goodCatch:"No",pv1:"NA",vbd:"NA",rphNames:[],rphCaughtNames:[],rphVBDNames:[],rphPV1CaughtNames:[],callRequired:"No",location:"NDP",daysToCatch:25,needsReview:false},
+  ];
+
+  // Add demo entries to D (prepend so they show up)
+  demoEntries.forEach(function(e){D.push(e);});
+
+  // Add Jessica Demo to SM if not already there
+  if(!SM["Intake"]) SM["Intake"]=[];
+  if(SM["Intake"].indexOf("Jessica Demo")<0) SM["Intake"].push("Jessica Demo");
+
+  console.log("✅ Demo staff member injected — Jessica Demo");
+}
+
+
 async function init(){
   // Check saved session FIRST — show app immediately, load data in background
   try {
@@ -2905,8 +3138,8 @@ async function init(){
           var pages = ROLE_PAGES[role] || ['log'];
           goTo(pages[0]);
           // Load fresh data from Firebase in background
-          if(window._fbReady){ fbLoad(); }
-          else{ lsLoad(); window.addEventListener('firebaseReady',function(){fbLoad();},{once:true}); }
+          if(window._fbReady){ fbLoad().then(function(){injectDemoStaff();upHdr();render(curV);}); }
+          else{ lsLoad(); injectDemoStaff(); window.addEventListener('firebaseReady',function(){fbLoad().then(function(){injectDemoStaff();upHdr();render(curV);});},{once:true}); }
           return;
         }
       }
@@ -2916,8 +3149,11 @@ async function init(){
   // No saved session — load Firebase then show login
   try{
     if(window._fbReady){ await fbLoad(); }
-    else{ lsLoad(); window.addEventListener('firebaseReady',function(){fbLoad();},{once:true}); }
+    else{ lsLoad(); window.addEventListener('firebaseReady',function(){fbLoad().then(function(){injectDemoStaff();});},{once:true}); }
   }catch(e){ console.warn('Load error:',e); lsLoad(); }
+
+  // Inject demo staff for preview — safe, won't overwrite real data
+  injectDemoStaff();
 
   // Check for saved session
   try {
