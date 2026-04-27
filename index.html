@@ -2258,15 +2258,20 @@ function onGoogleSignInWithInfo(info) {
   var name = info.name;
   var picture = info.picture;
 
+  // Check directory for elevated role first
   var ud = USER_DIRECTORY[email.toLowerCase()];
   var role = ud ? (typeof ud === 'string' ? ud : ud.role) : null;
-  if(!role) {
-    if(email.toLowerCase() === 'dominique.l@gifthealth.com') role = 'Admin';
-    else {
-      document.getElementById('authError').style.display = 'block';
-      document.getElementById('authError').textContent = '⚠ Access denied — ' + email + ' is not in the gifthealth directory. Contact your Admin to be added.';
-      return;
-    }
+
+  // Hard-coded admin
+  if(email.toLowerCase() === 'dominique.l@gifthealth.com') role = 'Admin';
+
+  // Any gifthealth email gets RPH access automatically
+  if(!role && email.toLowerCase().endsWith('@gifthealth.com')) role = 'RPH';
+
+  if(!role){
+    document.getElementById('authError').style.display = 'block';
+    document.getElementById('authError').textContent = '⚠ Access denied — ' + email + ' is not a gifthealth account.';
+    return;
   }
 
   currentUser = { name: name, email: email, picture: picture, role: role };
@@ -2746,7 +2751,37 @@ function showPhotoModal(id) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init(){
-  // Load data — Firebase if ready, local fallback while waiting
+  // Check saved session FIRST — show app immediately, load data in background
+  try {
+    var saved = localStorage.getItem('pet_auth');
+    if(saved){
+      var u = JSON.parse(saved);
+      if(u && u.email){
+        // Re-validate role — check directory for elevated, else default to RPH for gifthealth emails
+        var ud2 = USER_DIRECTORY[u.email.toLowerCase()];
+        var role = ud2 ? (typeof ud2==='string'?ud2:ud2.role) : null;
+        if(u.email.toLowerCase()==='dominique.l@gifthealth.com') role='Admin';
+        if(!role && u.email.toLowerCase().endsWith('@gifthealth.com')) role='RPH';
+        if(role){
+          u.role = role;
+          currentUser = u;
+          document.getElementById('authScreen').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+          updateUserPill();
+          buildNav();
+          upHdr();
+          var pages = ROLE_PAGES[role] || ['log'];
+          goTo(pages[0]);
+          // Load fresh data from Firebase in background
+          if(window._fbReady){ fbLoad(); }
+          else{ lsLoad(); window.addEventListener('firebaseReady',function(){fbLoad();},{once:true}); }
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+
+  // No saved session — load Firebase then show login
   try{
     if(window._fbReady){ await fbLoad(); }
     else{ lsLoad(); window.addEventListener('firebaseReady',function(){fbLoad();},{once:true}); }
