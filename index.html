@@ -1261,6 +1261,7 @@ function daysBadge(days){
 }
 
 function rQuickLog(){
+  var rphName=currentUser?currentUser.name:'';
   document.getElementById("sec-log").innerHTML=
     '<div class="card" style="max-width:520px">'+
     '<div class="quick-log-banner">'+
@@ -1272,16 +1273,15 @@ function rQuickLog(){
     '</div>'+
     '<div class="fgrid">'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Date Error Found</label><input type="text" id="lDt" placeholder="e.g. 041726 or Apr 17" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
-      '<div class="fhalf"><label class="flb" style="margin-top:0">Date RX Entered</label><input type="text" id="lDtRx" placeholder="e.g. 041726 or Apr 17" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="lTy">'+etOpts("")+'</select></div>'+
-      
       '<div class="fhalf"><label class="flb" style="margin-top:0">RX Number</label><input type="text" id="lRx" placeholder="e.g. 1234567"></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Call Required?</label><select id="lCall"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Location</label><select id="lLoc">'+locOpts("LDZ-OH",true)+'</select></div>'+
       '<div class="fhalf"><label class="flb" style="margin-top:0">Your Name (RPH)</label>'+
-    '<div class="name-wrap"><input id="lRphName" placeholder="Type to search your name..." autocomplete="off" style="width:100%" oninput="smartNameSuggest(this,\'lRphDrop\')" onblur="setTimeout(function(){var d=document.getElementById(\'lRphDrop\');if(d)d.style.display=\'none\'},200)">'+
-    '<div id="lRphDrop" class="name-dropdown"></div></div>'+
-    '</div>'+
+        '<div style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;background:#f0fdf4;font-size:13px;color:#15803d;font-weight:600">'+
+          '✓ '+(rphName||'Unknown')+'<input type="hidden" id="lRphName" value="'+rphName+'">'+
+        '</div>'+
+      '</div>'+
     '</div>'+
     '<label class="flb">Notes / What happened?</label><textarea id="lNt" rows="3" placeholder="Brief description of the error..."></textarea>'+
     '<label class="flb" style="margin-top:12px">📷 Photo of the error <span style="font-weight:400;color:#7c5c76">(optional — upload or paste with Ctrl+V)</span></label>'+
@@ -1332,12 +1332,12 @@ function dupWarning(existing){
 
 function subQuickLog(){
   var date=document.getElementById("lDt").value;
-  var dateRxEntered=document.getElementById("lDtRx")?document.getElementById("lDtRx").value:"";
+  var dateRxEntered=""; // not collected in quick log — manager fills in later
   if(!date){alert("Please select a date error was found.");return;}
   var errorType=document.getElementById("lTy").value;
   if(!errorType){alert("Please select an error type.");return;}
   var rx=document.getElementById("lRx").value.trim();
-  var rphName=document.getElementById("lRphName").value;
+  var rphName=document.getElementById("lRphName").value||(currentUser?currentUser.name:"");
   var notes=document.getElementById("lNt").value.trim();
   var ph=document.getElementById("lPhoto");
   var photo=ph&&ph._photoData?ph._photoData:"";
@@ -2554,6 +2554,22 @@ function rDirectory(){
       '</div>'+
       '<button onclick="addDirUser()" class="btn" style="margin-top:0">+ Add to Directory</button>'+
     '</div>'+
+    // ── CSV Bulk Import ──
+    '<div class="card" style="max-width:680px;margin-top:12px;border:1.5px solid #c7d2fe;background:#f8faff">'+
+      '<h3 style="font-size:14px;color:#2E0326;margin-bottom:4px">📥 Bulk Import from CSV</h3>'+
+      '<p style="font-size:11px;color:#7c5c76;margin-bottom:12px">Upload a CSV file with your staff list. Required columns: <strong>name, email, role, team</strong><br>'+
+      'Valid roles: <strong>RPH, Trainer, Lead, Manager, Admin</strong> &nbsp;·&nbsp; team must match an existing team in Staff tab</p>'+
+      '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:11px;color:#92400e;margin-bottom:12px">'+
+        '📋 Example CSV format:<br><code style="font-family:monospace;font-size:11px">name,email,role,team<br>Jessica Smith,jessica.s@gifthealth.com,RPH,RPH<br>Mike Johnson,mike.j@gifthealth.com,Lead,Intake</code>'+
+      '</div>'+
+      '<input type="file" id="dirCsvFile" accept=".csv" style="font-size:12px;margin-bottom:10px">'+
+      '<div id="dirCsvPreview" style="display:none;margin-bottom:10px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;font-size:11px"></div>'+
+      '<div id="dirCsvMsg" style="font-size:12px;font-weight:600;margin-bottom:8px"></div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button onclick="previewDirCsv()" class="btn" style="margin-top:0;background:#0369a1">Preview</button>'+
+        '<button onclick="importDirCsv()" class="btn" style="margin-top:0;background:#10b981">✅ Import All</button>'+
+      '</div>'+
+    '</div>'+
     (entries.length>0?
       '<div class="card" style="padding:0;overflow:hidden;margin-top:12px">'+
         '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Team</th><th></th></tr></thead>'+
@@ -2653,6 +2669,122 @@ function saveDirEdit(){
   var msg='✅ '+newName+' updated'+(old.role!==newRole?' — role changed to '+newRole:'');
   if(updated>0) msg+=' · '+updated+' entr'+(updated===1?'y':'ies')+' updated';
   showDirToast(msg);
+}
+
+function previewDirCsv(){
+  var file=document.getElementById('dirCsvFile').files[0];
+  if(!file){alert('Please select a CSV file first.');return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var lines=ev.target.result.trim().split('\n');
+    var parsed=parseDirCsv(lines);
+    var preview=document.getElementById('dirCsvPreview');
+    var msg=document.getElementById('dirCsvMsg');
+    var dupes=parsed.rows.filter(function(r){return !r.error&&r.warning&&r.warning.indexOf('Already exists')>=0;}).length;
+    var updates=parsed.rows.filter(function(r){return !r.error&&r.warning&&r.warning.indexOf('Will update')>=0;}).length;
+    var fresh=parsed.rows.filter(function(r){return !r.error&&!r.warning;}).length;
+    if(parsed.errors.length>0){
+      msg.style.color='#dc2626';
+      msg.textContent='⚠ '+parsed.errors.length+' row(s) have errors — fix and re-upload';
+    } else {
+      msg.style.color='#15803d';
+      msg.textContent='✅ '+fresh+' new · '+updates+' will update · '+dupes+' already up to date';
+    }
+    var html='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#440B39;color:#fff"><th style="padding:5px 8px;text-align:left;font-size:10px">Name</th><th style="padding:5px 8px;text-align:left;font-size:10px">Email</th><th style="padding:5px 8px;text-align:left;font-size:10px">Role</th><th style="padding:5px 8px;text-align:left;font-size:10px">Team</th><th style="padding:5px 8px;text-align:left;font-size:10px">Status</th></tr></thead><tbody>';
+    parsed.rows.forEach(function(r,i){
+      var bg=i%2===0?'#fdf8fc':'#fff';
+      var status=r.error
+        ?'<span style="color:#dc2626">⚠ '+r.error+'</span>'
+        :r.warning&&r.warning.indexOf('Already exists')>=0
+          ?'<span style="color:#7c5c76">— No change</span>'
+          :r.warning
+            ?'<span style="color:#d97706">↻ '+r.warning+'</span>'
+            :'<span style="color:#15803d">✓ New</span>';
+      html+='<tr style="background:'+bg+'"><td style="padding:4px 8px;font-size:11px">'+r.name+'</td><td style="padding:4px 8px;font-size:11px;color:#7c5c76">'+r.email+'</td><td style="padding:4px 8px;font-size:11px">'+r.role+'</td><td style="padding:4px 8px;font-size:11px">'+r.team+'</td><td style="padding:4px 8px;font-size:11px">'+status+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    preview.innerHTML=html;
+    preview.style.display='block';
+  };
+  reader.readAsText(file);
+}
+
+function parseDirCsv(lines){
+  var validRoles=['RPH','Trainer','Lead','Manager','Admin'];
+  var rows=[],errors=[];
+  // Skip header row
+  var start=0;
+  if(lines[0].toLowerCase().indexOf('name')>=0||lines[0].toLowerCase().indexOf('email')>=0) start=1;
+  // Track emails seen in this CSV for intra-file duplicates
+  var seenInFile={};
+  for(var i=start;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(!line) continue;
+    var parts=line.split(',');
+    var name=(parts[0]||'').trim();
+    var email=(parts[1]||'').trim().toLowerCase();
+    var role=(parts[2]||'').trim();
+    var team=(parts[3]||'').trim();
+    var error='';
+    var warning='';
+    if(!name) error='Missing name';
+    else if(!email||!email.includes('@')) error='Invalid email';
+    else if(validRoles.indexOf(role)<0) error='Invalid role (use: '+validRoles.join(', ')+')';
+    // Check duplicate within this CSV file
+    if(!error && seenInFile[email]) error='Duplicate in file — email appears more than once';
+    // Check if already exists in directory
+    if(!error && USER_DIRECTORY[email]){
+      var existing=USER_DIRECTORY[email];
+      if(existing.name===name && existing.role===role && existing.team===team){
+        warning='Already exists — no changes';
+      } else {
+        warning='Will update: '+existing.name+' ('+existing.role+')';
+      }
+    }
+    if(email) seenInFile[email]=true;
+    if(error) errors.push(error);
+    rows.push({name:name,email:email,role:role||'RPH',team:team,error:error,warning:warning});
+  }
+  return {rows:rows,errors:errors};
+}
+
+function importDirCsv(){
+  var file=document.getElementById('dirCsvFile').files[0];
+  if(!file){alert('Please select a CSV file first.');return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var lines=ev.target.result.trim().split('\n');
+    var parsed=parseDirCsv(lines);
+    var valid=parsed.rows.filter(function(r){return !r.error&&!(r.warning&&r.warning.indexOf('Already exists')>=0);});
+    var skipped=parsed.rows.filter(function(r){return !r.error&&r.warning&&r.warning.indexOf('Already exists')>=0;}).length;
+    if(valid.length===0){alert('No new or changed entries to import.\n\n'+skipped+' already up to date.');return;}
+    if(!confirm('Import '+valid.length+' people into the directory?'+(skipped>0?'\n\n'+skipped+' unchanged entries will be skipped.':'')+'\n\nExisting entries with changes will be updated.')) return;
+    var added=0,updated=0;
+    valid.forEach(function(r){
+      var isNew=!USER_DIRECTORY[r.email];
+      // Remove old name from SM if updating
+      if(!isNew){
+        var old=USER_DIRECTORY[r.email];
+        if(old&&old.team&&old.name&&SM[old.team]){
+          var oi=SM[old.team].indexOf(old.name);
+          if(oi>-1) SM[old.team].splice(oi,1);
+        }
+      }
+      // Add to directory
+      USER_DIRECTORY[r.email]={name:r.name,email:r.email,role:r.role,team:r.team};
+      // Add to SM (staff map)
+      if(r.team){
+        if(!SM[r.team]) SM[r.team]=[];
+        if(SM[r.team].indexOf(r.name)<0) SM[r.team].push(r.name);
+      }
+      if(isNew) added++; else updated++;
+    });
+    save();
+    rDirectory();
+    showDirToast('✅ Imported '+added+' new · '+updated+' updated');
+    document.getElementById('dirCsvMsg').textContent='✅ Done — '+added+' added, '+updated+' updated';
+  };
+  reader.readAsText(file);
 }
 
 function addDirUser(){
