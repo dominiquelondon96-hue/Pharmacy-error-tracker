@@ -173,6 +173,10 @@ tr.alt td{background:#fdf5fb}
   <div id="syncBar" class="sync-bar loading">
     <span><span class="sync-dot yellow" id="syncDot"></span><span id="syncMsg">Connecting to cloud…</span></span>
     <div class="sync-actions">
+      <div id="moduleSwitcher" style="display:none;background:rgba(255,255,255,.12);border-radius:20px;padding:2px;gap:2px;align-items:center">
+        <button onclick="switchModule('intake')" id="modBtnIntake" style="padding:4px 14px;border-radius:14px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#440B39">📋 Intake</button>
+        <button onclick="switchModule('shipping')" id="modBtnShipping" style="padding:4px 14px;border-radius:14px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;background:transparent;color:rgba(255,255,255,.7)">🚚 Shipping</button>
+      </div>
       <button class="sync-btn" onclick="forceSave()">💾 Save Now</button>
       <button class="sync-btn" onclick="exportData()">⬇ Export Backup</button>
       <button class="sync-btn" onclick="migrateFromJSONBin()" title="One-time import of existing JSONBin data">📥 Import JSONBin</button>
@@ -192,6 +196,10 @@ tr.alt td{background:#fdf5fb}
   <div id="sec-board" class="sec"></div>
   <div id="sec-directory" class="sec"></div>
   <div id="sec-admin" class="sec"></div>
+  <!-- Shipping module sections -->
+  <div id="sec-ship-dashboard" class="sec"></div>
+  <div id="sec-ship-entries" class="sec"></div>
+  <div id="sec-ship-log" class="sec"></div>
   <div id="editModal" class="modal-bg">
     <div class="modal-box">
       <h3 style="font-size:16px;color:#2E0326;margin-bottom:16px">Edit Error Entry</h3>
@@ -319,6 +327,10 @@ var BIN_URL="https://api.jsonbin.io/v3/b/"+BIN_ID;
 var ET=["Incorrect Refills","Invalid Rx","Drug Mismatch","Wrong DAW","Wrong Prescriber","Wrong Quantity","Wrong Quick Sig","Entered Under Wrong PT","Self Prescribed","Wrong Written Date","Wrong Patient"];
 var TM=["Intake","PCR 3","TLAC","Ups","RPH"];
 var LOCATIONS=["LDZ-OH","LDZ-AZ","NDP","IDP"];
+var SHIP_LOCATIONS=["Gifthealth Pharmacy - Lilly","Gifthealth Pharmacy - Gastro/Specialty","Gifthealth Pharmacy Arizona (GPAZ)"];
+var SHIP_ET=["Misdelivery by shipping provider (shipment addressed correctly, but delivered to incorrect recipient)","Shipment sent to non-updated address (Processing Error)","Shipment sent to address provided by patient, but address was incorrect (Patient Error)"];
+var SD=[]; // Shipping error entries
+var curModule="intake"; // "intake" or "shipping"
 var SR=["Human","Bot","API"];
 var TC=["#440B39","#FF764D","#DC5AEE","#A9F5FF","#FFC5B9","#F6AFFF","#10b981","#2E0326","#ef4444","#7c5c76","#f59e0b"];
 var TLC={Intake:"#440B39","PCR 3":"#FF764D",TLAC:"#10b981",Ups:"#DC5AEE",RPH:"#A9F5FF",Bot:"#F6AFFF",API:"#FFC5B9"};
@@ -371,7 +383,7 @@ function getPayload(){
     // driveId and driveUrl stay in cloud payload — they're just short strings
     return copy;
   });
-  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,POSTS:POSTS,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,LOCATIONS:LOCATIONS,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
+  return {D:dNoPhotos,FBI:FBI,RFBI:RFBI,POSTS:POSTS,SM:SM,DRUGS:DRUGS,ET:ET,TM:TM,LOCATIONS:LOCATIONS,SHIP_LOCATIONS:SHIP_LOCATIONS,SD:SD,USER_DIRECTORY:USER_DIRECTORY,ts:Date.now()};
 }
 
 function savePhotosLocally(){
@@ -401,6 +413,8 @@ function applyPayload(p){
   if(p.RFBI)RFBI=p.RFBI;
   if(p.POSTS)POSTS=p.POSTS;
   if(p.LOCATIONS&&p.LOCATIONS.length)LOCATIONS=p.LOCATIONS;
+  if(p.SHIP_LOCATIONS&&p.SHIP_LOCATIONS.length)SHIP_LOCATIONS=p.SHIP_LOCATIONS;
+  if(p.SD)SD=p.SD;
   if(p.USER_DIRECTORY)USER_DIRECTORY=p.USER_DIRECTORY;
   restorePhotosFromLocal();
 }
@@ -524,10 +538,50 @@ function exportData(){
 }
 
 // ── Nav ────────────────────────────────────────────────────────────────────
+function switchModule(mod){
+  curModule=mod;
+  updateModuleSwitcher();
+  buildNav();
+  var pages=curModule==='shipping'?['ship-dashboard','ship-log','ship-entries']:ROLE_PAGES[currentUser?currentUser.role:'RPH']||['log'];
+  goTo(pages[0]);
+}
+
+function updateModuleSwitcher(){
+  var sw=document.getElementById('moduleSwitcher');
+  if(!sw) return;
+  var mod=currentUser?currentUser.module:'intake';
+  sw.style.display=(mod==='both')?'flex':'none';
+  var ib=document.getElementById('modBtnIntake');
+  var sb=document.getElementById('modBtnShipping');
+  if(ib&&sb){
+    if(curModule==='intake'){
+      ib.style.background='#fff';ib.style.color='#440B39';
+      sb.style.background='transparent';sb.style.color='rgba(255,255,255,.7)';
+    } else {
+      sb.style.background='#FF764D';sb.style.color='#fff';
+      ib.style.background='transparent';ib.style.color='rgba(255,255,255,.7)';
+    }
+  }
+}
+
+var SHIP_NAVS=[
+  {k:"ship-dashboard",l:"🚚 Dashboard"},
+  {k:"ship-log",l:"Log Shipping Error"},
+  {k:"ship-entries",l:"Shipping Entries"},
+  {k:"board",l:"📋 Board"},
+  {k:"admin",l:"Admin"},
+];
+var SHIP_ROLE_PAGES={
+  'RPH':     ['ship-log'],
+  'Trainer': ['ship-dashboard','ship-log','ship-entries'],
+  'Lead':    ['ship-dashboard','ship-log','ship-entries','board'],
+  'Manager': ['ship-dashboard','ship-log','ship-entries','board'],
+  'Admin':   ['ship-dashboard','ship-log','ship-entries','board','admin'],
+};
 var NAVS=[{k:"board",l:"📋 Board"},{k:"dashboard",l:"Dashboard"},{k:"summary",l:"Summary"},{k:"trends",l:"Trends"},{k:"rph",l:"RPH Report"},{k:"staff",l:"Staff"},{k:"staffrev",l:"👤 Staff Review"},{k:"member",l:"Member View"},{k:"log",l:"Log Error"},{k:"import",l:"Import"},{k:"entries",l:"All Entries"},{k:"directory",l:"Directory"},{k:"admin",l:"Admin"}];
 
 function goTo(v){curV=v;var ss=document.querySelectorAll(".sec");for(var i=0;i<ss.length;i++)ss[i].classList.remove("on");document.getElementById("sec-"+v).classList.add("on");buildNav();render(v);}
-function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,staffrev:rStaffRev,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin};if(fn[v])fn[v]();}
+function render(v){var fn={board:rBoard,dashboard:rDash,summary:rSum,trends:rTrend,rph:rRph,staff:rStaff,staffrev:rStaffRev,member:rMember,log:rLog,"import":rImport,entries:rEntries,directory:rDirectory,admin:rAdmin,"ship-dashboard":rShipDash,"ship-log":rShipLog,"ship-entries":rShipEntries};if(fn[v])fn[v]();}
 function upHdr(){var sub=getSubset();document.getElementById("hTot").textContent=sub.length;var rv=D.filter(function(e){return e.needsReview;}).length;document.getElementById("hPnd").textContent=(D.filter(function(e){return !e.needsReview;}).length-Object.keys(FBI).length)+" Pending"+(rv>0?" · "+rv+" Needs Review":"");document.getElementById("hMode").textContent=dashMode==="daily"?"Today":dashMode==="weekly"?"This Week":dashMode==="prevweek"?"Prev Week":"All Time";}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -2457,31 +2511,35 @@ function onGoogleSignInWithInfo(info) {
   var name = info.name;
   var picture = info.picture;
 
-  // Check directory for elevated role first
   var ud = USER_DIRECTORY[email.toLowerCase()];
   var role = ud ? (typeof ud === 'string' ? ud : ud.role) : null;
+  var module = ud && ud.module ? ud.module : 'intake';
 
-  // Hard-coded admin
-  if(email.toLowerCase() === 'dominique.l@gifthealth.com') role = 'Admin';
-
-  // Any gifthealth email gets RPH access automatically
-  if(!role && email.toLowerCase().endsWith('@gifthealth.com')) role = 'RPH';
+  if(email.toLowerCase() === 'dominique.l@gifthealth.com'){ role='Admin'; module='both'; }
+  if(!role && email.toLowerCase().endsWith('@gifthealth.com')){ role='RPH'; module='intake'; }
 
   if(!role){
-    document.getElementById('authError').style.display = 'block';
-    document.getElementById('authError').textContent = '⚠ Access denied — ' + email + ' is not a gifthealth account.';
+    document.getElementById('authError').style.display='block';
+    document.getElementById('authError').textContent='⚠ Access denied — '+email+' is not a gifthealth account.';
     return;
   }
 
-  currentUser = { name: name, email: email, picture: picture, role: role };
-  localStorage.setItem('pet_auth', JSON.stringify(currentUser));
+  // Admins always get both
+  if(role==='Admin') module='both';
 
-  document.getElementById('authScreen').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
+  currentUser={name:name,email:email,picture:picture,role:role,module:module};
+  localStorage.setItem('pet_auth',JSON.stringify(currentUser));
+
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
   updateUserPill();
+
+  // Set starting module
+  curModule=(module==='shipping')?'shipping':'intake';
+  updateModuleSwitcher();
   buildNav();
   upHdr();
-  var pages = ROLE_PAGES[role] || ['log'];
+  var pages=ROLE_PAGES[role]||['log'];
   goTo(pages[0]);
 }
 
@@ -2513,15 +2571,22 @@ function signOut() {
 }
 
 // ── Role-filtered nav ──
-function buildNav() {
-  var allowed = currentUser ? (ROLE_PAGES[currentUser.role] || ['log']) : ['log'];
-  var h = '';
-  for(var i = 0; i < NAVS.length; i++) {
-    if(allowed.indexOf(NAVS[i].k) >= 0) {
-      h += '<button class="' + (NAVS[i].k === curV ? 'on' : '') + '" onclick="goTo(\'' + NAVS[i].k + '\')">' + NAVS[i].l + '</button>';
+function buildNav(){
+  var allowed,navList;
+  if(curModule==='shipping'){
+    allowed=currentUser?(SHIP_ROLE_PAGES[currentUser.role]||['ship-log']):['ship-log'];
+    navList=SHIP_NAVS;
+  } else {
+    allowed=currentUser?(ROLE_PAGES[currentUser.role]||['log']):['log'];
+    navList=NAVS;
+  }
+  var h='';
+  for(var i=0;i<navList.length;i++){
+    if(allowed.indexOf(navList[i].k)>=0){
+      h+='<button class="'+(navList[i].k===curV?"on":"")+'" onclick="goTo(\''+navList[i].k+'\')">'+navList[i].l+'</button>';
     }
   }
-  document.getElementById('navBar').innerHTML = h;
+  document.getElementById('navBar').innerHTML=h;
 }
 
 // ── Admin — User Directory management ──
@@ -2533,6 +2598,291 @@ var POST_TYPES={
   sop:         {label:'📄 SOP / Policy',color:'#059669',bg:'#f0fdf4'},
   urgent:      {label:'🚨 Urgent',color:'#dc2626',bg:'#fff1f2'},
 };
+
+// ═══════════════════════════════════════════════════════════════
+// SHIPPING MODULE
+// ═══════════════════════════════════════════════════════════════
+
+var shipEFF="All",shipEFT="All",shipEFRev="All",shipRxSearch="";
+
+function mkShipId(){return 8000000+Math.floor(Math.random()*999999);}
+
+function shipLocOpts(sel){
+  return SHIP_LOCATIONS.map(function(l){return'<option'+(l===(sel||SHIP_LOCATIONS[0])?" selected":"")+'>'+l+'</option>';}).join('');
+}
+function shipEtOpts(sel){
+  return SHIP_ET.map(function(t){return'<option'+(t===sel?" selected":"")+'>'+t+'</option>';}).join('');
+}
+
+// ── Shipping Log ──────────────────────────────────────────────
+function rShipLog(){
+  var sec=document.getElementById('sec-ship-log');
+  if(!sec) return;
+  var reporter=currentUser?currentUser.name:'';
+  sec.innerHTML=
+    '<div class="card" style="max-width:620px">'+
+    '<h3 style="font-size:15px;color:#2E0326;margin-bottom:16px">🚚 Log Shipping Error</h3>'+
+    '<div class="fgrid">'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Location</label><select id="sLoc">'+shipLocOpts("")+'</select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Date of Error</label><input type="text" id="sDt" value="'+fmtD(new Date())+'" onblur="smartDateInput(this)"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Order / RX Number</label><input type="text" id="sRx" placeholder="e.g. 1234567"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Patient Name</label><input type="text" id="sPtName" placeholder="First Last"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Patient Date of Birth</label><input type="date" id="sPtDob"></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Error Type</label><select id="sEt"><option value="">-- Select --</option>'+shipEtOpts("")+'</select></div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Reporting Person</label>'+
+        '<div style="padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;background:#f0fdf4;font-size:13px;color:#15803d;font-weight:600">✓ '+reporter+'<input type="hidden" id="sReporter" value="'+reporter+'"></div>'+
+      '</div>'+
+      '<div class="fhalf"><label class="flb" style="margin-top:0">Person(s) Who Made Error</label><input type="text" id="sWhoErr" placeholder="Full name(s) or N/A"></div>'+
+    '</div>'+
+    '<label class="flb">Brief Description of Mistake / Event</label>'+
+    '<textarea id="sDesc" rows="3" placeholder="Provide more information about the incident..."></textarea>'+
+    '<label class="flb">Corrective Action Taken</label>'+
+    '<textarea id="sAction" rows="3" placeholder="What did we do to resolve the incident?"></textarea>'+
+    '<div style="margin-top:14px;padding:12px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca">'+
+      '<label class="flb" style="margin-top:0;color:#dc2626">⚠ HIPAA — If this was a potential HIPAA violation, was an email sent to the privacy team? (privacy@gifthealth.com)</label>'+
+      '<div style="display:flex;gap:16px;margin-top:8px">'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sHipaa" id="sHipaaYes" value="Yes"> Yes</label>'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sHipaa" id="sHipaaNo" value="No" checked> No</label>'+
+      '</div>'+
+    '</div>'+
+    '<button class="btn btn-full" onclick="subShipLog()" style="margin-top:14px;background:#FF764D">🚚 Submit Shipping Error</button>'+
+    '</div>';
+}
+
+function subShipLog(){
+  var date=document.getElementById('sDt').value;
+  if(!date){alert('Please enter a date.');return;}
+  var et=document.getElementById('sEt').value;
+  if(!et){alert('Please select an error type.');return;}
+  var ptName=document.getElementById('sPtName').value.trim();
+  if(!ptName){alert('Please enter the patient name.');return;}
+  var desc=document.getElementById('sDesc').value.trim();
+  if(!desc){alert('Please add a description.');return;}
+  var action=document.getElementById('sAction').value.trim();
+  if(!action){alert('Please add a corrective action.');return;}
+  var hipaa=document.querySelector('input[name="sHipaa"]:checked');
+
+  var row={
+    id:mkShipId(),
+    date:date,
+    week:getWk(date),
+    location:document.getElementById('sLoc').value,
+    rxNum:document.getElementById('sRx').value.trim(),
+    patientName:ptName,
+    patientDob:document.getElementById('sPtDob').value,
+    errorType:et,
+    description:desc,
+    correctiveAction:action,
+    reporter:document.getElementById('sReporter').value,
+    whoMadeError:document.getElementById('sWhoErr').value.trim(),
+    hipaa:hipaa?hipaa.value:'No',
+    ts:Date.now(),
+    reviewedBy:'',
+    initials:''
+  };
+
+  // Duplicate check — same RX + error type
+  var dup=SD.find(function(e){return e.rxNum&&row.rxNum&&e.rxNum===row.rxNum&&e.errorType===row.errorType;});
+  if(dup&&!confirm('⚠ A shipping error with RX '+row.rxNum+' and the same error type already exists ('+dup.date+'). Save anyway?')) return;
+
+  SD.unshift(row);
+  save();
+  upHdr();
+  rShipLog();
+  alert('✅ Shipping error logged successfully.');
+}
+
+// ── Shipping Dashboard ────────────────────────────────────────
+function rShipDash(){
+  var sec=document.getElementById('sec-ship-dashboard');
+  if(!sec) return;
+
+  var locFilter=shipEFF==="All"?SD:SD.filter(function(e){return e.location===shipEFF;});
+  var total=locFilter.length;
+  var thisWkE=locFilter.filter(function(e){return e.week===thisWk;});
+  var hipaaCount=locFilter.filter(function(e){return e.hipaa==="Yes";});
+  var thisWkHipaa=thisWkE.filter(function(e){return e.hipaa==="Yes";});
+
+  // By error type
+  var etC={};locFilter.forEach(function(e){etC[e.errorType]=(etC[e.errorType]||0)+1;});
+  var topET="None",topEV=0;for(var k in etC){if(etC[k]>topEV){topEV=etC[k];topET=k;}}
+  var topETShort=topET.length>30?topET.slice(0,28)+"…":topET;
+
+  // By location
+  var locC={};locFilter.forEach(function(e){locC[e.location||"Unknown"]=(locC[e.location||"Unknown"]||0)+1;});
+  var topLoc="None",topLocV=0;for(var k2 in locC){if(locC[k2]>topLocV){topLocV=locC[k2];topLoc=k2;}}
+
+  // Weekly trend
+  var wks=allWks();
+  var wkData=wks.map(function(w){return{w:w,c:locFilter.filter(function(e){return e.week===w;}).length};});
+  var maxW=Math.max.apply(null,wkData.map(function(t){return t.c;}),1);
+
+  var locFilterBar='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<select onchange="shipEFF=this.value;rShipDash()" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer">'+
+      '<option value="All"'+(shipEFF==="All"?" selected":"")+'>All Locations</option>'+
+      SHIP_LOCATIONS.map(function(l){return'<option value="'+l+'"'+(shipEFF===l?" selected":"")+'>'+l+'</option>';}).join('')+
+    '</select>'+
+  '</div>';
+
+  var kpis=[
+    {l:"Total Errors",v:total,c:"#FF764D",s:"all time"},
+    {l:"This Week",v:thisWkE.length,c:"#440B39",s:"week "+thisWk},
+    {l:"⚠ HIPAA Flags",v:hipaaCount.length,c:"#ef4444",s:thisWkHipaa.length+" this week"},
+    {l:"Top Error Type",v:topETShort,c:"#7c3aed",s:topEV>0?topEV+" occurrences":"",sm:true},
+    {l:"Top Location",v:topLoc==="None"?"None":topLoc.split(" - ")[1]||topLoc,c:"#0369a1",s:topLocV>0?topLocV+" errors":"",sm:true},
+  ];
+  var kHtml=kpis.map(function(k){
+    return '<div class="kpi" style="border-left-color:'+k.c+'">'+
+      '<div class="lb">'+k.l+'</div>'+
+      '<div class="vl" style="font-size:'+(k.sm?13:20)+'px;color:'+k.c+'">'+k.v+'</div>'+
+      (k.s?'<div class="sub">'+k.s+'</div>':'')+
+    '</div>';
+  }).join('');
+
+  // Weekly trend bars
+  var trendBars=wkData.length?
+    '<div style="display:flex;gap:3px;align-items:flex-end;height:60px">'+
+    wkData.map(function(t){
+      var h=maxW>0?Math.max(4,Math.round(t.c/maxW*60)):4;
+      var isCur=t.w===thisWk;
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">'+
+        '<div style="font-size:9px;color:#7c5c76">'+t.c+'</div>'+
+        '<div style="width:100%;height:'+h+'px;background:'+(isCur?"#FF764D":"#FFC5B9")+';border-radius:3px 3px 0 0"></div>'+
+        '<div style="font-size:8px;color:#7c5c76">'+(isCur?"★":t.w)+'</div>'+
+      '</div>';
+    }).join('')+
+    '</div>'
+  :'<div style="font-size:11px;color:#7c5c76">No data yet</div>';
+
+  // Error type breakdown
+  var etRows=Object.entries(etC).sort(function(a,b){return b[1]-a[1];}).map(function(kv){
+    var pct=total?Math.round(kv[1]/total*100):0;
+    var short=kv[0].length>45?kv[0].slice(0,43)+"…":kv[0];
+    return '<div style="margin-bottom:8px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">'+
+        '<span style="color:#2E0326">'+short+'</span>'+
+        '<span style="font-weight:700;color:#FF764D">'+kv[1]+' ('+pct+'%)</span>'+
+      '</div>'+
+      '<div style="height:8px;background:#f3e8f1;border-radius:4px">'+
+        '<div style="height:8px;background:#FF764D;border-radius:4px;width:'+pct+'%"></div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  // Recent HIPAA entries
+  var hipaaRows=hipaaCount.slice(0,5).map(function(e,i){
+    return '<tr'+(i%2===0?' class="alt"':'')+'>'+
+      '<td>'+e.date+'</td>'+
+      '<td style="font-size:10px">'+e.errorType.slice(0,40)+'…</td>'+
+      '<td>'+(e.patientName||"—")+'</td>'+
+      '<td>'+(e.location||"—")+'</td>'+
+      '<td>'+(e.reporter||"—")+'</td>'+
+    '</tr>';
+  }).join('');
+
+  sec.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">'+
+      '<div><h2 style="font-size:16px;font-weight:800;color:#2E0326;margin:0">🚚 Shipping Dashboard</h2>'+
+      '<div style="font-size:11px;color:#7c5c76;margin-top:2px">Shipping error metrics and trends</div></div>'+
+      locFilterBar+
+    '</div>'+
+    '<div class="kpi-row">'+kHtml+'</div>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="card" style="flex:2;min-width:280px;margin-bottom:0">'+
+        '<div style="font-size:13px;font-weight:700;color:#2E0326;margin-bottom:10px">Errors by Week <span style="font-size:10px;font-weight:400;color:#7c5c76">(★ = current)</span></div>'+
+        trendBars+
+      '</div>'+
+      '<div class="card" style="flex:1;min-width:220px;margin-bottom:0">'+
+        '<div style="font-size:13px;font-weight:700;color:#2E0326;margin-bottom:10px">Error Type Breakdown</div>'+
+        (etRows||'<div style="font-size:11px;color:#7c5c76">No data yet</div>')+
+      '</div>'+
+    '</div>'+
+    (hipaaCount.length>0?
+      '<div class="card">'+
+        '<div style="font-size:13px;font-weight:700;color:#dc2626;margin-bottom:10px">⚠ HIPAA Flag Log</div>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Error Type</th><th>Patient</th><th>Location</th><th>Reporter</th></tr></thead>'+
+        '<tbody>'+hipaaRows+'</tbody></table></div>'+
+      '</div>'
+    :'');
+}
+
+// ── Shipping All Entries ──────────────────────────────────────
+function rShipEntries(){
+  var sec=document.getElementById('sec-ship-entries');
+  if(!sec) return;
+
+  var fil=SD.filter(function(e){
+    return (shipEFT==="All"||e.errorType===shipEFT)
+      &&(shipEFF==="All"||e.location===shipEFF)
+      &&(shipEFRev==="All"||(shipEFRev==="HIPAA"&&e.hipaa==="Yes")||(shipEFRev==="No HIPAA"&&e.hipaa!=="Yes"))
+      &&(!shipRxSearch||(e.rxNum||"").toLowerCase().indexOf(shipRxSearch.toLowerCase())>=0);
+  }).sort(function(a,b){return b.date>a.date?1:-1;});
+
+  var etOpt='<option value="All"'+(shipEFT==="All"?" selected":"")+'>All Types</option>'+
+    SHIP_ET.map(function(t){return'<option value="'+t+'"'+(shipEFT===t?" selected":"")+'>'+t.slice(0,40)+'…</option>';}).join('');
+  var locOpt='<option value="All"'+(shipEFF==="All"?" selected":"")+'>All Locations</option>'+
+    SHIP_LOCATIONS.map(function(l){return'<option value="'+l+'"'+(shipEFF===l?" selected":"")+'>'+l+'</option>';}).join('');
+
+  var rows=fil.slice(0,300).map(function(e,i){
+    var hi=e.initials;
+    return '<tr'+(i%2===0?' class="alt"':'')+'>'+
+      '<td style="white-space:nowrap">'+e.date+'</td>'+
+      '<td style="font-size:10px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.errorType+'">'+e.errorType.slice(0,35)+'…</td>'+
+      '<td>'+(e.location||"—")+'</td>'+
+      '<td>'+(e.patientName||"—")+'</td>'+
+      '<td>'+(e.rxNum||"—")+'</td>'+
+      '<td>'+(e.reporter||"—")+'</td>'+
+      '<td>'+(e.whoMadeError||"—")+'</td>'+
+      '<td style="text-align:center">'+(e.hipaa==="Yes"?'<span class="bdg" style="background:#fee2e2;color:#dc2626">⚠ Yes</span>':'<span style="color:#cbd5e1;font-size:11px">No</span>')+'</td>'+
+      '<td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#7c5c76">'+e.description+'</td>'+
+      '<td>'+
+        (hi
+          ?'<div style="display:flex;align-items:center;gap:4px">'+
+              '<span class="bdg" style="background:#dcfce7;color:#16a34a;letter-spacing:1px">'+hi+'</span>'+
+              '<button onclick="clearShipI('+e.id+')" style="font-size:10px;padding:1px 5px;border-radius:4px;border:1px solid #e8d5e4;background:#fff;cursor:pointer">✕</button>'+
+            '</div>'
+          :'<input class="ii" maxlength="4" placeholder="Init." style="width:40px;font-size:11px;padding:3px 5px;border-radius:6px;border:1.5px solid #e8d5e4;text-align:center;background:#fffbeb" onblur="setShipI('+e.id+',this.value)">'
+        )+
+      '</td>'+
+      '<td><button onclick="delShipE('+e.id+')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #fecaca;background:#fff5f5;color:#ef4444;cursor:pointer">Del</button></td>'+
+    '</tr>';
+  }).join('');
+
+  sec.innerHTML=
+    '<div class="card fbar" style="margin-bottom:10px">'+
+      '<label style="font-size:11px;color:#7c5c76">Type:</label><select onchange="shipEFT=this.value;rShipEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+etOpt+'</select>'+
+      '<label style="font-size:11px;color:#7c5c76">Location:</label><select onchange="shipEFF=this.value;rShipEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+locOpt+'</select>'+
+      '<label style="font-size:11px;color:#7c5c76">HIPAA:</label><select onchange="shipEFRev=this.value;rShipEntries()" style="width:auto;padding:5px 8px;font-size:11px">'+
+        '<option'+(shipEFRev==="All"?" selected":"")+' value="All">All</option>'+
+        '<option'+(shipEFRev==="HIPAA"?" selected":"")+' value="HIPAA">HIPAA Flagged</option>'+
+        '<option'+(shipEFRev==="No HIPAA"?" selected":"")+' value="No HIPAA">No HIPAA</option>'+
+      '</select>'+
+      '<input placeholder="🔍 RX #" value="'+shipRxSearch+'" oninput="shipRxSearch=this.value;rShipEntries()" style="width:110px;padding:5px 8px;font-size:11px;border-radius:20px;border:1.5px solid var(--border)">'+
+      '<span style="font-size:11px;color:#7c5c76;margin-left:auto">'+fil.length+' entries</span>'+
+    '</div>'+
+    '<div class="card" style="padding:0;overflow:hidden">'+
+      '<div class="tbl-scroll"><table><thead><tr>'+
+        '<th>Date</th><th>Error Type</th><th>Location</th><th>Patient</th><th>RX/Order</th><th>Reporter</th><th>Who Made Error</th><th>HIPAA</th><th>Description</th><th>Lead FB</th><th></th>'+
+      '</tr></thead><tbody>'+
+      (rows||'<tr><td colspan="11" style="text-align:center;padding:40px;color:#7c5c76">No shipping errors logged yet.</td></tr>')+
+      '</tbody></table></div>'+
+    '</div>';
+}
+
+function setShipI(id,val){
+  var v=val.trim().toUpperCase();if(!v)return;
+  var e=SD.find(function(x){return x.id===id;});
+  if(e){e.initials=v;e.initialsDate=fmtD(new Date());save();rShipEntries();}
+}
+function clearShipI(id){
+  var e=SD.find(function(x){return x.id===id;});
+  if(e){e.initials='';e.initialsDate='';save();rShipEntries();}
+}
+function delShipE(id){
+  if(!confirm('Delete this shipping error?'))return;
+  SD=SD.filter(function(e){return e.id!==id;});
+  save();rShipEntries();
+}
 
 function rBoard(){
   var sec=document.getElementById('sec-board');
@@ -2750,6 +3100,14 @@ function rDirectory(){
           '</select></div>'+
         '<div><label class="flb" style="margin-top:0">Team (auto-adds to Staff tab)</label>'+
           '<select id="dirTeam">'+teamOpts+'</select></div>'+
+        '<div><label class="flb" style="margin-top:0">Module Access</label>'+
+          '<div style="display:flex;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-top:4px">'+
+            '<button type="button" id="dirModIntake" onclick="setDirMod(\'intake\')" style="flex:1;padding:7px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#440B39;color:#fff;font-family:inherit">📋 Intake</button>'+
+            '<button type="button" id="dirModBoth" onclick="setDirMod(\'both\')" style="flex:1;padding:7px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#f3f4f6;color:#7c5c76;font-family:inherit">Both</button>'+
+            '<button type="button" id="dirModShipping" onclick="setDirMod(\'shipping\')" style="flex:1;padding:7px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#f3f4f6;color:#7c5c76;font-family:inherit">🚚 Shipping</button>'+
+          '</div>'+
+          '<input type="hidden" id="dirMod" value="intake">'+
+        '</div>'+
       '</div>'+
       '<button onclick="addDirUser()" class="btn" style="margin-top:0">+ Add to Directory</button>'+
     '</div>'+
@@ -2924,6 +3282,8 @@ function parseDirCsv(lines){
     var email=(parts[1]||'').trim().toLowerCase();
     var role=(parts[2]||'').trim();
     var team=(parts[3]||'').trim();
+    var module=((parts[4]||'').trim().toLowerCase()||'intake');
+    if(['intake','shipping','both'].indexOf(module)<0) module='intake';
     var error='';
     var warning='';
     if(!name) error='Missing name';
@@ -2942,7 +3302,7 @@ function parseDirCsv(lines){
     }
     if(email) seenInFile[email]=true;
     if(error) errors.push(error);
-    rows.push({name:name,email:email,role:role||'RPH',team:team,error:error,warning:warning});
+    rows.push({name:name,email:email,role:role||'RPH',team:team,module:module,error:error,warning:warning});
   }
   return {rows:rows,errors:errors};
 }
@@ -2970,7 +3330,7 @@ function importDirCsv(){
         }
       }
       // Add to directory
-      USER_DIRECTORY[r.email]={name:r.name,email:r.email,role:r.role,team:r.team};
+      USER_DIRECTORY[r.email]={name:r.name,email:r.email,role:r.role,team:r.team,module:r.module||'intake'};
       // Add to SM (staff map)
       if(r.team){
         if(!SM[r.team]) SM[r.team]=[];
@@ -2986,21 +3346,34 @@ function importDirCsv(){
   reader.readAsText(file);
 }
 
+function setDirMod(mod){
+  document.getElementById('dirMod').value=mod;
+  var btns={intake:'dirModIntake',both:'dirModBoth',shipping:'dirModShipping'};
+  var colors={intake:'#440B39',both:'#7c3aed',shipping:'#FF764D'};
+  Object.keys(btns).forEach(function(m){
+    var el=document.getElementById(btns[m]);
+    if(!el)return;
+    if(m===mod){el.style.background=colors[m];el.style.color='#fff';}
+    else{el.style.background='#f3f4f6';el.style.color='#7c5c76';}
+  });
+}
+
 function addDirUser(){
   var name=(document.getElementById('dirName')||{value:''}).value.trim();
   var email=(document.getElementById('dirEmail').value||'').trim().toLowerCase();
   var role=document.getElementById('dirRole').value;
   var team=(document.getElementById('dirTeam')||{value:''}).value;
+  var module=(document.getElementById('dirMod')||{value:'intake'}).value||'intake';
   if(!name){alert('Please enter a name');return;}
   if(!email||!email.includes('@')){alert('Please enter a valid email');return;}
-  USER_DIRECTORY[email]={name:name,email:email,role:role,team:team};
+  USER_DIRECTORY[email]={name:name,email:email,role:role,team:team,module:module};
   if(team){if(!SM[team])SM[team]=[];if(SM[team].indexOf(name)===-1)SM[team].push(name);}
   save();
   if(document.getElementById('dirName')) document.getElementById('dirName').value='';
   document.getElementById('dirEmail').value='';
   rDirectory();
   rStaff();
-  showDirToast('✅ '+name+' added as '+role+(team?' — '+team:''));
+  showDirToast('✅ '+name+' added as '+role+' · '+module+' access'+(team?' — '+team:''));
 }
 
 function removeDirUser(btn){
@@ -3129,9 +3502,14 @@ async function init(){
         if(!role && u.email.toLowerCase().endsWith('@gifthealth.com')) role='RPH';
         if(role){
           u.role = role;
+          // Ensure module is set — Admin always gets both
+          if(!u.module) u.module = (role==='Admin')?'both':'intake';
+          if(role==='Admin') u.module='both';
           currentUser = u;
+          curModule=(u.module==='shipping')?'shipping':'intake';
           document.getElementById('authScreen').style.display = 'none';
           document.getElementById('mainApp').style.display = 'block';
+          updateModuleSwitcher();
           updateUserPill();
           buildNav();
           upHdr();
@@ -3227,11 +3605,14 @@ function devLogin(role) {
     name: role === 'Admin' ? 'Dominique London' : role + ' User',
     email: role === 'Admin' ? 'dominique.l@gifthealth.com' : role.toLowerCase()+'@gifthealth.com',
     picture: '',
-    role: role
+    role: role,
+    module: role==='Admin'?'both':'intake'
   };
   localStorage.setItem('pet_auth', JSON.stringify(currentUser));
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
+  curModule='intake';
+  updateModuleSwitcher();
   updateUserPill();
   buildNav();
   upHdr();
